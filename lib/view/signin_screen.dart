@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/view/home_page.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -167,8 +168,18 @@ class _SigninScreenState extends State<SigninScreen> {
                             border: InputBorder.none,
                           ),
                         ),
-                        SizedBox(height: Height20),
-                        AppButton(title: 'ចូលគណនី', onTap: () {}),
+                        SizedBox(height: Height30),
+                        AppButton(
+                          title: 'ចូលគណនី',
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HomePage(),
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),

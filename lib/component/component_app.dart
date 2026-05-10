@@ -32,34 +32,32 @@ LinearGradient gradientColor({
 
 class AppButton extends StatelessWidget {
   final String title;
-  final VoidCallback onTap;
+  final void Function() onTap;
 
-  const AppButton({
-    super.key,
-    required this.title,
-    required this.onTap,
-  });
+  const AppButton({super.key, required this.title, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       height: 60,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFC96A28),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: ButtonColor,
+            borderRadius: BorderRadius.circular(Round20),
           ),
-        ),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+          child: Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: UKFontFamily,
+              ),
+            ),
           ),
         ),
       ),
