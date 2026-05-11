@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/signin_screen.dart';
 
@@ -36,10 +37,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   // handle get started button press
-  void handleGetStarted() {
-    // Navigate to home or login screen
-    // final authProvider = context.read<AuthProvider>();
-    // authProvider.setFirstTimeDone();
+  Future<void> handleGetStarted() async {
+    await context.read<AuthProvider>().setFirstTimeDone();
+
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const SigninScreen()),
@@ -151,9 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SigninScreen(),));
-                      },
+                      onPressed: handleGetStarted,
                       child: Text(
                         "រំលង",
                         style: TextStyle(

@@ -5,6 +5,7 @@ import 'package:thesisapp/model/user.dart';
 
 class AuthProvider extends ChangeNotifier {
   late SharedPreferences _prefs;
+  late final Future<void> _initFuture;
 
   bool _isFirstTime = true;
   bool _isLoggedIn = false;
@@ -17,8 +18,10 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
 
   AuthProvider() {
-    _init();
+    _initFuture = _init();
   }
+
+  Future<void> get initialized => _initFuture;
 
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -39,7 +42,11 @@ class AuthProvider extends ChangeNotifier {
           // Corrupted data – clear it
           await _prefs.remove('user');
           _isLoggedIn = false;
+          await _prefs.setBool('isLoggedIn', false);
         }
+      } else {
+        _isLoggedIn = false;
+        await _prefs.setBool('isLoggedIn', false);
       }
     } finally {
       _isLoading = false;
@@ -48,12 +55,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> setFirstTimeDone() async {
+    await initialized;
     _isFirstTime = false;
     await _prefs.setBool('isFirstTime', false);
     notifyListeners();
   }
 
   Future<void> login(User user) async {
+    await initialized;
     _isLoggedIn = true;
     _user = user;
     await _prefs.setBool('isLoggedIn', true);
@@ -62,6 +71,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await initialized;
     _isLoggedIn = false;
     _user = null;
     await _prefs.setBool('isLoggedIn', false);
@@ -75,6 +85,8 @@ class AuthProvider extends ChangeNotifier {
     String? email,
     String? image,
   }) async {
+    await initialized;
+
     if (_user != null) {
       _user = User(
         id: _user!.id,

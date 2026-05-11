@@ -55,6 +55,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     final authProvider = context.read<AuthProvider>();
+    await authProvider.initialized;
+
+    if (!mounted) return;
 
     if (authProvider.isFirstTime) {
       Navigator.pushReplacement(
@@ -153,7 +156,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 60),
                 ],
               ),

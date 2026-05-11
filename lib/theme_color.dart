@@ -32,7 +32,9 @@ const  StrokeCardColor = Color(0xFFFDF6EE);
 const  IconColor = Color(0xFF2C2C2C);
 const  IconOrangeColor = Color(0xFFC46520);
 
-const  SoftGreen = Color(0xFFAFE4B5);
+const ColorNavBar = Color(0xFFFAEBD7);
+
+const SoftGreen = Color(0xFFAFE4B5);
 
 const double ZeroPixel = 0.0;
 
