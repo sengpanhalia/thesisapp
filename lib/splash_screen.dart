@@ -160,7 +160,7 @@ class _SplashScreenState extends State<SplashScreen>
                           "សូមស្វាគមន៍",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             // letterSpacing: 1,
                             fontFamily: 'KhmerMool1',
                             // fontWeight: FontWeight.w600,
@@ -168,7 +168,6 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 10),
 
                         Text(
                           "3",

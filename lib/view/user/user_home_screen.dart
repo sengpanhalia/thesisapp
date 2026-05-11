@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/component_app.dart';
@@ -32,6 +35,34 @@ class _HomePageState extends State<HomePage> {
     context.read<NavigationProvider>().setIndex(1);
   }
 
+  Future<void> _fetchProducts() async {
+    final url = Uri.parse('$_baseUrl/get_products.php');
+    try {
+      final response = await http.get(url);
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['status'] == 'success') {
+          final List productsJson = (data['products'] as List?) ?? const [];
+          setState(() {
+            _products = productsJson
+                .whereType<Map<String, dynamic>>()
+                .map(ProductModel.fromJson)
+                .toList();
+            _isLoadingProducts = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoadingProducts = false);
+  }
+
   @override
   void dispose() {
     searchController.dispose();
@@ -54,6 +85,7 @@ class _HomePageState extends State<HomePage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: MgPd20),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -137,6 +169,40 @@ class _HomePageState extends State<HomePage> {
                     'assets/slide2.png',
                     'assets/slide3.png',
                   ],
+                ),
+                SizedBox(height: Height15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'សៀវភៅប្រចាំឆមាស',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: TextColor,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: UKFontFamily,
+                      ),
+                    ),
+                    GestureDetector(
+                      child: Text(
+                        'មើលទាំងអស់',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: GText1,
+                          fontFamily: UKFontFamily,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: Height10),
+                GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                  ),
+                  itemBuilder: (context, index){
+                    return 
+                  },
                 ),
               ],
             ),
