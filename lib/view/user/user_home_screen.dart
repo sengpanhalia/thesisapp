@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 
 class HomePage extends StatefulWidget {
@@ -10,6 +13,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final TextEditingController searchController = TextEditingController();
+
   String getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -23,7 +28,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  
+  void _openSearch() {
+    context.read<NavigationProvider>().setIndex(1);
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +88,54 @@ class _HomePageState extends State<HomePage> {
                         backgroundImage: AssetImage('assets/image.JPG'),
                       ),
                     ),
+                  ],
+                ),
+                SizedBox(height: Height15),
+                Container(
+                  height: 54,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: StrokeSearchBar, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded, color: Colors.black45),
+                      const SizedBox(width: Width5),
+                      Expanded(
+                        child: TextField(
+                          controller: searchController,
+                          readOnly: true,
+
+                          onTap: _openSearch,
+                          decoration: InputDecoration(
+                            fillColor: Colors.transparent,
+                            hintText: 'ស្វែងរក...',
+                            // hintStyle: GoogleFonts.poppins(
+                            //   fontSize: 13,
+                            //   color: Colors.black45,
+                            //   fontWeight: FontWeight.w500,
+                            // ),
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: TextSoftColor,
+                              // fontWeight: FontWeight.w500,
+                              fontFamily: UKFontFamily,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: Height15),
+                CarouselSliderWidget(
+                  images: [
+                    'assets/slide1.png',
+                    'assets/slide2.png',
+                    'assets/slide3.png',
                   ],
                 ),
               ],

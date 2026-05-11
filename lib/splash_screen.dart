@@ -153,6 +153,34 @@ class _SplashScreenState extends State<SplashScreen>
                             color: TextColor,
                           ),
                         ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "សូមស្វាគមន៍",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            // letterSpacing: 1,
+                            fontFamily: 'KhmerMool1',
+                            // fontWeight: FontWeight.w600,
+                            color: TextColor,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "3",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 26,
+                            // letterSpacing: 1.2,
+                            fontFamily: 'tacteng',
+                            // fontWeight: FontWeight.w600,
+                            color: TextColor,
+                          ),
+                        ),
                       ],
                     ),
                   ),

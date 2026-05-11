@@ -1,36 +1,38 @@
 import 'package:flutter/material.dart';
 
-const  UKFontFamily = "SiemReap";
-const  UEFontFamily = "Poppins";
+const UKFontFamily = "SiemReap";
+const UEFontFamily = "Poppins";
 
-const  WhiteColor = Color(0xFFFFFFFF);
-const  RedColor = Color(0xFFFF1100);
-const  GreenColor = Color(0xFF4CAF50);
-const  YellowColor = Color(0xFFFFEB3B); 
-final  StrokeColor = Color(0xFF9A9288).withOpacity(0.5);
-const  TranparentColor = Colors.transparent;
-const  BlackColor = Color(0xFF000000);
+const WhiteColor = Color(0xFFFFFFFF);
+const RedColor = Color(0xFFFF1100);
+const GreenColor = Color(0xFF4CAF50);
+const YellowColor = Color(0xFFFFEB3B);
+final StrokeColor = Color(0xFF9A9288).withOpacity(0.5);
+const TranparentColor = Colors.transparent;
+const BlackColor = Color(0xFF000000);
 
-const  GBackground1 = Color(0xFFFDF6EE);
-const  GBackground2 = Color(0xFFFAF0E4);
-const  GBackground3 = Color(0xFFF4E2CC);
-const  GBackground4 = Color(0xFFECD0AE);
+const GBackground1 = Color(0xFFFDF6EE);
+const GBackground2 = Color(0xFFFAF0E4);
+const GBackground3 = Color(0xFFF4E2CC);
+const GBackground4 = Color(0xFFECD0AE);
 
-const  GText1 = Color(0xFFC46520);
-const  GText2 = Color(0xFFA34E1B);
-const  GText3 = Color(0xFF843F1C);
+const StrokeSearchBar = Color(0xFFE8E6E2);
 
-const  TextColor = Color(0xFF5E574F);
-const  TextSoftColor = Color(0xFFB8B2A8);
-const  GreyColor = Color(0xFFD9D9D9);
+const GText1 = Color(0xFFC46520);
+const GText2 = Color(0xFFA34E1B);
+const GText3 = Color(0xFF843F1C);
 
-const  ButtonColor = Color(0xFFD97F2E);
-const  CardColor = Color(0xFFFAF0E4);
+const TextColor = Color(0xFF5E574F);
+const TextSoftColor = Color(0xFFB8B2A8);
+const GreyColor = Color(0xFFD9D9D9);
 
-const  StrokeCardColor = Color(0xFFFDF6EE);
+const ButtonColor = Color(0xFFD97F2E);
+const CardColor = Color(0xFFFAF0E4);
 
-const  IconColor = Color(0xFF2C2C2C);
-const  IconOrangeColor = Color(0xFFC46520);
+const StrokeCardColor = Color(0xFFFDF6EE);
+
+const IconColor = Color(0xFF2C2C2C);
+const IconOrangeColor = Color(0xFFC46520);
 
 const ColorNavBar = Color(0xFFFAEBD7);
 
