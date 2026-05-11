@@ -1,43 +1,86 @@
-import 'package:flutter/material.dart';
-import 'package:thesisapp/component/component_app.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/view/admin/home_screen.dart';
+import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/view/onboard_screen.dart';
+import 'package:thesisapp/view/signin_screen.dart';
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  double _logoOpacity = 0.8;
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  double _logoOpacity = 0.0;
   double _textOpacity = 0.0;
-  double _logoScale = 0.0;
-  bool _showOnboarding = false;
+  double _logoScale = 0.5;
 
   @override
   void initState() {
     super.initState();
     _startAnimation();
+    _navigateAfterDelay();
   }
 
-  _startAnimation() async {
-    // Wait a moment before starting
-    await Future.delayed(Duration(milliseconds: 800));
+  Future<void> _startAnimation() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
 
     setState(() {
       _logoOpacity = 1.0;
-      _logoScale = 1.0; // This triggers the TweenAnimationBuilder to animate
+      _logoScale = 1.0;
     });
 
-    // Wait for logo to finish popping, then show text
-    await Future.delayed(Duration(milliseconds: 800));
-    setState(() => _textOpacity = 1.0);
+    await Future.delayed(const Duration(milliseconds: 900));
 
-    // Final transition to onboarding
-    await Future.delayed(Duration(seconds: 2));
-    setState(() => _showOnboarding = true);
+    if (!mounted) return;
+
+    setState(() {
+      _textOpacity = 1.0;
+    });
+  }
+
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (!mounted) return;
+
+    final authProvider = context.read<AuthProvider>();
+
+    if (authProvider.isFirstTime) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
+    } else if (authProvider.isLoggedIn) {
+      final userRole = authProvider.user?.role ?? 'user';
+
+      if (userRole == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      }
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const SigninScreen()),
+      );
+    }
   }
 
   @override
@@ -46,68 +89,78 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          // Matching the warm gradient from your design
           gradient: gradientColor(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        ),
-        child: AnimatedSwitcher(
-          duration: Duration(milliseconds: 800),
-          child: _showOnboarding ? OnboardingScreen() : _buildSplash(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSplash() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TweenAnimationBuilder<double>(
-          tween: Tween<double>(
-            begin: 0.7,
-            end: _logoScale,
-          ), // Scale from 70% to 100%
-          duration: Duration(milliseconds: 2000),
-          curve: Curves.elasticOut, // This creates the "Pop/Bounce" feel
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: _logoOpacity,
-              child: Transform.scale(scale: value, child: child),
-            );
-          },
-          child: Image.asset('assets/logo_app.png', width: 300),
-        ),
-        SizedBox(height: 30),
-        // University Name Text
-        AnimatedOpacity(
-          opacity: _textOpacity,
-          duration: Duration(milliseconds: 800),
-          child: Column(
-            children: [
-              Text(
-                "សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេសៀ",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontFamily: 'KhmerMool1',
-                  // fontWeight: FontWeight.bold,
-                  color: TextColor, // USEA Deep Blue
-                ),
-              ),
-              Text(
-                "University of South-East Asia",
-                style: TextStyle(
-                  fontSize: 24,
-                  letterSpacing: 0.7,
-                  color: TextColor,
-                  fontFamily: UEFontFamily,
-                ),
-              ),
-            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-      ],
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 800),
+                    opacity: _logoOpacity,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0.5, end: _logoScale),
+                      duration: const Duration(milliseconds: 1600),
+                      curve: Curves.elasticOut,
+                      builder: (context, value, child) {
+                        return Transform.scale(scale: value, child: child);
+                      },
+                      child: Hero(
+                        tag: "app_logo",
+                        child: Image.asset('assets/logo_app.png', width: 220),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: Height15),
+
+                  AnimatedOpacity(
+                    opacity: _textOpacity,
+                    duration: const Duration(milliseconds: 1000),
+                    curve: Curves.easeIn,
+                    child: Column(
+                      children: [
+                        Text(
+                          "សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេសៀ",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontFamily: 'KhmerMool1',
+                            color: TextColor,
+                            height: 1.5,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "University of South-East Asia",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 20,
+                            letterSpacing: 1.2,
+                            fontFamily: UEFontFamily,
+                            fontWeight: FontWeight.w600,
+                            color: TextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 60),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

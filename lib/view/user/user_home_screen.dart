@@ -13,15 +13,17 @@ class _HomePageState extends State<HomePage> {
   String getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'អរុណសួស្តី'; // Good Morning in Khmer
+      return 'អរុណសួស្តី,'; // Good Morning in Khmer
     } else if (hour < 17) {
-      return 'ទិវាសួស្តី'; // Good Afternoon in Khmer
+      return 'ទិវាសួស្តី,'; // Good Afternoon in Khmer
     } else if (hour < 20) {
-      return 'សាយន្តសួស្តី'; // Afternoon in Khmer
+      return 'សាយន្តសួស្តី,'; // Afternoon in Khmer
     } else {
-      return 'រាត្រីសួស្តី'; // Evening in Khmer
+      return 'រាត្រីសួស្តី,'; // Evening in Khmer
     }
   }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +60,9 @@ class _HomePageState extends State<HomePage> {
                         textGradient(
                           'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
                           TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             color: Colors.white,
-                            fontFamily: UKFontFamily,
+                            fontFamily: 'KhmerMool1',
                           ),
                         ),
                       ],
