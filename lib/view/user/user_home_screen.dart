@@ -120,18 +120,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final canShowProducts = !_isLoadingProducts;
     final user = context.watch<AuthProvider>().user;
-    final profilePic = _userData.isNotEmpty
-        ? _userData.first.profile_pic.trim()
-        : '';
-    final profileImageUrl = profilePic.isEmpty
-        ? ''
-        : profilePic.startsWith('http')
-            ? profilePic
-            : '${ApiConfig.usersUploadsUrl}/$profilePic';
-    final ImageProvider? profileImage = profileImageUrl.isEmpty
-        ? null
-        : CachedNetworkImageProvider(profileImageUrl);
-
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 65,
@@ -175,11 +163,7 @@ class _HomePageState extends State<HomePage> {
               backgroundColor: Colors.white,
               child: CircleAvatar(
                 radius: 30,
-                backgroundColor: GBackground1,
-                backgroundImage: profileImage,
-                child: profileImage == null
-                    ? const Icon(Icons.person_rounded, color: TextSoftColor)
-                    : null,
+                backgroundImage: CachedNetworkImage(imageUrl: _userData[0].profile_pic),
               ),
             ),
           ),
