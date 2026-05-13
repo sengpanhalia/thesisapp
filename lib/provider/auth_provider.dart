@@ -80,24 +80,26 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> updateUserInfo({
-    String? fullname,
-    String? username,
-    String? email,
-    String? image,
+    String? student_id,
+    String? name_kh,
+    String? pwd,
   }) async {
     await initialized;
 
-    if (_user != null) {
-      _user = User(
-        id: _user!.id,
-        fullname: fullname ?? _user!.fullname,
-        username: username ?? _user!.username,
-        email: email ?? _user!.email,
-        role: _user!.role,
-        image: image ?? _user!.image,
-      );
-      await _prefs.setString('user', jsonEncode(_user!.toJson()));
-      notifyListeners();
+    // if (_user != null) {
+    //   _user = User(
+    //     student_id: _user!.student_id,
+    //     fullname: fullname ?? _user!.fullname,
+    //     username: username ?? _user!.username,
+    //     // email: email ?? _user!.email,
+    //     role: _user!.role,
+    //     image: image ?? _user!.image,
+    //   );
+    //   await _prefs.setString('user', jsonEncode(_user!.toJson()));
+    //   notifyListeners();
+    // }
+    if(_user != null){
+      _user = User(name_kh: _user!.name_kh, student_id: _user!.student_id, pwd: _user!.pwd);
     }
   }
 }

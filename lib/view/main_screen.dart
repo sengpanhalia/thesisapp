@@ -16,11 +16,17 @@ class MainScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<NavigationProvider>(
       builder: (context, navigationProvider, child) {
-        final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
+        // final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
 
-        final screens = isAdmin
-            ? const [AdminHomeScreen(), ProfileScreen()]
-            : const [HomePage(), CartScreen(), OrderScreen(), ProfileScreen()];
+        // final screens = isAdmin
+        //     ? const [AdminHomeScreen(), ProfileScreen()]
+        //     : const [HomePage(), CartScreen(), OrderScreen(), ProfileScreen()];
+        final screens = const [
+          HomePage(),
+          CartScreen(),
+          OrderScreen(),
+          ProfileScreen()
+        ];
         final currentIndex = navigationProvider.currentIndex;
 
         return Scaffold(
@@ -41,7 +47,7 @@ class MainScreen extends StatelessWidget {
           ),
 
           bottomNavigationBar: Container(
-            // margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+            margin: const EdgeInsets.only(top: Height5),
             padding: const EdgeInsets.only(top: Height10),
             decoration: BoxDecoration(
               color: ColorNavBar,

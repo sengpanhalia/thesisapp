@@ -6,7 +6,7 @@ class Product {
   final String? image;
   final String author;
   final String category;
-  final String page;
+  final String pages;
   final String language;
   final String year;
   final int stockQuantity;
@@ -19,7 +19,7 @@ class Product {
     required this.image,
     this.author = '',
     this.category = '',
-    this.page = '',
+    this.pages = '',
     this.language = '',
     this.year = '',
     this.stockQuantity = 0,
@@ -51,7 +51,7 @@ class Product {
       image: json['image']?.toString() ?? '',
       author: json['author']?.toString() ?? '',
       category: json['category']?.toString() ?? '',
-      page: json['page']?.toString() ?? '',
+      pages: json['page']?.toString() ?? '',
       language: json['language']?.toString() ?? '',
       year: json['year']?.toString() ?? '',
       stockQuantity: stockQuantity,

@@ -41,6 +41,7 @@ dependencies:
   http: ^1.6.0
   fluttertoast: ^9.0.0
   carousel_slider: ^5.1.2
+  cached_network_image: ^3.2.3
 
 dev_dependencies:
   flutter_test:

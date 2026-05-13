@@ -30,7 +30,7 @@ class CartProvider extends ChangeNotifier {
 
   void bindAuth(AuthProvider authProvider) {
     final previousUserId = _loadedUserId;
-    final nextUserId = authProvider.user?.id;
+    final nextUserId = authProvider.user?.student_id;
     _authProvider = authProvider;
 
     if (nextUserId == null) {
@@ -48,7 +48,7 @@ class CartProvider extends ChangeNotifier {
     }
 
     if (previousUserId != nextUserId) {
-      _loadedUserId = nextUserId;
+      _loadedUserId = nextUserId as int?;
       _selectionInitialized = false;
       fetchCart();
     }
@@ -117,12 +117,12 @@ class CartProvider extends ChangeNotifier {
         previousSelectedIds.length == previousSelectableIds.length &&
         previousSelectedIds.containsAll(previousSelectableIds);
 
-    _loadedUserId = user.id;
+    _loadedUserId = int.tryParse(user.student_id) ?? null;
     _isLoading = true;
     notifyListeners();
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/get_cart.php?user_id=${user.id}'),
+        Uri.parse('${ApiConfig.baseUrl}/get_cart.php?user_id=${user.student_id}'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -233,7 +233,7 @@ class CartProvider extends ChangeNotifier {
         Uri.parse('${ApiConfig.baseUrl}/update_cart_quantity.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'user_id': user.id,
+          'user_id': user.student_id,
           'cart_id': cartId,
           'change': change,
         }),
@@ -268,7 +268,7 @@ class CartProvider extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/remove_from_cart.php'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': user.id, 'cart_id': cartId}),
+        body: jsonEncode({'user_id': user.student_id, 'cart_id': cartId}),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -307,7 +307,7 @@ class CartProvider extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/clear_cart.php'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': user.id}),
+        body: jsonEncode({'user_id': user.student_id}),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

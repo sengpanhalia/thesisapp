@@ -31,7 +31,7 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              user?.fullname.isNotEmpty == true ? user!.fullname : 'User',
+              user?.name_kh.isNotEmpty == true ? user!.name_kh : 'User',
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
@@ -41,7 +41,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: Height5),
             Text(
-              user?.username ?? '',
+              user?.student_id ?? '',
               style: const TextStyle(
                 fontSize: 14,
                 color: TextSoftColor,

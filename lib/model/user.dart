@@ -1,51 +1,79 @@
+// class User {
+//   final String student_id;
+//   final String username;
+//   // final String? email;
+//   final String fullname;
+//   final String role;
+//   final String? image;
+
+//   User({
+//     required this.student_id,
+//     required this.username,
+//     // this.email,
+//     required this.fullname,
+//     required String role,
+//     this.image,
+//   }) : role = _normalizeRole(role);
+
+//   static String _normalizeRole(String role) {
+//     final normalized = role.trim().toLowerCase();
+//     return normalized.isEmpty ? 'user' : normalized;
+//   }
+
+//   bool get isAdmin => role == 'admin';
+
+//   factory User.fromJson(Map<String, dynamic> json) {
+//     final rawId = json['student_id'];
+//     final String student_id = rawId is String
+//         ? rawId
+//         : (rawId != null ? rawId.toString() : ''); // Handle null and non-string cases
+
+//     return User(
+//       student_id: student_id,
+//       username: (json['username'] ?? '').toString(),
+//       // email: json['email']?.toString(),
+//       fullname: (json['fullname'] ?? '').toString(),
+//       role: (json['role'] ?? 'user').toString(),
+//       image: json['image']?.toString(), // may be null - allowed
+//     );
+//   }
+
+//   Map<String, dynamic> toJson() {
+//     return {
+//       'student_id': student_id,
+//       'username': username,
+//       // 'email': email,
+//       'fullname': fullname,
+//       'role': role,
+//       'image': image,
+//     };
+//   }
+// }
+
 class User {
-  final int id;
-  final String username;
-  final String? email;
-  final String fullname;
-  final String role;
-  final String? image;
+  final String name_kh;
+  final String student_id;
+  final String pwd;
 
   User({
-    required this.id,
-    required this.username,
-    this.email,
-    required this.fullname,
-    required String role,
-    this.image,
-  }) : role = _normalizeRole(role);
-
-  static String _normalizeRole(String role) {
-    final normalized = role.trim().toLowerCase();
-    return normalized.isEmpty ? 'user' : normalized;
-  }
-
-  bool get isAdmin => role == 'admin';
+    required this.name_kh,
+    required this.student_id,
+    required this.pwd,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    final rawId = json['id'];
-    final int id = rawId is int
-        ? rawId
-        : int.tryParse(rawId?.toString() ?? '') ?? 0;
-
     return User(
-      id: id,
-      username: (json['username'] ?? '').toString(),
-      email: json['email']?.toString(),
-      fullname: (json['fullname'] ?? '').toString(),
-      role: (json['role'] ?? 'user').toString(),
-      image: json['image']?.toString(), // may be null - allowed
+      name_kh: json['name_kh'] ?? '',
+      student_id: json['student_id'] ?? '',
+      pwd: json['pwd'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'username': username,
-      'email': email,
-      'fullname': fullname,
-      'role': role,
-      'image': image,
+      'name_kh': name_kh,
+      'student_id': student_id,
+      'pwd': pwd,
     };
   }
 }

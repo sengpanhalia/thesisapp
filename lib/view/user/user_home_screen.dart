@@ -1,12 +1,20 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/model/product.dart';
+import 'package:thesisapp/model/user.dart';
+import 'package:thesisapp/model/user_detail.dart';
+import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/user_api.dart';
+import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/user/product_detail_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +24,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const String _baseUrl = ApiConfig.baseUrl;
   final TextEditingController searchController = TextEditingController();
+
+  List<Product> _products = [];
+  List<UserDetail> _userData = [];
+  List<User> _user = [];
+  bool _isLoadingProducts = true;
 
   String getGreeting() {
     final hour = DateTime.now().hour;
@@ -35,6 +49,12 @@ class _HomePageState extends State<HomePage> {
     context.read<NavigationProvider>().setIndex(1);
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
   Future<void> _fetchProducts() async {
     final url = Uri.parse('$_baseUrl/get_products.php');
     try {
@@ -48,7 +68,7 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             _products = productsJson
                 .whereType<Map<String, dynamic>>()
-                .map(ProductModel.fromJson)
+                .map(Product.fromJson)
                 .toList();
             _isLoadingProducts = false;
           });
@@ -62,6 +82,33 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     setState(() => _isLoadingProducts = false);
   }
+  Future<void> _fetchDataUser(UserDetail user) async {
+    try{
+      var response = await http.post(
+        Uri.parse(APIStLoginKh),
+        body: {
+          'student_id': _user[0].student_id,
+          'pwd': _user[0].pwd
+        }
+      );
+      
+      if(response.statusCode == 200){
+        var userData = jsonDecode(response.body);
+        if(mounted){
+          setState(() {
+             _userData = List<UserDetail>.from(
+              userData['user_data'].map(
+                (data_stDetail) => UserDetail.fromJson(data_stDetail),
+              ),
+            );
+          });
+        }
+      }
+    }
+    catch(e){
+      print(e);
+    }
+  }
 
   @override
   void dispose() {
@@ -71,7 +118,73 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final canShowProducts = !_isLoadingProducts;
+    final user = context.watch<AuthProvider>().user;
+    final profilePic = _userData.isNotEmpty
+        ? _userData.first.profile_pic.trim()
+        : '';
+    final profileImageUrl = profilePic.isEmpty
+        ? ''
+        : profilePic.startsWith('http')
+            ? profilePic
+            : '${ApiConfig.usersUploadsUrl}/$profilePic';
+    final ImageProvider? profileImage = profileImageUrl.isEmpty
+        ? null
+        : CachedNetworkImageProvider(profileImageUrl);
+
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 65,
+        leadingWidth: MediaQuery.of(context).size.width,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: MgPd20),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    getGreeting(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: TextColor,
+                      fontFamily: UKFontFamily,
+                    ),
+                  ),
+                  SizedBox(height: Height5),
+                  textGradient(
+                    'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
+                    TextStyle(
+                      fontSize: 15,
+                      color: Colors.white,
+                      fontFamily: 'KhmerMool1',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: MgPd20),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.white,
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: GBackground1,
+                backgroundImage: profileImage,
+                child: profileImage == null
+                    ? const Icon(Icons.person_rounded, color: TextSoftColor)
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -82,129 +195,277 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: MgPd20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: MgPd20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  //   children: [
+                  //     Column(
+                  //       crossAxisAlignment: CrossAxisAlignment.start,
+                  //       children: [
+                  //         Text(
+                  //           getGreeting(),
+                  //           style: TextStyle(
+                  //             fontSize: 14,
+                  //             color: TextColor,
+                  //             fontFamily: UKFontFamily,
+                  //           ),
+                  //         ),
+                  //         SizedBox(height: Height5),
+                  //         textGradient(
+                  //           'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
+                  //           TextStyle(
+                  //             fontSize: 15,
+                  //             color: Colors.white,
+                  //             fontFamily: 'KhmerMool1',
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     CircleAvatar(
+                  //       radius: 22,
+                  //       backgroundColor: Colors.white,
+                  //       child: CircleAvatar(
+                  //         radius: 30,
+                  //         backgroundImage: AssetImage('assets/image.JPG'),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  // SizedBox(height: Height15),
+                  Container(
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: StrokeSearchBar, width: 1.5),
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          getGreeting(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: TextColor,
-                            fontFamily: UKFontFamily,
-                          ),
-                        ),
-                        SizedBox(height: Height5),
-                        textGradient(
-                          'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
-                          TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                            fontFamily: 'KhmerMool1',
+                        const Icon(Icons.search_rounded, color: Colors.black45),
+                        const SizedBox(width: Width5),
+                        Expanded(
+                          child: TextField(
+                            controller: searchController,
+                            readOnly: true,
+
+                            onTap: _openSearch,
+                            decoration: InputDecoration(
+                              fillColor: Colors.transparent,
+                              hintText: 'ស្វែងរក...',
+                              // hintStyle: GoogleFonts.poppins(
+                              //   fontSize: 13,
+                              //   color: Colors.black45,
+                              //   fontWeight: FontWeight.w500,
+                              // ),
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: TextSoftColor,
+                                // fontWeight: FontWeight.w500,
+                                fontFamily: UKFontFamily,
+                              ),
+                              border: InputBorder.none,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.white,
-                      child: CircleAvatar(
-                        radius: 30,
-                        backgroundImage: AssetImage('assets/image.JPG'),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: Height15),
-                Container(
-                  height: 54,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: StrokeSearchBar, width: 1.5),
                   ),
-                  child: Row(
+                  SizedBox(height: Height15),
+                  CarouselSliderWidget(
+                    images: [
+                      'assets/slide1.png',
+                      'assets/slide2.png',
+                      'assets/slide3.png',
+                    ],
+                  ),
+                  SizedBox(height: Height15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.search_rounded, color: Colors.black45),
-                      const SizedBox(width: Width5),
-                      Expanded(
-                        child: TextField(
-                          controller: searchController,
-                          readOnly: true,
-
-                          onTap: _openSearch,
-                          decoration: InputDecoration(
-                            fillColor: Colors.transparent,
-                            hintText: 'ស្វែងរក...',
-                            // hintStyle: GoogleFonts.poppins(
-                            //   fontSize: 13,
-                            //   color: Colors.black45,
-                            //   fontWeight: FontWeight.w500,
-                            // ),
-                            hintStyle: TextStyle(
-                              fontSize: 13,
-                              color: TextSoftColor,
-                              // fontWeight: FontWeight.w500,
-                              fontFamily: UKFontFamily,
-                            ),
-                            border: InputBorder.none,
+                      Text(
+                        'សៀវភៅប្រចាំឆមាស',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: TextColor,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: UKFontFamily,
+                        ),
+                      ),
+                      GestureDetector(
+                        child: Text(
+                          'មើលទាំងអស់',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: GText1,
+                            fontFamily: UKFontFamily,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: Height15),
-                CarouselSliderWidget(
-                  images: [
-                    'assets/slide1.png',
-                    'assets/slide2.png',
-                    'assets/slide3.png',
-                  ],
-                ),
-                SizedBox(height: Height15),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                  SizedBox(height: Height10),
+                  if (!canShowProducts)
+                    const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  if (canShowProducts && _products.isEmpty)
                     Text(
-                      'សៀវភៅប្រចាំឆមាស',
+                      'មិនមានសៀវភៅទេ',
                       style: TextStyle(
-                        fontSize: 16,
-                        color: TextColor,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: TextSoftColor,
                         fontFamily: UKFontFamily,
                       ),
                     ),
-                    GestureDetector(
-                      child: Text(
-                        'មើលទាំងអស់',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: GText1,
-                          fontFamily: UKFontFamily,
-                        ),
-                      ),
+                  if (canShowProducts && _products.isNotEmpty)
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.65,
+                          ),
+                      itemCount: _products.length,
+                      itemBuilder: (context, index) {
+                        final product = _products[index];
+                        final productImage = (product.image ?? '').trim();
+                        final imageUrl = productImage.startsWith('http')
+                            ? productImage
+                            : '$_baseUrl/uploads/products/$productImage';
+
+                        Widget imageLoading() {
+                          return Container(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            alignment: Alignment.center,
+                            child: const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: GText1,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          );
+                        }
+
+                        return Container(
+                          // margin: const EdgeInsets.only(bottom: Height10),
+                          // padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              // Handle product tap, e.g., navigate to product details
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ProductDetailScreen(product: product, baseUrl: _baseUrl,),
+                                ),
+                              );
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(12),
+                                      topRight: Radius.circular(12),
+                                    ),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: productImage.isEmpty
+                                          ? imageLoading()
+                                          : Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.cover,
+                                              loadingBuilder:
+                                                  (
+                                                    context,
+                                                    child,
+                                                    loadingProgress,
+                                                  ) {
+                                                    if (loadingProgress ==
+                                                        null) {
+                                                      return child;
+                                                    }
+                                                    return imageLoading();
+                                                  },
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                    return imageLoading();
+                                                  },
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: Height5),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: MgPd10,
+                                    right: MgPd10,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        product.name,
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: TextColor,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: UKFontFamily,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      // SizedBox(height: Height5),
+                                      Text(
+                                        product.name,
+                                        style: TextStyle(
+                                          overflow: TextOverflow.ellipsis,
+                                          fontSize: 14,
+                                          color: TextColor,
+                                          fontFamily: UKFontFamily,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: Height5),
+                                      Text(
+                                        '\$${product.price}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: GText1,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: UKFontFamily,
+                                        ),
+                                      ),
+                                      SizedBox(height: Height10),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ],
-                ),
-                SizedBox(height: Height10),
-                GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                  ),
-                  itemBuilder: (context, index){
-                    return 
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:thesisapp/theme_color.dart';
 
 class CarouselSliderWidget extends StatefulWidget {
   final List<String> images;
@@ -142,7 +143,7 @@ class _CarouselSliderWidgetState extends State<CarouselSliderWidget> {
               width: _currentIndex == index ? 18 : 8,
               height: 8,
               decoration: BoxDecoration(
-                color: _currentIndex == index ? Colors.blue : Colors.grey[400],
+                color: _currentIndex == index ? GText1 : GBackground4,
                 borderRadius: BorderRadius.circular(20),
               ),
             );

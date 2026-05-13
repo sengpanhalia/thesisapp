@@ -21,8 +21,10 @@ const StrokeSearchBar = Color(0xFFE8E6E2);
 const GText1 = Color(0xFFC46520);
 const GText2 = Color(0xFFA34E1B);
 const GText3 = Color(0xFF843F1C);
+final GText4 = Color(0xFF6C341A).withOpacity(0.7);
 
 const TextColor = Color(0xFF5E574F);
+const TitleColor = Color(0xFF2C2822);
 const TextSoftColor = Color(0xFFB8B2A8);
 const GreyColor = Color(0xFFD9D9D9);
 
