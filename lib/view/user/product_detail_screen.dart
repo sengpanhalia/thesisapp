@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/util/api_config.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -18,6 +19,8 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  static const String baseUrl = ApiConfig.baseUrl;
+  List<Product> relatedProducts = [];
   void _openFullImage(String imageUrl) {
     Navigator.push(
       context,
@@ -249,6 +252,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       color: GText1,
                     ),
                   ),
+                  SizedBox(height: Height10),
+                  ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: relatedProducts.length,
+                    itemBuilder: (context, index){
+                      final product = relatedProducts[index];
+                      final productImage = (product.image ?? '').trim();
+                      final imageUrl = productImage.startsWith('http')
+                          ? productImage
+                          : '$baseUrl/uploads/products/$productImage';
+
+                      return 
+                  })
                 ],
               ),
             ),

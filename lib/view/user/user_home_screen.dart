@@ -4,11 +4,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/model/product.dart';
-import 'package:thesisapp/model/user.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
@@ -28,9 +28,9 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController searchController = TextEditingController();
 
   List<Product> _products = [];
-  List<UserDetail> _userData = [];
-  List<User> _user = [];
+  UserDetail? _userDetail;
   bool _isLoadingProducts = true;
+  bool _isLoadingUser = true;
 
   String getGreeting() {
     final hour = DateTime.now().hour;
@@ -53,6 +53,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _fetchProducts();
+    _fetchUserData();
   }
 
   Future<void> _fetchProducts() async {
@@ -82,32 +83,47 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     setState(() => _isLoadingProducts = false);
   }
-  Future<void> _fetchDataUser(UserDetail user) async {
-    try{
-      var response = await http.post(
+
+  Future<void> _fetchUserData() async {
+    final authUser = context.read<AuthProvider>().user;
+    if (authUser == null) {
+      if (!mounted) return;
+      setState(() => _isLoadingUser = false);
+      return;
+    }
+
+    try {
+      final response = await http.post(
         Uri.parse(APIStLoginKh),
-        body: {
-          'student_id': _user[0].student_id,
-          'pwd': _user[0].pwd
-        }
+        body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
       );
-      
-      if(response.statusCode == 200){
-        var userData = jsonDecode(response.body);
-        if(mounted){
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final userData =
+              (decoded['user_data'] as List?) ??
+              (decoded['student_users'] as List?) ??
+              const [];
+          final details = userData
+              .whereType<Map<String, dynamic>>()
+              .map(UserDetail.fromJson)
+              .toList();
+
+          if (!mounted) return;
           setState(() {
-             _userData = List<UserDetail>.from(
-              userData['user_data'].map(
-                (data_stDetail) => UserDetail.fromJson(data_stDetail),
-              ),
-            );
+            _userDetail = details.isNotEmpty ? details.first : null;
+            _isLoadingUser = false;
           });
+          return;
         }
       }
+    } catch (e) {
+      debugPrint('Failed to load user detail: $e');
     }
-    catch(e){
-      print(e);
-    }
+
+    if (!mounted) return;
+    setState(() => _isLoadingUser = false);
   }
 
   @override
@@ -119,7 +135,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final canShowProducts = !_isLoadingProducts;
-    final user = context.watch<AuthProvider>().user;
+    final profileImageUrl = (_userDetail?.profile_pic ?? '').trim();
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 65,
@@ -162,8 +178,20 @@ class _HomePageState extends State<HomePage> {
               radius: 22,
               backgroundColor: Colors.white,
               child: CircleAvatar(
-                radius: 30,
-                backgroundImage: CachedNetworkImage(imageUrl: _userData[0].profile_pic),
+                radius: 20,
+                backgroundColor: Colors.white.withValues(alpha: 0.95),
+                backgroundImage: profileImageUrl.isNotEmpty
+                    ? CachedNetworkImageProvider(profileImageUrl)
+                    : null,
+                child: _isLoadingUser
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : profileImageUrl.isEmpty
+                    ? const Icon(Icons.person, color: Colors.black45)
+                    : null,
               ),
             ),
           ),
@@ -326,125 +354,22 @@ class _HomePageState extends State<HomePage> {
                             ? productImage
                             : '$_baseUrl/uploads/products/$productImage';
 
-                        Widget imageLoading() {
-                          return Container(
-                            color: Colors.white.withValues(alpha: 0.45),
-                            alignment: Alignment.center,
-                            child: const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: GText1,
-                                strokeWidth: 2,
+                        return BuildCardProduct(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailScreen(
+                                  product: product,
+                                  baseUrl: _baseUrl,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-
-                        return Container(
-                          // margin: const EdgeInsets.only(bottom: Height10),
-                          // padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.72),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              // Handle product tap, e.g., navigate to product details
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProductDetailScreen(product: product, baseUrl: _baseUrl,),
-                                ),
-                              );
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(12),
-                                      topRight: Radius.circular(12),
-                                    ),
-                                    child: SizedBox(
-                                      width: double.infinity,
-                                      child: productImage.isEmpty
-                                          ? imageLoading()
-                                          : Image.network(
-                                              imageUrl,
-                                              fit: BoxFit.cover,
-                                              loadingBuilder:
-                                                  (
-                                                    context,
-                                                    child,
-                                                    loadingProgress,
-                                                  ) {
-                                                    if (loadingProgress ==
-                                                        null) {
-                                                      return child;
-                                                    }
-                                                    return imageLoading();
-                                                  },
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                    return imageLoading();
-                                                  },
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: Height5),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: MgPd10,
-                                    right: MgPd10,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        product.name,
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          color: TextColor,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: UKFontFamily,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      // SizedBox(height: Height5),
-                                      Text(
-                                        product.name,
-                                        style: TextStyle(
-                                          overflow: TextOverflow.ellipsis,
-                                          fontSize: 14,
-                                          color: TextColor,
-                                          fontFamily: UKFontFamily,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      SizedBox(height: Height5),
-                                      Text(
-                                        '\$${product.price}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: GText1,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: UKFontFamily,
-                                        ),
-                                      ),
-                                      SizedBox(height: Height10),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                            );
+                          },
+                          productName: product.name,
+                          productPrice: product.price,
+                          imageUrl: imageUrl,
+                          productImage: productImage,
                         );
                       },
                     ),
