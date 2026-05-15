@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
-import 'package:thesisapp/view/order_screen.dart';
+import 'package:thesisapp/view/cart_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 import 'package:thesisapp/view/user/user_home_screen.dart';
 import 'package:thesisapp/view/user/user_profile.dart';
@@ -23,7 +23,7 @@ class MainScreen extends StatelessWidget {
         final screens = const [
           HomePage(),
           SearchScreen(baseUrl: ApiConfig.baseUrl),
-          OrderScreen(),
+          CartScreen(),
           UserProfile(),
         ];
         final currentIndex = navigationProvider.currentIndex;

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:thesisapp/component/alert_dialog.dart';
 import 'package:thesisapp/component/button.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/component_profile.dart';
@@ -11,6 +12,7 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/view/signin_screen.dart';
+import 'package:thesisapp/view/user/personal_information.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -85,7 +87,6 @@ class _UserProfileState extends State<UserProfile> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
     final profileImageUrl = (_userDetail?.profile_pic ?? '').trim();
     return Scaffold(
       body: Container(
@@ -131,6 +132,9 @@ class _UserProfileState extends State<UserProfile> {
                             radius: 60,
                             backgroundImage: profileImageUrl.isNotEmpty
                                 ? CachedNetworkImageProvider(profileImageUrl)
+                                : null,
+                            child: _isLoadingUser
+                                ? const CircularProgressIndicator()
                                 : null,
                           ),
                           SizedBox(height: 10),
@@ -187,6 +191,9 @@ class _UserProfileState extends State<UserProfile> {
                         ComponentProfile(
                           image: 'assets/graduate.png',
                           title: "ព័ត៌មានគណនី",
+                          onTap: (){
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInformation()));
+                          },
                         ),
                         ComponentProfile(
                           image: 'assets/graduate.png',
@@ -235,7 +242,25 @@ class _UserProfileState extends State<UserProfile> {
                     ),
                   ),
                   SizedBox(height: Height40),
-                  Button(title: "ចាកចេញ", icon: 'assets/logout.png'),
+                  Button(
+                    title: "ចាកចេញ",
+                    icon: 'assets/logout.png',
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => customizeAlertDialog(
+                          title: 'ចាកចេញ',
+                          content: 'តើអ្នកចង់ចេញមែនដែរឬទេ?',
+                          cancelOnTap: () {
+                            Navigator.pop(context);
+                          },
+                          onTap: () {
+                            _logout(context);
+                          },
+                        ),
+                      );
+                    },
+                  ),
                   SizedBox(height: Height50),
                   Center(
                     child: Text(

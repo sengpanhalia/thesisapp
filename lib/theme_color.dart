@@ -10,6 +10,7 @@ const YellowColor = Color(0xFFFFEB3B);
 final StrokeColor = Color(0xFF9A9288).withOpacity(0.5);
 const TranparentColor = Colors.transparent;
 const BlackColor = Color(0xFF000000);
+const Sapphire = Color(0xFF002060);
 
 const GBackground1 = Color(0xFFFDF6EE);
 const GBackground2 = Color(0xFFFAF0E4);

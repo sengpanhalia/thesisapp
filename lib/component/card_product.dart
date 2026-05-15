@@ -24,6 +24,14 @@ class BuildCardProduct extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: WhiteColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: GestureDetector(
         onTap: () {
@@ -107,8 +115,6 @@ class BuildCardProduct extends StatelessWidget {
     );
   }
 }
-
-
 
 Widget imageLoading() {
   return Container(

@@ -28,6 +28,10 @@ class CartProvider extends ChangeNotifier {
 
   AuthProvider get authProvider => _authProvider;
 
+  Map<String, dynamic> _studentPayload(String studentId) {
+    return {'user_id': studentId, 'student_id': studentId};
+  }
+
   void bindAuth(AuthProvider authProvider) {
     final previousUserId = _loadedUserId;
     final nextUserId = authProvider.user?.student_id;
@@ -123,7 +127,7 @@ class CartProvider extends ChangeNotifier {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConfig.baseUrl}/get_cart.php?user_id=${user.student_id}',
+          '${ApiConfig.baseUrl}/get_cart.php?user_id=${Uri.encodeQueryComponent(user.student_id)}&student_id=${Uri.encodeQueryComponent(user.student_id)}',
         ),
       );
       if (response.statusCode == 200) {
@@ -235,7 +239,7 @@ class CartProvider extends ChangeNotifier {
         Uri.parse('${ApiConfig.baseUrl}/update_cart_quantity.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'user_id': user.student_id,
+          ..._studentPayload(user.student_id),
           'cart_id': cartId,
           'change': change,
         }),
@@ -270,7 +274,10 @@ class CartProvider extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/remove_from_cart.php'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': user.student_id, 'cart_id': cartId}),
+        body: jsonEncode({
+          ..._studentPayload(user.student_id),
+          'cart_id': cartId,
+        }),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -309,7 +316,7 @@ class CartProvider extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/clear_cart.php'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': user.student_id}),
+        body: jsonEncode(_studentPayload(user.student_id)),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

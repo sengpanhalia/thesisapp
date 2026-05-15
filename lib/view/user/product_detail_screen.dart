@@ -127,7 +127,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'student_id': student.id,
+          'user_id': user.student_id,
+          'student_id': user.student_id,
           'product_id': widget.product.id,
           'quantity': quantity,
         }),
@@ -135,6 +136,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == 'success') {
+          if (!context.mounted) return false;
           final cartProvider = context.read<CartProvider>();
           await cartProvider.fetchCart();
           Fluttertoast.showToast(
@@ -458,7 +460,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: ,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(MgPd20, 12, MgPd20, 12),
+          decoration: const BoxDecoration(
+            color: CardColor,
+            border: Border(top: BorderSide(color: StrokeSearchBar)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: isOutOfStock ? null : () => _addToCart(context),
+                  child: const Text('Add to cart'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: isOutOfStock ? null : () => _buyNow(),
+                  child: const Text('Buy now'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

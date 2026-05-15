@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/view/admin/home_screen.dart';
 import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/view/onboard_screen.dart';
 import 'package:thesisapp/view/signin_screen.dart';
