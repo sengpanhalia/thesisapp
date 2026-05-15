@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
-import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/view/admin/home_screen.dart';
-import 'package:thesisapp/view/admin/profile_screen.dart';
-import 'package:thesisapp/view/cart_screen.dart';
+import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/order_screen.dart';
+import 'package:thesisapp/view/user/search_screen.dart';
 import 'package:thesisapp/view/user/user_home_screen.dart';
+import 'package:thesisapp/view/user/user_profile.dart';
 
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
@@ -23,9 +22,9 @@ class MainScreen extends StatelessWidget {
         //     : const [HomePage(), CartScreen(), OrderScreen(), ProfileScreen()];
         final screens = const [
           HomePage(),
-          CartScreen(),
+          SearchScreen(baseUrl: ApiConfig.baseUrl),
           OrderScreen(),
-          ProfileScreen()
+          UserProfile(),
         ];
         final currentIndex = navigationProvider.currentIndex;
 

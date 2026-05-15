@@ -199,6 +199,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Container(
         width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           // Matching the warm gradient from your design
           gradient: gradientColor(
@@ -265,7 +266,6 @@ class _HomePageState extends State<HomePage> {
                           child: TextField(
                             controller: searchController,
                             readOnly: true,
-
                             onTap: _openSearch,
                             decoration: InputDecoration(
                               fillColor: Colors.transparent,

@@ -13,7 +13,7 @@ class CartProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
   Set<int> _selectedItemIds = {};
-  int? _loadedUserId;
+  String? _loadedUserId;
   bool _selectionInitialized = false;
 
   List<Map<String, dynamic>> get cartItems => _cartItems;
@@ -48,7 +48,7 @@ class CartProvider extends ChangeNotifier {
     }
 
     if (previousUserId != nextUserId) {
-      _loadedUserId = nextUserId as int?;
+      _loadedUserId = nextUserId;
       _selectionInitialized = false;
       fetchCart();
     }
@@ -117,12 +117,14 @@ class CartProvider extends ChangeNotifier {
         previousSelectedIds.length == previousSelectableIds.length &&
         previousSelectedIds.containsAll(previousSelectableIds);
 
-    _loadedUserId = int.tryParse(user.student_id) ?? null;
+    _loadedUserId = user.student_id;
     _isLoading = true;
     notifyListeners();
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/get_cart.php?user_id=${user.student_id}'),
+        Uri.parse(
+          '${ApiConfig.baseUrl}/get_cart.php?user_id=${user.student_id}',
+        ),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -148,7 +150,7 @@ class CartProvider extends ChangeNotifier {
   double get total {
     double t = 0.0;
     for (var item in _cartItems) {
-      if (_selectedItemIds.contains(item['cart_id'])) {
+      if (_selectedItemIds.contains(_parseInt(item['cart_id']))) {
         final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
         final discount = int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
         final discountedPrice = discount > 0
@@ -179,7 +181,7 @@ class CartProvider extends ChangeNotifier {
   void toggleItem(int cartId, bool selected) {
     Map<String, dynamic>? item;
     for (final entry in _cartItems) {
-      if (entry['cart_id'] == cartId) {
+      if (_parseInt(entry['cart_id']) == cartId) {
         item = entry;
         break;
       }
@@ -202,7 +204,7 @@ class CartProvider extends ChangeNotifier {
 
     // Update locally first for better UX
     final itemIndex = _cartItems.indexWhere(
-      (item) => item['cart_id'] == cartId,
+      (item) => _parseInt(item['cart_id']) == cartId,
     );
     if (itemIndex != -1) {
       final currentQuantity = itemQuantity(_cartItems[itemIndex]);
@@ -286,7 +288,7 @@ class CartProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> get selectedItems {
     return _cartItems
-        .where((item) => _selectedItemIds.contains(item['cart_id']))
+        .where((item) => _selectedItemIds.contains(_parseInt(item['cart_id'])))
         .toList();
   }
 

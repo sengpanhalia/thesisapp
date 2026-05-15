@@ -2,10 +2,16 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:thesisapp/component/card_product.dart';
+import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/model/product.dart';
+import 'package:thesisapp/model/user.dart';
+import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 
@@ -24,6 +30,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   static const String baseUrl = ApiConfig.baseUrl;
+  late List<User> user;
   List<Product> relatedProducts = [];
   bool _isLoadingRelatedProducts = true;
 
@@ -101,6 +108,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       _isLoadingRelatedProducts = false;
     });
   }
+
+  Future<bool> _addToCart(BuildContext context, {int quantity = 1}) async {
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.user;
+    if (user == null) {
+      Fluttertoast.showToast(msg: 'Please log in first');
+      return false;
+    }
+    if (widget.product.isOutOfStock) {
+      Fluttertoast.showToast(msg: 'This product is out of stock');
+      return false;
+    }
+
+    final url = Uri.parse('${widget.baseUrl}/add_to_cart.php');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'student_id': student.id,
+          'product_id': widget.product.id,
+          'quantity': quantity,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success') {
+          final cartProvider = context.read<CartProvider>();
+          await cartProvider.fetchCart();
+          Fluttertoast.showToast(
+            msg: 'Added to cart (x$quantity)',
+            backgroundColor: Colors.green,
+          );
+          return true;
+        } else {
+          Fluttertoast.showToast(msg: data['message'] ?? 'Failed');
+        }
+      } else {
+        Fluttertoast.showToast(msg: 'Failed to add to cart');
+      }
+    } catch (e) {
+      debugPrint('Add to cart error: $e');
+    }
+    return false;
+  }
+
+  Future<void> _buyNow({int quantity = 1}) async {
+    final navigationProvider = context.read<NavigationProvider>();
+    final added = await _addToCart(context, quantity: quantity);
+    if (!added || !mounted) return;
+    navigationProvider.setIndex(2);
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
 
   void _openFullImage(String imageUrl) {
     Navigator.push(
@@ -390,12 +451,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         },
                       ),
                     ),
+
                 ],
               ),
             ),
           ),
         ),
       ),
+      bottomNavigationBar: ,
     );
   }
 }

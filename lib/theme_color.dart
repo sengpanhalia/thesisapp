@@ -67,6 +67,7 @@ const double Height35 = 35;
 const double Height40 = 40;
 const double Height45 = 45;
 const double Height50 = 50;
+const double Height70 = 70;
 
 const double Width5 = 5;
 const double Width10 = 10;
