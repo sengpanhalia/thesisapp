@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/theme_color.dart';
@@ -21,6 +25,83 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   static const String baseUrl = ApiConfig.baseUrl;
   List<Product> relatedProducts = [];
+  bool _isLoadingRelatedProducts = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRelatedProducts();
+  }
+
+  Future<void> _fetchRelatedProducts() async {
+    final url = Uri.parse('$baseUrl/get_products.php');
+
+    try {
+      final response = await http.get(url);
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['status'] == 'success') {
+          final List productsJson = (data['products'] as List?) ?? const [];
+          final products = productsJson
+              .whereType<Map<String, dynamic>>()
+              .map(Product.fromJson)
+              .where((product) => product.id != widget.product.id)
+              .toList();
+
+          final currentCategory = widget.product.category.trim().toLowerCase();
+          final currentAuthor = widget.product.author.trim().toLowerCase();
+
+          final sameCategory = currentCategory.isEmpty
+              ? <Product>[]
+              : products
+                    .where(
+                      (product) =>
+                          product.category.trim().toLowerCase() ==
+                          currentCategory,
+                    )
+                    .toList();
+
+          final sameAuthor = currentAuthor.isEmpty
+              ? <Product>[]
+              : products
+                    .where(
+                      (product) =>
+                          product.author.trim().toLowerCase() == currentAuthor,
+                    )
+                    .toList();
+
+          final related = [
+            ...sameCategory,
+            ...sameAuthor.where(
+              (product) => !sameCategory.any((item) => item.id == product.id),
+            ),
+            ...products.where(
+              (product) =>
+                  !sameCategory.any((item) => item.id == product.id) &&
+                  !sameAuthor.any((item) => item.id == product.id),
+            ),
+          ].take(10).toList();
+
+          setState(() {
+            relatedProducts = related;
+            _isLoadingRelatedProducts = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Ignore and fall back to empty state.
+    }
+
+    if (!mounted) return;
+    setState(() {
+      relatedProducts = [];
+      _isLoadingRelatedProducts = false;
+    });
+  }
+
   void _openFullImage(String imageUrl) {
     Navigator.push(
       context,
@@ -31,8 +112,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final double basePrice = double.tryParse(widget.product.price) ?? 0.0;
-    final double originalPrice = basePrice;
-    final String category = widget.product.category.trim();
     final String author = widget.product.author.trim();
     final String pages = widget.product.pages.trim();
     final String language = widget.product.language.trim();
@@ -179,7 +258,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: stockColor.withOpacity(0.12),
+                      color: stockColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -253,18 +332,64 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   SizedBox(height: Height10),
-                  ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: relatedProducts.length,
-                    itemBuilder: (context, index){
-                      final product = relatedProducts[index];
-                      final productImage = (product.image ?? '').trim();
-                      final imageUrl = productImage.startsWith('http')
-                          ? productImage
-                          : '$baseUrl/uploads/products/$productImage';
+                  if (_isLoadingRelatedProducts)
+                    const SizedBox(
+                      height: 260,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (relatedProducts.isEmpty)
+                    SizedBox(
+                      height: 80,
+                      child: Center(
+                        child: Text(
+                          'មិនមានសៀវភៅណែនាំទេ',
+                          style: TextStyle(
+                            fontFamily: UKFontFamily,
+                            fontSize: 14,
+                            color: TextSoftColor,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 260,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: relatedProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = relatedProducts[index];
+                          final productImage = (product.image ?? '').trim();
+                          final imageUrl = productImage.startsWith('http')
+                              ? productImage
+                              : '$baseUrl/uploads/products/$productImage';
 
-                      return 
-                  })
+                          return SizedBox(
+                            width: 180,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: BuildCardProduct(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductDetailScreen(
+                                        product: product,
+                                        baseUrl: widget.baseUrl,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                productName: product.name,
+                                productPrice: product.price,
+                                imageUrl: imageUrl,
+                                productImage: productImage,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
