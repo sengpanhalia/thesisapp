@@ -97,8 +97,51 @@ class _PersonalInformationState extends State<PersonalInformation> {
           ),
         ),
         child: SingleChildScrollView(
-          child: Column(
-            children: [ListInfo(title: "អត្តលេខ", subTitle: "")],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MgPd20,
+              vertical: Height15,
+            ),
+            child: Column(
+              children: [
+                ListInfo(
+                  title: "អត្តលេខ",
+                  subTitle: _userDetail?.student_id ?? "",
+                ),
+                SizedBox(height: Height15),
+                ListInfo(
+                  title: "គោត្តនាម-នាម",
+                  subTitle: _userDetail?.name_kh ?? "",
+                ),
+                SizedBox(height: Height15),
+                ListInfo(
+                  title: "អត្តលេខ",
+                  subTitle: _userDetail?.status_name ?? "",
+                ),
+                SizedBox(height: Height15),
+                ListInfo(
+                  title: "ថ្ងៃខែឆ្នាំកំណើត",
+                  subTitle: _userDetail?.date_of_birth ?? "",
+                ),
+                SizedBox(height: Height15),
+                ListInfo(
+                  title: "មហាវិទ្យាល័យ",
+                  subTitle: _userDetail?.faculty_name ?? "",
+                ),
+                SizedBox(height: Height15),
+                ListInfo(
+                  title: "មុខជំនាញ",
+                  subTitle: _userDetail?.major_name ?? "",
+                ),
+                SizedBox(height: Height15),
+                CardYear(
+                  year: _userDetail?.year_name ?? "",
+                  semester: _userDetail?.semester_name ?? "",
+                  stage_name: _userDetail?.stage_name ?? "",
+                  academic_year: _userDetail?.academic_year ?? "",
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -112,32 +155,129 @@ Widget ListInfo({required String title, required String subTitle}) {
       color: CardColor,
       borderRadius: BorderRadius.circular(Round10),
       border: Border.all(color: WhiteColor, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: BlackColor.withOpacity(0.2),
+          offset: Offset(0, 4),
+          blurRadius: 6,
+        ),
+      ],
     ),
-    child: IntrinsicHeight(
-      child: Row(
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: UKFontFamily,
-                color: TextColor,
+    child: Padding(
+      padding: const EdgeInsets.all(MgPd10),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            SizedBox(
+              width: 120,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: UKFontFamily,
+                  color: TextColor,
+                ),
               ),
             ),
-          ),
-          const VerticalDivider(width: 1, thickness: 1, color: Colors.grey),
-          Text(
-            subTitle,
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: UKFontFamily,
-              color: TextColor,
+            const VerticalDivider(width: 1, thickness: 1, color: Colors.grey),
+            SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                subTitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: UKFontFamily,
+                  color: TextColor,
+                ),
+                softWrap: true,
+                overflow: TextOverflow.visible,
+              ),
             ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget CardYear({
+  required String year,
+  required String semester,
+  required String stage_name,
+  required String academic_year,
+}) {
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: CardColor,
+      borderRadius: BorderRadius.circular(Round10),
+      border: Border.all(color: WhiteColor, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: BlackColor.withOpacity(0.2),
+          offset: Offset(0, 4),
+          blurRadius: 6,
+        ),
+      ],
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: Height10,
+        horizontal: MgPd10,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 10,
+            child: _CardYearItem(title: 'ឆ្នាំទី', value: year),
+          ),
+          Expanded(
+            flex: 10,
+            child: _CardYearItem(title: 'ឆមាសទី', value: semester),
+          ),
+          Expanded(
+            flex: 10,
+            child: _CardYearItem(title: 'វគ្គទី', value: stage_name),
+          ),
+          Expanded(
+            flex: 15,
+            child: _CardYearItem(title: 'ឆ្នាំសិក្សា', value: academic_year),
           ),
         ],
       ),
     ),
+  );
+}
+
+Widget _CardYearItem({required String title, required String value}) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(
+        title,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: UKFontFamily,
+          color: TextColor,
+        ),
+      ),
+      SizedBox(height: Height10),
+      FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          value,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: UKFontFamily,
+            color: TextColor,
+          ),
+        ),
+      ),
+    ],
   );
 }

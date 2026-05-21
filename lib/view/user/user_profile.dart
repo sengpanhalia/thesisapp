@@ -7,6 +7,8 @@ import 'package:thesisapp/component/alert_dialog.dart';
 import 'package:thesisapp/component/button.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/component_profile.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/localization/language_provider.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
@@ -24,6 +26,7 @@ class UserProfile extends StatefulWidget {
 class _UserProfileState extends State<UserProfile> {
   UserDetail? _userDetail;
   bool _isLoadingUser = true;
+
   Future<void> _logout(BuildContext context) async {
     await context.read<AuthProvider>().logout();
 
@@ -80,20 +83,20 @@ class _UserProfileState extends State<UserProfile> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _fetchUserData();
   }
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     final profileImageUrl = (_userDetail?.profile_pic ?? '').trim();
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          // Matching the warm gradient from your design
           gradient: gradientColor(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -121,7 +124,6 @@ class _UserProfileState extends State<UserProfile> {
                           BoxShadow(
                             color: BlackColor.withOpacity(0.2),
                             blurRadius: 4.0,
-                            // spreadRadius: 1.0,
                             offset: Offset(0, 4),
                           ),
                         ],
@@ -163,7 +165,7 @@ class _UserProfileState extends State<UserProfile> {
                   ),
                   SizedBox(height: Height20),
                   Text(
-                    "ឯកជនភាព",
+                    lang.translate('privacy'),
                     style: TextStyle(
                       fontFamily: UKFontFamily,
                       fontSize: 20,
@@ -181,7 +183,6 @@ class _UserProfileState extends State<UserProfile> {
                         BoxShadow(
                           color: BlackColor.withOpacity(0.2),
                           blurRadius: 4.0,
-                          // spreadRadius: 1.0,
                           offset: Offset(0, 4),
                         ),
                       ],
@@ -190,21 +191,26 @@ class _UserProfileState extends State<UserProfile> {
                       children: [
                         ComponentProfile(
                           image: 'assets/graduate.png',
-                          title: "ព័ត៌មានគណនី",
-                          onTap: (){
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInformation()));
+                          title: lang.translate('account_information'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PersonalInformation(),
+                              ),
+                            );
                           },
                         ),
                         ComponentProfile(
                           image: 'assets/graduate.png',
-                          title: "ព័ត៌មានគណនី",
+                          title: lang.translate('account_information'),
                         ),
                       ],
                     ),
                   ),
                   SizedBox(height: Height20),
                   Text(
-                    "ឯកជនភាព",
+                    lang.translate('privacy'),
                     style: TextStyle(
                       fontFamily: UKFontFamily,
                       fontSize: 20,
@@ -213,7 +219,6 @@ class _UserProfileState extends State<UserProfile> {
                     ),
                   ),
                   SizedBox(height: Height15),
-
                   Container(
                     decoration: BoxDecoration(
                       color: CardColor,
@@ -223,7 +228,6 @@ class _UserProfileState extends State<UserProfile> {
                         BoxShadow(
                           color: BlackColor.withOpacity(0.2),
                           blurRadius: 4.0,
-                          // spreadRadius: 1.0,
                           offset: Offset(0, 4),
                         ),
                       ],
@@ -232,25 +236,53 @@ class _UserProfileState extends State<UserProfile> {
                       children: [
                         ComponentProfile(
                           image: 'assets/graduate.png',
-                          title: "ព័ត៌មានគណនី",
+                          title: lang.translate('account_information'),
                         ),
                         ComponentProfile(
                           image: 'assets/graduate.png',
-                          title: "ព័ត៌មានគណនី",
+                          title: lang.translate('change_language'),
+                          onTap: () {
+                            final languageProvider = context
+                                .read<LanguageProvider>();
+
+                            showDialog(
+                              context: context,
+                              builder: (dialogContext) => customizeAlertDialog(
+                                title: lang.translate('change_language'),
+                                content: lang.translate(
+                                  'change_language_message',
+                                ),
+                                cancelOnTap: () {
+                                  languageProvider.changeLanguage('km');
+
+                                  Navigator.pop(dialogContext);
+                                },
+                                onTap: () {
+                                  languageProvider.changeLanguage('en');
+
+                                  Navigator.pop(dialogContext);
+                                },
+                                choice_1: lang.translate('khmer_language'),
+                                choice_2: lang.translate('english_language'),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
                   SizedBox(height: Height40),
                   Button(
-                    title: "ចាកចេញ",
+                    title: 'logout',
                     icon: 'assets/logout.png',
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (context) => customizeAlertDialog(
-                          title: 'ចាកចេញ',
-                          content: 'តើអ្នកចង់ចេញមែនដែរឬទេ?',
+                          title: lang.translate('logout'),
+                          content: lang.translate('logout_message'),
+                          choice_1: lang.translate('cancel'),
+                          choice_2: lang.translate('confirm'),
                           cancelOnTap: () {
                             Navigator.pop(context);
                           },

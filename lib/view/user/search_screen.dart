@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
@@ -211,6 +212,7 @@ class _SearchScreenState extends State<SearchScreen> {
   // }
 
   Widget _searchBar() {
+    final lang = AppLocalizations.of(context)!;
     return Container(
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -229,10 +231,10 @@ class _SearchScreenState extends State<SearchScreen> {
               focusNode: _focusNode,
               textInputAction: TextInputAction.search,
               onSubmitted: (value) => _addToHistory(value),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 fillColor: Colors.transparent,
-                hintText: 'ស្វែងរក...',
-                hintStyle: TextStyle(
+                hintText: lang.translate('search'),
+                hintStyle: const TextStyle(
                   fontSize: 13,
                   color: TextSoftColor,
                   // fontWeight: FontWeight.w500,
@@ -257,12 +259,13 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _historyHeader() {
+  Widget _historyHeader(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'ប្រវត្តិ',
+        Text(
+          lang.translate('history'),
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -278,15 +281,17 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _historyList() {
+  Widget _historyList(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
+
     if (_isLoadingHistory) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_history.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'មិនមានទិន្នន័យក្នុងការស្វែងរក',
-          style: TextStyle(
+          lang.translate('no_data_found'),
+          style: const TextStyle(
             color: TextColor,
             fontFamily: UKFontFamily,
             fontWeight: FontWeight.w600,
@@ -495,11 +500,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   children: [
                     _searchBar(),
                     const SizedBox(height: 14),
-                    if (query.isEmpty) _historyHeader(),
+                    if (query.isEmpty) _historyHeader(context),
                     if (query.isEmpty) const SizedBox(height: 6),
                     Expanded(
                       child: query.isEmpty
-                          ? _historyList()
+                          ? _historyList(context)
                           : _resultsList(results),
                     ),
                   ],

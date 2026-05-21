@@ -15,6 +15,7 @@ class ComponentProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: onTap,
       leading: Container(
         decoration: BoxDecoration(
           color: WhiteColor,
@@ -33,13 +34,10 @@ class ComponentProfile extends StatelessWidget {
           color: TextColor,
         ),
       ),
-      trailing: GestureDetector(
-        onTap: onTap,
-        child: const Icon(
-          Icons.arrow_forward_ios,
-          size: 18,
-          color: ButtonColor,
-        ),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        size: 18,
+        color: ButtonColor,
       ),
     );
   }

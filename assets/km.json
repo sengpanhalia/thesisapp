@@ -1,0 +1,19 @@
+{
+  "good_morning": "អរុណសួស្តី",
+  "search": "ស្វែងរក",
+  "privacy": "ឯកជនភាព",
+  "account_information": "ព័ត៌មានគណនី",
+  "change_language": "ផ្លាស់ប្តូរភាសា",
+  "change_language_message": "សូមជ្រើសរើសភាសាដែលអ្នកចង់ប្រើ។",
+  "khmer_language": "ភាសាខ្មែរ",
+  "english_language": "English",
+  "logout": "ចាកចេញ",
+  "logout_message": "តើអ្នកចង់ចាកចេញមែនទេ?",
+  "cancel": "បោះបង់",
+  "confirm": "យល់ព្រម",
+  "home": "ទំព័រដើម",
+  "cart": "កន្រ្តក",
+  "setting": "ការកំណត់",
+  "no_data_found": "មិនមានទិន្នន័យក្នុងការស្វែងរក",
+  "history": "ប្រវត្តិ"
+}

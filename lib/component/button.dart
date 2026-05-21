@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 
 class Button extends StatelessWidget {
@@ -10,6 +11,7 @@ class Button extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(Round25),
@@ -40,7 +42,7 @@ class Button extends StatelessWidget {
               if (icon != null) SizedBox(height: Height5),
               SizedBox(width: Width15),
               Text(
-                title,
+                lang.translate(title),
                 style: TextStyle(
                   color: WhiteColor,
                   fontFamily: UKFontFamily,

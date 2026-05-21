@@ -15,6 +15,7 @@ import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
+import 'package:thesisapp/view/user/product_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -310,6 +311,14 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (Context) => ProductScreen(),
+                            ),
+                          );
+                        },
                         child: Text(
                           'មើលទាំងអស់',
                           style: TextStyle(

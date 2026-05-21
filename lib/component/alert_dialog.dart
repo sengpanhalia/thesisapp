@@ -6,6 +6,9 @@ Widget customizeAlertDialog({
   required String content,
   void Function()? cancelOnTap,
   void Function()? onTap,
+  required String choice_1,
+  required String choice_2,
+
 }) {
   return Dialog(
     backgroundColor: Colors.transparent,
@@ -64,7 +67,7 @@ Widget customizeAlertDialog({
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Text(
-                      'បោះបង់',
+                      choice_1,
                       style: TextStyle(
                         color: Sapphire,
                         fontSize: 14,
@@ -87,7 +90,7 @@ Widget customizeAlertDialog({
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Text(
-                      'យល់ព្រម',
+                      choice_2,
                       style: TextStyle(
                         color: Colors.red,
                         fontSize: 14,

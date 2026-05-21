@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/cart_screen.dart';
@@ -13,6 +14,8 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
+
     return Consumer<NavigationProvider>(
       builder: (context, navigationProvider, child) {
         // final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
@@ -110,7 +113,7 @@ class MainScreen extends StatelessWidget {
                       borderRadius: 14,
                     ),
 
-                    label: 'ទំព័រដើម',
+                    label: lang.translate('home'),
                   ),
 
                   NavigationDestination(
@@ -120,7 +123,7 @@ class MainScreen extends StatelessWidget {
                       assetPath: 'assets/search.png',
                     ),
 
-                    label: 'ស្វែងរក',
+                    label: lang.translate('search'),
                   ),
 
                   NavigationDestination(
@@ -130,7 +133,7 @@ class MainScreen extends StatelessWidget {
                       assetPath: 'assets/cart.png',
                     ),
 
-                    label: 'កន្ត្រក',
+                    label: lang.translate('cart'),
                   ),
 
                   // NavigationDestination(
@@ -162,7 +165,7 @@ class MainScreen extends StatelessWidget {
                       assetPath: 'assets/setting.png',
                     ),
 
-                    label: 'ការកំណត់',
+                    label: lang.translate('setting'),
                   ),
                 ],
               ),

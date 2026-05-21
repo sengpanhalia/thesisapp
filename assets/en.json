@@ -1,0 +1,19 @@
+{
+  "good_morning": "Good Morning",
+  "search": "Search",
+  "privacy": "Privacy",
+  "account_information": "Account Information",
+  "change_language": "Change Language",
+  "change_language_message": "Please choose the language you want to use.",
+  "khmer_language": "Khmer",
+  "english_language": "English",
+  "logout": "Logout",
+  "logout_message": "Do you want to logout?",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "home": "Home",
+  "cart": "Cart",
+  "setting": "Setting",
+  "no_data_found": "No data found for search.",
+  "history": "History"
+}
