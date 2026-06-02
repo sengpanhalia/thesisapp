@@ -64,19 +64,6 @@ class _SplashScreenState extends State<SplashScreen>
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
     } else if (authProvider.isLoggedIn) {
-      // final userRole = authProvider.user?.role ?? 'user';
-
-      // if (userRole == 'admin') {
-      //   Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-      //   );
-      // } else {
-      //   Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(builder: (_) => const MainScreen()),
-      //   );
-      // }
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainScreen()),
@@ -170,7 +157,6 @@ class _SplashScreenState extends State<SplashScreen>
                             color: TextColor,
                           ),
                         ),
-
 
                         Text(
                           "3",

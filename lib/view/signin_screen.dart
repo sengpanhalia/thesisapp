@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/model/user.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
@@ -20,17 +22,44 @@ class SigninScreen extends StatefulWidget {
 }
 
 class _SigninScreenState extends State<SigninScreen> {
+  static const String _localAdminId = 'admin';
+  static const String _localAdminPassword = 'admin123';
+
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> login() async {
+    final studentId = _usernameController.text.trim();
+    final password = _passwordController.text;
+
     // Basic validation
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (studentId.isEmpty || password.isEmpty) {
       Fluttertoast.showToast(msg: "Please fill all fields");
       return;
     }
 
     try {
+      if (_isLocalAdminId(studentId)) {
+        if (!_isLocalAdminLogin(studentId, password)) {
+          Fluttertoast.showToast(msg: "Invalid admin password");
+          return;
+        }
+
+        final admin = User(
+          name_kh: 'Admin',
+          student_id: studentId,
+          pwd: password,
+          role: 'admin',
+        );
+
+        if (!mounted) return;
+        await context.read<AuthProvider>().login(admin);
+
+        if (!mounted) return;
+        _openHome();
+        return;
+      }
+
       // final response = await http.post(
       //   url,
       //   headers: {"Content-Type": "application/json"},
@@ -39,13 +68,12 @@ class _SigninScreenState extends State<SigninScreen> {
       //     "pwd": _passwordController.text,
       //   }),
       // );
-      var response = await http.post(
-        Uri.parse(APIStLoginKh),
-        body: {
-          "student_id": _usernameController.text.trim(),
-          "pwd": _passwordController.text,
-        },
-      );
+      var response = await http
+          .post(
+            Uri.parse(APIStLoginKh),
+            body: {"student_id": studentId, "pwd": password},
+          )
+          .timeout(const Duration(seconds: 15));
 
       // Debug: print raw response (remove in production)
       debugPrint('Login response: ${response.body}');
@@ -64,7 +92,8 @@ class _SigninScreenState extends State<SigninScreen> {
             final user = User(
               name_kh: item['name_kh'] ?? '',
               student_id: item['student_id'] ?? '',
-              pwd: _passwordController.text,
+              pwd: password,
+              role: (item['role'] ?? 'user').toString(),
             );
             users.add(user);
           }
@@ -83,10 +112,7 @@ class _SigninScreenState extends State<SigninScreen> {
 
         if (!mounted) return;
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-        );
+        _openHome();
       }
 
       // final decoded = jsonDecode(response.body);
@@ -155,10 +181,31 @@ class _SigninScreenState extends State<SigninScreen> {
       //   context,
       //   MaterialPageRoute(builder: (_) => const MainScreen()),
       // );
+    } on TimeoutException {
+      debugPrint('Login failed: server timeout');
+      Fluttertoast.showToast(msg: "Login server timeout. Please try again.");
     } catch (e) {
       debugPrint('Login failed: $e');
-      Fluttertoast.showToast(msg: "Login failed: $e");
+      Fluttertoast.showToast(
+        msg: "Cannot connect to login server. Please try again later.",
+      );
     }
+  }
+
+  bool _isLocalAdminId(String studentId) {
+    return studentId.toLowerCase() == _localAdminId;
+  }
+
+  bool _isLocalAdminLogin(String studentId, String password) {
+    return _isLocalAdminId(studentId) && password == _localAdminPassword;
+  }
+
+  void _openHome() {
+    context.read<NavigationProvider>().setIndex(0);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MainScreen()),
+    );
   }
 
   Future<void> saveStudentUser(

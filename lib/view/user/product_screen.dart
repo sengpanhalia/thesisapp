@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/component_app.dart';
@@ -80,7 +79,7 @@ class _ProductScreenState extends State<ProductScreen> {
         }
       }
     } catch (e) {
-      print(e);
+      debugPrint('Failed to load products: $e');
     }
 
     if (!mounted) return;

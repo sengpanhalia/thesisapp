@@ -98,8 +98,15 @@ class AuthProvider extends ChangeNotifier {
     //   await _prefs.setString('user', jsonEncode(_user!.toJson()));
     //   notifyListeners();
     // }
-    if(_user != null){
-      _user = User(name_kh: _user!.name_kh, student_id: _user!.student_id, pwd: _user!.pwd);
+    if (_user != null) {
+      _user = User(
+        name_kh: name_kh ?? _user!.name_kh,
+        student_id: student_id ?? _user!.student_id,
+        pwd: pwd ?? _user!.pwd,
+        role: _user!.role,
+      );
+      await _prefs.setString('user', jsonEncode(_user!.toJson()));
+      notifyListeners();
     }
   }
 }

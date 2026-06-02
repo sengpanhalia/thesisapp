@@ -54,18 +54,28 @@ class User {
   final String name_kh;
   final String student_id;
   final String pwd;
+  final String role;
 
   User({
     required this.name_kh,
     required this.student_id,
     required this.pwd,
-  });
+    String role = 'user',
+  }) : role = _normalizeRole(role);
+
+  static String _normalizeRole(String role) {
+    final normalized = role.trim().toLowerCase();
+    return normalized.isEmpty ? 'user' : normalized;
+  }
+
+  bool get isAdmin => role == 'admin';
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       name_kh: json['name_kh'] ?? '',
       student_id: json['student_id'] ?? '',
       pwd: json['pwd'] ?? '',
+      role: (json['role'] ?? 'user').toString(),
     );
   }
 
@@ -74,6 +84,7 @@ class User {
       'name_kh': name_kh,
       'student_id': student_id,
       'pwd': pwd,
+      'role': role,
     };
   }
 }

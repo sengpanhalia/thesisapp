@@ -2,15 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/admin/home_screen.dart';
+import 'package:thesisapp/view/admin/profile_screen.dart';
 import 'package:thesisapp/view/cart_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 import 'package:thesisapp/view/user/user_home_screen.dart';
 import 'package:thesisapp/view/user/user_profile.dart';
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  final Set<int> _builtIndexes = <int>{0};
+  bool? _lastIsAdmin;
 
   @override
   Widget build(BuildContext context) {
@@ -18,34 +29,90 @@ class MainScreen extends StatelessWidget {
 
     return Consumer<NavigationProvider>(
       builder: (context, navigationProvider, child) {
-        // final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
+        final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
 
-        // final screens = isAdmin
-        //     ? const [AdminHomeScreen(), ProfileScreen()]
-        //     : const [HomePage(), CartScreen(), OrderScreen(), ProfileScreen()];
-        final screens = const [
-          HomePage(),
-          SearchScreen(baseUrl: ApiConfig.baseUrl),
-          CartScreen(),
-          UserProfile(),
-        ];
+        final screens = isAdmin
+            ? const [AdminHomeScreen(), ProfileScreen()]
+            : const [
+                HomePage(),
+                SearchScreen(baseUrl: ApiConfig.baseUrl),
+                CartScreen(),
+                UserProfile(),
+              ];
+        final destinations = isAdmin
+            ? const [
+                NavigationDestination(
+                  icon: _NavImageIcon(assetPath: 'assets/home.png'),
+                  selectedIcon: _SelectedNavIcon(
+                    assetPath: 'assets/home.png',
+                    borderRadius: 14,
+                  ),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.account_circle_outlined),
+                  selectedIcon: _SelectedMaterialNavIcon(
+                    icon: Icons.account_circle,
+                  ),
+                  label: 'Profile',
+                ),
+              ]
+            : [
+                NavigationDestination(
+                  icon: const _NavImageIcon(assetPath: 'assets/home.png'),
+                  selectedIcon: const _SelectedNavIcon(
+                    assetPath: 'assets/home.png',
+                    borderRadius: 14,
+                  ),
+                  label: lang.translate('home'),
+                ),
+                NavigationDestination(
+                  icon: const _NavImageIcon(assetPath: 'assets/search.png'),
+                  selectedIcon: const _SelectedNavIcon(
+                    assetPath: 'assets/search.png',
+                  ),
+                  label: lang.translate('search'),
+                ),
+                NavigationDestination(
+                  icon: const _NavImageIcon(assetPath: 'assets/cart.png'),
+                  selectedIcon: const _SelectedNavIcon(
+                    assetPath: 'assets/cart.png',
+                  ),
+                  label: lang.translate('cart'),
+                ),
+                NavigationDestination(
+                  icon: const _NavImageIcon(assetPath: 'assets/setting.png'),
+                  selectedIcon: const _SelectedNavIcon(
+                    assetPath: 'assets/setting.png',
+                  ),
+                  label: lang.translate('setting'),
+                ),
+              ];
         final currentIndex = navigationProvider.currentIndex;
+        final safeIndex = currentIndex >= 0 && currentIndex < screens.length
+            ? currentIndex
+            : 0;
+
+        if (_lastIsAdmin != isAdmin) {
+          _lastIsAdmin = isAdmin;
+          _builtIndexes
+            ..clear()
+            ..add(safeIndex);
+        } else {
+          _builtIndexes.add(safeIndex);
+        }
 
         return Scaffold(
           extendBody: true,
-          body: Stack(
-            children: [
-              for (var index = 0; index < screens.length; index++)
-                AnimatedOpacity(
-                  opacity: currentIndex == index ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  child: IgnorePointer(
-                    ignoring: currentIndex != index,
-                    child: screens[index],
-                  ),
-                ),
-            ],
+          body: IndexedStack(
+            index: safeIndex,
+            children: List.generate(screens.length, (index) {
+              if (!_builtIndexes.contains(index)) {
+                return const SizedBox.shrink();
+              }
+
+              return screens[index];
+            }),
           ),
 
           bottomNavigationBar: Container(
@@ -98,81 +165,47 @@ class MainScreen extends StatelessWidget {
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 animationDuration: const Duration(milliseconds: 260),
 
-                selectedIndex: currentIndex,
+                selectedIndex: safeIndex,
 
                 onDestinationSelected: (index) {
                   navigationProvider.setIndex(index);
                 },
 
-                destinations: [
-                  NavigationDestination(
-                    icon: const _NavImageIcon(assetPath: 'assets/home.png'),
-
-                    selectedIcon: const _SelectedNavIcon(
-                      assetPath: 'assets/home.png',
-                      borderRadius: 14,
-                    ),
-
-                    label: lang.translate('home'),
-                  ),
-
-                  NavigationDestination(
-                    icon: const _NavImageIcon(assetPath: 'assets/search.png'),
-
-                    selectedIcon: const _SelectedNavIcon(
-                      assetPath: 'assets/search.png',
-                    ),
-
-                    label: lang.translate('search'),
-                  ),
-
-                  NavigationDestination(
-                    icon: const _NavImageIcon(assetPath: 'assets/cart.png'),
-
-                    selectedIcon: const _SelectedNavIcon(
-                      assetPath: 'assets/cart.png',
-                    ),
-
-                    label: lang.translate('cart'),
-                  ),
-
-                  // NavigationDestination(
-                  //   icon: Icon(
-                  //     Icons.inventory_2_outlined,
-                  //     color: Colors.grey.shade600,
-                  //     size: 28,
-                  //   ),
-
-                  //   selectedIcon: Container(
-                  //     padding: const EdgeInsets.all(10),
-                  //     decoration: BoxDecoration(
-                  //       color: IconOrangeColor,
-                  //       borderRadius: BorderRadius.circular(10),
-                  //     ),
-                  //     child: const Icon(
-                  //       Icons.inventory_2,
-                  //       color: Colors.white,
-                  //       size: 28,
-                  //     ),
-                  //   ),
-
-                  //   label: 'កុម្ម៉ង់',
-                  // ),
-                  NavigationDestination(
-                    icon: const _NavImageIcon(assetPath: 'assets/setting.png'),
-
-                    selectedIcon: const _SelectedNavIcon(
-                      assetPath: 'assets/setting.png',
-                    ),
-
-                    label: lang.translate('setting'),
-                  ),
-                ],
+                destinations: destinations,
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _SelectedMaterialNavIcon extends StatelessWidget {
+  const _SelectedMaterialNavIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.88, end: 1),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Opacity(
+          opacity: scale.clamp(0.0, 1.0),
+          child: Transform.scale(scale: scale, child: child),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: IconOrangeColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: Colors.white, size: 28),
+      ),
     );
   }
 }

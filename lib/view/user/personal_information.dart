@@ -18,13 +18,10 @@ class PersonalInformation extends StatefulWidget {
 
 class _PersonalInformationState extends State<PersonalInformation> {
   UserDetail? _userDetail;
-  bool _isLoadingUser = true;
 
   Future<void> _fetchUserData() async {
     final authUser = context.read<AuthProvider>().user;
     if (authUser == null) {
-      if (!mounted) return;
-      setState(() => _isLoadingUser = false);
       return;
     }
 
@@ -49,7 +46,6 @@ class _PersonalInformationState extends State<PersonalInformation> {
           if (!mounted) return;
           setState(() {
             _userDetail = details.isNotEmpty ? details.first : null;
-            _isLoadingUser = false;
           });
           return;
         }
@@ -57,9 +53,6 @@ class _PersonalInformationState extends State<PersonalInformation> {
     } catch (e) {
       debugPrint('Failed to load user detail: $e');
     }
-
-    if (!mounted) return;
-    setState(() => _isLoadingUser = false);
   }
 
   @override
