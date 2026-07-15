@@ -120,7 +120,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Column(
                       children: [
                         Text(
-                          "សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេសៀ",
+                          "សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេយសៀ",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 22,

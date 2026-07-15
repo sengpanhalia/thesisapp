@@ -16,6 +16,7 @@ import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
+import 'package:thesisapp/view/user/search_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -47,7 +48,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openSearch() {
-    context.read<NavigationProvider>().setIndex(1);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchScreen(baseUrl: _baseUrl),
+      ),
+    );
   }
 
   @override

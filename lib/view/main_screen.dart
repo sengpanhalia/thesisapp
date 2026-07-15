@@ -8,6 +8,7 @@ import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/admin/home_screen.dart';
 import 'package:thesisapp/view/admin/profile_screen.dart';
 import 'package:thesisapp/view/cart_screen.dart';
+import 'package:thesisapp/view/user/category_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 import 'package:thesisapp/view/user/user_home_screen.dart';
 import 'package:thesisapp/view/user/user_profile.dart';
@@ -35,7 +36,8 @@ class _MainScreenState extends State<MainScreen> {
             ? const [AdminHomeScreen(), ProfileScreen()]
             : const [
                 HomePage(),
-                SearchScreen(baseUrl: ApiConfig.baseUrl),
+                CategoryScreen(),
+                // SearchScreen(baseUrl: ApiConfig.baseUrl),
                 CartScreen(),
                 UserProfile(),
               ];
@@ -67,11 +69,11 @@ class _MainScreenState extends State<MainScreen> {
                   label: lang.translate('home'),
                 ),
                 NavigationDestination(
-                  icon: const _NavImageIcon(assetPath: 'assets/search.png'),
+                  icon: const _NavImageIcon(assetPath: 'assets/category.png'),
                   selectedIcon: const _SelectedNavIcon(
-                    assetPath: 'assets/search.png',
+                    assetPath: 'assets/category.png',
                   ),
-                  label: lang.translate('search'),
+                  label: lang.translate('category'),
                 ),
                 NavigationDestination(
                   icon: const _NavImageIcon(assetPath: 'assets/cart.png'),

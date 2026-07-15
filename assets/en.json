@@ -15,5 +15,9 @@
   "cart": "Cart",
   "setting": "Setting",
   "no_data_found": "No data found for search.",
-  "history": "History"
+  "history": "History",
+  "category": "Category",
+  "books": "Books",
+  "t-shirts": "T-Shirts",
+  "materials": "Materials"
 }

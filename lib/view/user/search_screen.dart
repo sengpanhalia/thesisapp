@@ -476,9 +476,26 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _queryController.text.trim();
+  final lang = AppLocalizations.of(context)!;
+
     final results = _results();
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        title: Text(
+          lang.translate('search'),
+          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: Stack(
         children: [
           // BackgroundColor(),
