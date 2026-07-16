@@ -4,13 +4,15 @@ const UKFontFamily = "SiemReap";
 const UEFontFamily = "Poppins";
 
 const WhiteColor = Color(0xFFFFFFFF);
-const RedColor = Color(0xFFFF1100);
-const GreenColor = Color(0xFF4CAF50);
+const RedColor = Color(0xFFEE0000);
+const GreenColor = Color(0xFF2CB037);
 const YellowColor = Color(0xFFFFEB3B);
 final StrokeColor = Color(0xFF9A9288).withOpacity(0.5);
 const TranparentColor = Colors.transparent;
 const BlackColor = Color(0xFF000000);
 const Sapphire = Color(0xFF002060);
+final processColor = Color(0xFFD97F2E).withOpacity(0.9);
+
 
 const GBackground1 = Color(0xFFFDF6EE);
 const GBackground2 = Color(0xFFFAF0E4);
@@ -40,6 +42,8 @@ const IconOrangeColor = Color(0xFFC46520);
 const ColorNavBar = Color(0xFFFAEBD7);
 
 const SoftGreen = Color(0xFFAFE4B5);
+
+final checkboxColor = Color(0xFFE39A4F).withOpacity(0.7);
 
 const double ZeroPixel = 0.0;
 

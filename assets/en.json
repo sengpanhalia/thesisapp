@@ -19,5 +19,7 @@
   "category": "Category",
   "books": "Books",
   "t-shirts": "T-Shirts",
-  "materials": "Materials"
+  "materials": "Materials",
+  "review_and_choose_payment_method": "Review and choose payment method",
+  "note: The currency used for payment is the Cambodian Riel (KHR)": "Note: The currency used for payment is the Cambodian Riel (KHR)"
 }

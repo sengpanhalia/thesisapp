@@ -7,6 +7,7 @@ import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/khqr_payment_screen.dart';
+import 'package:thesisapp/view/user/checkout_payment.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -34,7 +35,7 @@ class _CartScreenState extends State<CartScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => KhqrPaymentScreen(
-          address: KhqrPaymentWatcher.address!,
+          // address: KhqrPaymentWatcher.address!,
           items: KhqrPaymentWatcher.items,
           total: KhqrPaymentWatcher.total!,
           cartIds: KhqrPaymentWatcher.cartIds,
@@ -49,15 +50,15 @@ class _CartScreenState extends State<CartScreen> {
     await _refreshCartScreen();
   }
 
-  // Future<void> _openCheckoutAddressScreen() async {
-  //   await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(builder: (_) => const CheckoutAddressScreen()),
-  //   );
+  Future<void> _openCheckoutPaymentScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CheckoutPayment()),
+    );
 
-  //   if (!mounted) return;
-  //   await _refreshCartScreen();
-  // }
+    if (!mounted) return;
+    await _refreshCartScreen();
+  }
 
   @override
   void didChangeDependencies() {
@@ -175,7 +176,7 @@ class _CartScreenState extends State<CartScreen> {
                                       await _openKhqrPaymentScreen();
                                       return;
                                     }
-                                    // await _openCheckoutAddressScreen();
+                                    await _openCheckoutPaymentScreen();
                                   },
                             child: Container(
                               height: 50,
@@ -265,7 +266,7 @@ class _CartScreenState extends State<CartScreen> {
                       },
                     ),
 
-                    // Blue main container
+                    // Blue main container 
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.all(15),
@@ -274,7 +275,7 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 241, 221, 201),
+                            color: CardColor,
                             borderRadius: BorderRadius.circular(25),
                             border: Border.all(color: Color(0xFFFFFFFF)),
                           ),
@@ -305,9 +306,7 @@ class _CartScreenState extends State<CartScreen> {
                                         height: 22,
                                         decoration: BoxDecoration(
                                           color: cartProvider.allSelected
-                                              ? Color(
-                                                  0xFFE39A4F,
-                                                ).withOpacity(0.7)
+                                              ? checkboxColor
                                               : Colors.white,
                                           borderRadius: BorderRadius.circular(
                                             6,
@@ -443,9 +442,7 @@ class _CartScreenState extends State<CartScreen> {
                                                                 cartId,
                                                               ) &&
                                                           isPurchasable
-                                                      ? Color(
-                                                          0xFFE39A4F,
-                                                        ).withOpacity(0.7)
+                                                      ? checkboxColor
                                                       : isPurchasable
                                                       ? Colors.white
                                                       : Colors.grey[200],
@@ -533,9 +530,7 @@ class _CartScreenState extends State<CartScreen> {
                                                                 item['name'] ??
                                                                     'Product',
                                                                 style: const TextStyle(
-                                                                  color: Color(
-                                                                    0xFF9A9288,
-                                                                  ),
+                                                                  color: TextColor,
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .bold,
@@ -583,7 +578,7 @@ class _CartScreenState extends State<CartScreen> {
                                                                     "\$${displayPrice.toStringAsFixed(2)}",
                                                                     style: TextStyle(
                                                                       color:
-                                                                          Color.fromARGB(255, 241, 221, 201),
+                                                                          TextColor,
 
                                                                       fontSize:
                                                                           14,
@@ -596,20 +591,20 @@ class _CartScreenState extends State<CartScreen> {
                                                                   const SizedBox(
                                                                     width: 5,
                                                                   ),
-                                                                  if (hasDiscount)
-                                                                    Text(
-                                                                      "\$${originalPrice.toStringAsFixed(2)}",
-                                                                      style: GoogleFonts.poppins(
-                                                                        fontSize:
-                                                                            11,
-                                                                        fontWeight:
-                                                                            FontWeight.w500,
-                                                                        color: Colors
-                                                                            .black45,
-                                                                        decoration:
-                                                                            TextDecoration.lineThrough,
-                                                                      ),
-                                                                    ),
+                                                                  // if (hasDiscount)
+                                                                  //   Text(
+                                                                  //     "\$${originalPrice.toStringAsFixed(2)}",
+                                                                  //     style: GoogleFonts.poppins(
+                                                                  //       fontSize:
+                                                                  //           11,
+                                                                  //       fontWeight:
+                                                                  //           FontWeight.w500,
+                                                                  //       color: Colors
+                                                                  //           .black45,
+                                                                  //       decoration:
+                                                                  //           TextDecoration.lineThrough,
+                                                                  //     ),
+                                                                  //   ),
                                                                 ],
                                                               ),
                                                             ],
@@ -638,7 +633,7 @@ class _CartScreenState extends State<CartScreen> {
                                                                 height: 28,
                                                                 decoration: BoxDecoration(
                                                                   color:
-                                                                      Color.fromARGB(255, 241, 221, 201),
+                                                                      checkboxColor,
                                                                   borderRadius:
                                                                       BorderRadius.circular(
                                                                         8,
@@ -653,24 +648,26 @@ class _CartScreenState extends State<CartScreen> {
                                                                 ),
                                                               ),
                                                             ),
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
-                                                            Text(
-                                                              "$quantity",
-                                                              style: const TextStyle(
-                                                                color: Color(
-                                                                  0xFF9A9288,
+                                                            // const SizedBox(
+                                                            //   width: 20,
+                                                            // ),
+                                                            Container(
+                                                              width: 35,
+                                                              alignment: Alignment.center,
+                                                              child: Text(
+                                                                "$quantity",
+                                                                style: const TextStyle(
+                                                                  color: TextColor,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 16,
                                                                 ),
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 16,
                                                               ),
                                                             ),
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
+                                                            // const SizedBox(
+                                                            //   width: 20,
+                                                            // ),
                                                             GestureDetector(
                                                               onTap:
                                                                   isPaymentLocked
@@ -691,7 +688,7 @@ class _CartScreenState extends State<CartScreen> {
                                                                 height: 28,
                                                                 decoration: BoxDecoration(
                                                                   color:
-                                                                      Color.fromARGB(255, 241, 221, 201),
+                                                                      checkboxColor,
                                                                   borderRadius:
                                                                       BorderRadius.circular(
                                                                         8,

@@ -4,12 +4,11 @@ import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/admin/home_screen.dart';
 import 'package:thesisapp/view/admin/profile_screen.dart';
 import 'package:thesisapp/view/cart_screen.dart';
+import 'package:thesisapp/view/order_screen.dart';
 import 'package:thesisapp/view/user/category_screen.dart';
-import 'package:thesisapp/view/user/search_screen.dart';
 import 'package:thesisapp/view/user/user_home_screen.dart';
 import 'package:thesisapp/view/user/user_profile.dart';
 
@@ -37,8 +36,8 @@ class _MainScreenState extends State<MainScreen> {
             : const [
                 HomePage(),
                 CategoryScreen(),
-                // SearchScreen(baseUrl: ApiConfig.baseUrl),
                 CartScreen(),
+                OrderScreen(),
                 UserProfile(),
               ];
         final destinations = isAdmin
@@ -81,6 +80,13 @@ class _MainScreenState extends State<MainScreen> {
                     assetPath: 'assets/cart.png',
                   ),
                   label: lang.translate('cart'),
+                ),
+                NavigationDestination(
+                  icon: const _NavImageIcon(assetPath: 'assets/order.png'),
+                  selectedIcon: const _SelectedNavIcon(
+                    assetPath: 'assets/order.png',
+                  ),
+                  label: lang.translate('order'),
                 ),
                 NavigationDestination(
                   icon: const _NavImageIcon(assetPath: 'assets/setting.png'),

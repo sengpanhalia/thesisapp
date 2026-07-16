@@ -17,7 +17,6 @@ import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
-import 'package:thesisapp/view/user/user_profile.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -179,8 +178,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        actions: [
-          
+        actions: [ 
           Padding(
             padding: const EdgeInsets.only(right: MgPd20),
             child: GestureDetector(

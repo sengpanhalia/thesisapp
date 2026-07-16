@@ -36,7 +36,7 @@ class KhqrPaymentWatcher {
   static void start({
     int? paymentId,
     int? orderId,
-    required Address address,
+    // required Address address,
     required List<Map<String, dynamic>> items,
     required List<int> cartIds,
     required double total,
@@ -68,7 +68,7 @@ class KhqrPaymentScreen extends StatefulWidget {
   final int? orderId;
   final int? paymentId;
   final List<int> cartIds;
-  final Address address;
+  // final Address address;
   final List<Map<String, dynamic>> items;
   final double total;
   final DateTime createdAt;
@@ -78,7 +78,7 @@ class KhqrPaymentScreen extends StatefulWidget {
     this.orderId,
     this.paymentId,
     this.cartIds = const [],
-    required this.address,
+    // required this.address,
     required this.items,
     required this.total,
     DateTime? createdAt,
@@ -106,7 +106,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     KhqrPaymentWatcher.start(
       paymentId: widget.paymentId,
       orderId: widget.orderId,
-      address: widget.address,
+      // address: widget.address,
       items: widget.items,
       cartIds: widget.cartIds,
       total: widget.total,
@@ -155,7 +155,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
           'student_id': user.student_id,
           'amount': widget.total,
           'cart_ids': widget.cartIds,
-          if (widget.address.id > 0) 'address_id': widget.address.id,
+          // if (widget.address.id > 0) 'address_id': widget.address.id,
           if (widget.orderId != null) 'order_id': widget.orderId,
         }),
       );
@@ -195,7 +195,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       KhqrPaymentWatcher.start(
         paymentId: _paymentId,
         orderId: _orderId,
-        address: widget.address,
+        // address: widget.address,
         items: widget.items,
         cartIds: widget.cartIds,
         total: widget.total,
