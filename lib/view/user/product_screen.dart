@@ -193,7 +193,7 @@ class _ProductScreenState extends State<ProductScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         color: TextSoftColor,
-                        fontFamily: UKFontFamily,
+                        fontFamily: getFontFamily(context),
                       ),
                     ),
                   if (canShowProducts && product.isNotEmpty)

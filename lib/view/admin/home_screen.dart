@@ -64,7 +64,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       color: TextColor,
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                     ),
                   ),
                   SizedBox(height: Height5),
@@ -123,7 +123,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _CardAdminProfile(),
+                  _CardAdminProfile(context),
                   SizedBox(height: Height15),
                   Text(
                     "Dashboard",
@@ -131,7 +131,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: TextColor,
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                     ),
                   ),
                   SizedBox(height: Height15),
@@ -140,6 +140,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     runSpacing: 12,
                     children: _featureItems.map((item) {
                       return _CardFeature(
+                        context: context,
                         imageIcon: item.image,
                         title: item.title,
                         onTap: () {
@@ -173,7 +174,7 @@ class _AdminFeatureItem {
   final Widget screen;
 }
 
-Widget _CardAdminProfile() {
+Widget _CardAdminProfile(BuildContext context) {
   return Container(
     width: double.infinity,
     padding: EdgeInsets.symmetric(horizontal: Height25, vertical: Height15),
@@ -208,7 +209,7 @@ Widget _CardAdminProfile() {
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: TextColor,
-                    fontFamily: UKFontFamily,
+                    fontFamily: getFontFamily(context),
                   ),
                 ),
                 Text(
@@ -217,7 +218,7 @@ Widget _CardAdminProfile() {
                     fontSize: 20,
                     // fontWeight: FontWeight.bold,
                     color: TextColor,
-                    fontFamily: UKFontFamily,
+                    fontFamily: getFontFamily(context),
                   ),
                 ),
               ],
@@ -230,6 +231,7 @@ Widget _CardAdminProfile() {
 }
 
 Widget _CardFeature({
+  required BuildContext context,
   required String imageIcon,
   required String title,
   void Function()? onTap,
@@ -263,7 +265,7 @@ Widget _CardFeature({
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: TextColor,
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
             ),
           ),
         ],

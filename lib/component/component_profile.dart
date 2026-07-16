@@ -29,7 +29,7 @@ class ComponentProfile extends StatelessWidget {
       title: Text(
         title,
         style: TextStyle(
-          fontFamily: UKFontFamily,
+          fontFamily: getFontFamily(context),
           fontSize: 16,
           color: TextColor,
         ),

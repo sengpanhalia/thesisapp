@@ -71,7 +71,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                             fontSize: 13,
                             color: TextSoftColor,
                             // fontWeight: FontWeight.w500,
-                            fontFamily: UKFontFamily,
+                            fontFamily: getFontFamily(context),
                           ),
                           border: InputBorder.none,
                         ),
@@ -86,10 +86,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
               /// Title
               Text(
                 lang.translate('category'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  fontFamily: UKFontFamily,
+                  fontFamily: getFontFamily(context),
                 ),
               ),
 
@@ -163,10 +163,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
             ),
           ),
         ],

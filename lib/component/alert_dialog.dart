@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:thesisapp/theme_color.dart';
 
 Widget customizeAlertDialog({
+  required BuildContext context,
   required String title,
   required String content,
   void Function()? cancelOnTap,
@@ -35,7 +36,7 @@ Widget customizeAlertDialog({
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
               color: BlackColor,
             ),
           ),
@@ -49,7 +50,7 @@ Widget customizeAlertDialog({
             style: TextStyle(
               fontSize: 16,
               height: 1.5,
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
               color: TextColor,
             ),
           ),
@@ -71,7 +72,7 @@ Widget customizeAlertDialog({
                       style: TextStyle(
                         color: Sapphire,
                         fontSize: 14,
-                        fontFamily: UKFontFamily,
+                        fontFamily: getFontFamily(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -94,7 +95,7 @@ Widget customizeAlertDialog({
                       style: TextStyle(
                         color: Colors.red,
                         fontSize: 14,
-                        fontFamily: UKFontFamily,
+                        fontFamily: getFontFamily(context),
                         fontWeight: FontWeight.bold,
                       ),
                     ),

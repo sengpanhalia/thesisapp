@@ -32,20 +32,20 @@ class ProfileScreen extends StatelessWidget {
           children: [
             Text(
               user?.name_kh.isNotEmpty == true ? user!.name_kh : 'User',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
                 color: TextColor,
-                fontFamily: UEFontFamily,
+                fontFamily: getFontFamily(context),
               ),
             ),
             const SizedBox(height: Height5),
             Text(
               user?.student_id ?? '',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: TextSoftColor,
-                fontFamily: UEFontFamily,
+                fontFamily: getFontFamily(context),
               ),
             ),
             const Spacer(),
@@ -59,12 +59,12 @@ class ProfileScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(Round15),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Logout',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  fontFamily: UEFontFamily,
+                  fontFamily: getFontFamily(context),
                 ),
               ),
             ),

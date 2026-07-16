@@ -45,7 +45,7 @@ class Button extends StatelessWidget {
                 lang.translate(title),
                 style: TextStyle(
                   color: WhiteColor,
-                  fontFamily: UKFontFamily,
+                  fontFamily: getFontFamily(context),
                   fontSize: 20,
                 ),
               ),

@@ -143,7 +143,7 @@ class _UserProfileState extends State<UserProfile> {
                           Text(
                             _userDetail?.name_kh ?? "",
                             style: TextStyle(
-                              fontFamily: UKFontFamily,
+                              fontFamily: getFontFamily(context),
                               color: TextColor,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _UserProfileState extends State<UserProfile> {
                           Text(
                             _userDetail?.student_id ?? "",
                             style: TextStyle(
-                              fontFamily: UKFontFamily,
+                              fontFamily: getFontFamily(context),
                               color: TextColor,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -167,7 +167,7 @@ class _UserProfileState extends State<UserProfile> {
                   Text(
                     lang.translate('privacy'),
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 20,
                       color: TextColor,
                       fontWeight: FontWeight.bold,
@@ -212,7 +212,7 @@ class _UserProfileState extends State<UserProfile> {
                   Text(
                     lang.translate('privacy'),
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 20,
                       color: TextColor,
                       fontWeight: FontWeight.bold,
@@ -248,6 +248,7 @@ class _UserProfileState extends State<UserProfile> {
                             showDialog(
                               context: context,
                               builder: (dialogContext) => customizeAlertDialog(
+                                context: dialogContext,
                                 title: lang.translate('change_language'),
                                 content: lang.translate(
                                   'change_language_message',
@@ -279,6 +280,7 @@ class _UserProfileState extends State<UserProfile> {
                       showDialog(
                         context: context,
                         builder: (context) => customizeAlertDialog(
+                          context: context,
                           title: lang.translate('logout'),
                           content: lang.translate('logout_message'),
                           choice_1: lang.translate('cancel'),

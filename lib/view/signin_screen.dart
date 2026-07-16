@@ -226,7 +226,7 @@ class _SigninScreenState extends State<SigninScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               color: TextColor,
-                              fontFamily: UKFontFamily,
+                              fontFamily: getFontFamily(context),
                             ),
                           ),
                           SizedBox(height: Height5),
@@ -250,7 +250,7 @@ class _SigninScreenState extends State<SigninScreen> {
                               ),
                               hintStyle: TextStyle(
                                 color: TextSoftColor,
-                                fontFamily: UKFontFamily,
+                                fontFamily: getFontFamily(context),
                               ),
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: MgPd10,
@@ -265,7 +265,7 @@ class _SigninScreenState extends State<SigninScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               color: TextColor,
-                              fontFamily: UKFontFamily,
+                              fontFamily: getFontFamily(context),
                             ),
                           ),
                           SizedBox(height: Height5),
@@ -290,7 +290,7 @@ class _SigninScreenState extends State<SigninScreen> {
                               hintText: 'លេខកូដសម្ងាត់',
                               hintStyle: TextStyle(
                                 color: TextSoftColor,
-                                fontFamily: UKFontFamily,
+                                fontFamily: getFontFamily(context),
                               ),
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: MgPd10,

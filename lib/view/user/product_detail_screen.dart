@@ -271,7 +271,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     Text(
                                       'មើលរូបភាព',
                                       style: TextStyle(
-                                        fontFamily: UKFontFamily,
+                                        fontFamily: getFontFamily(context),
                                         fontSize: 12,
                                         color: TextColor,
                                       ),
@@ -289,7 +289,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     widget.product.name,
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: TitleColor,
@@ -301,7 +301,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     'អ្នកនិពន្ធ: $author',
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 16,
                       color: TextColor,
                     ),
@@ -310,7 +310,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     '​៛ ${basePrice.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 24,
                       color: GText1,
                     ),
@@ -330,7 +330,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ? 'អស់ពីស្តុក'
                           : 'នៅមានក្នុងស្តុក: $stockQuantity',
                       style: TextStyle(
-                        fontFamily: UKFontFamily,
+                        fontFamily: getFontFamily(context),
                         fontSize: 16,
                         color: stockColor,
                       ),
@@ -367,7 +367,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     'ព័ត៌មានលម្អិត',
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 16,
                       color: GText1,
                     ),
@@ -378,7 +378,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     widget.product.description,
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 14,
                       color: TextColor,
                       height: LineHegiht,
@@ -390,7 +390,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     'សៀវភៅណែនាំ',
                     style: TextStyle(
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                       fontSize: 16,
                       color: GText1,
                     ),
@@ -408,7 +408,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: Text(
                           'មិនមានសៀវភៅណែនាំទេ',
                           style: TextStyle(
-                            fontFamily: UKFontFamily,
+                            fontFamily: getFontFamily(context),
                             fontSize: 14,
                             color: TextSoftColor,
                           ),
@@ -544,7 +544,7 @@ class _SpecItem extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: TitleColor,
@@ -554,7 +554,7 @@ class _SpecItem extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
               fontSize: 11,
               color: Colors.brown[400],
             ),

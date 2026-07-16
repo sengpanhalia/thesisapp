@@ -234,11 +234,11 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: InputDecoration(
                 fillColor: Colors.transparent,
                 hintText: lang.translate('search'),
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   fontSize: 13,
                   color: TextSoftColor,
                   // fontWeight: FontWeight.w500,
-                  fontFamily: UKFontFamily,
+                  fontFamily: getFontFamily(context),
                 ),
                 border: InputBorder.none,
               ),
@@ -269,7 +269,7 @@ class _SearchScreenState extends State<SearchScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            fontFamily: UKFontFamily,
+            fontFamily: getFontFamily(context),
           ),
         ),
         IconButton(
@@ -291,9 +291,9 @@ class _SearchScreenState extends State<SearchScreen> {
       return Center(
         child: Text(
           lang.translate('no_data_found'),
-          style: const TextStyle(
+          style: TextStyle(
             color: TextColor,
-            fontFamily: UKFontFamily,
+            fontFamily: getFontFamily(context),
             fontWeight: FontWeight.w600,
           ),
         ),

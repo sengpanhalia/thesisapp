@@ -161,7 +161,7 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(
                       fontSize: 14,
                       color: TextColor,
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                     ),
                   ),
                   SizedBox(height: Height5),
@@ -237,7 +237,7 @@ class _HomePageState extends State<HomePage> {
                   //           style: TextStyle(
                   //             fontSize: 14,
                   //             color: TextColor,
-                  //             fontFamily: UKFontFamily,
+                  //             fontFamily: getFontFamily(context),
                   //           ),
                   //         ),
                   //         SizedBox(height: Height5),
@@ -291,7 +291,7 @@ class _HomePageState extends State<HomePage> {
                                 fontSize: 13,
                                 color: TextSoftColor,
                                 // fontWeight: FontWeight.w500,
-                                fontFamily: UKFontFamily,
+                                fontFamily: getFontFamily(context),
                               ),
                               border: InputBorder.none,
                             ),
@@ -318,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 16,
                           color: TextColor,
                           fontWeight: FontWeight.w600,
-                          fontFamily: UKFontFamily,
+                          fontFamily: getFontFamily(context),
                         ),
                       ),
                       GestureDetector(
@@ -335,7 +335,7 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(
                             fontSize: 13,
                             color: GText1,
-                            fontFamily: UKFontFamily,
+                            fontFamily: getFontFamily(context),
                           ),
                         ),
                       ),
@@ -352,7 +352,7 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: 14,
                         color: TextSoftColor,
-                        fontFamily: UKFontFamily,
+                        fontFamily: getFontFamily(context),
                       ),
                     ),
                   if (canShowProducts && _products.isNotEmpty)

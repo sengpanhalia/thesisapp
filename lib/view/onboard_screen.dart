@@ -90,7 +90,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               TextStyle(
                                 fontSize: 24,
                                 color: Colors.white,
-                                fontFamily: UKFontFamily,
+                                fontFamily: getFontFamily(context),
                               ),
                             ),
                             SizedBox(height: 10),
@@ -99,7 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               TextStyle(
                                 fontSize: 24,
                                 color: Colors.white,
-                                fontFamily: UKFontFamily,
+                                fontFamily: getFontFamily(context),
                               ),
                             ),
                           ],
@@ -113,7 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               color: TextColor,
-                              fontFamily: UKFontFamily,
+                              fontFamily: getFontFamily(context),
                             ),
                           ),
                         ),
@@ -159,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           color: BlackColor,
-                          fontFamily: UKFontFamily,
+                          fontFamily: getFontFamily(context),
                         ),
                       ),
                     ),
@@ -193,7 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white,
-                          fontFamily: UKFontFamily,
+                          fontFamily: getFontFamily(context),
                         ),
                       ),
                     ),

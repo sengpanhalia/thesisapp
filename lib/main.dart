@@ -9,6 +9,7 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/provider/theme_provider.dart';
 import 'package:thesisapp/splash_screen.dart';
 import 'package:thesisapp/util/app_theme.dart';
+import 'package:thesisapp/theme_color.dart';
 
 void main() {
   runApp(const MyApp());
@@ -50,7 +51,13 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
 
-            theme: AppThemes.light,
+            theme: AppThemes.light.copyWith(
+              textTheme: AppThemes.light.textTheme.apply(
+                fontFamily: languageProvider.locale.languageCode == 'km'
+                    ? UKFontFamily
+                    : UEFontFamily,
+              ),
+            ),
 
             locale: languageProvider.locale,
 

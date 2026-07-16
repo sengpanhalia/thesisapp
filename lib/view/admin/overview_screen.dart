@@ -79,6 +79,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     final item = overviewItems[index];
 
                     return _cardOverView(
+                      context: context,
                       imageIcon: item.imageIcon,
                       title: item.title,
                       total: item.total,
@@ -115,6 +116,7 @@ class OverviewItems {
 }
 
 Widget _cardOverView({
+  required BuildContext context,
   required String imageIcon,
   required String title,
   required String total,
@@ -144,7 +146,7 @@ Widget _cardOverView({
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: UKFontFamily,
+                  fontFamily: getFontFamily(context),
                   fontSize: 16,
                   color: TextColor,
                 ),
@@ -165,7 +167,7 @@ Widget _cardOverView({
           Text(
             total,
             style: TextStyle(
-              fontFamily: UKFontFamily,
+              fontFamily: getFontFamily(context),
               fontSize: 16,
               color: TextColor,
             ),

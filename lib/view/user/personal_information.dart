@@ -98,36 +98,43 @@ class _PersonalInformationState extends State<PersonalInformation> {
             child: Column(
               children: [
                 ListInfo(
+                  context: context,
                   title: "អត្តលេខ",
                   subTitle: _userDetail?.student_id ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
+                  context: context,
                   title: "គោត្តនាម-នាម",
                   subTitle: _userDetail?.name_kh ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
+                  context: context,
                   title: "អត្តលេខ",
                   subTitle: _userDetail?.status_name ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
+                  context: context,
                   title: "ថ្ងៃខែឆ្នាំកំណើត",
                   subTitle: _userDetail?.date_of_birth ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
+                  context: context,
                   title: "មហាវិទ្យាល័យ",
                   subTitle: _userDetail?.faculty_name ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
+                  context: context,
                   title: "មុខជំនាញ",
                   subTitle: _userDetail?.major_name ?? "",
                 ),
                 SizedBox(height: Height15),
                 CardYear(
+                  context: context,
                   year: _userDetail?.year_name ?? "",
                   semester: _userDetail?.semester_name ?? "",
                   stage_name: _userDetail?.stage_name ?? "",
@@ -142,7 +149,7 @@ class _PersonalInformationState extends State<PersonalInformation> {
   }
 }
 
-Widget ListInfo({required String title, required String subTitle}) {
+Widget ListInfo({required BuildContext context, required String title, required String subTitle}) {
   return Container(
     decoration: BoxDecoration(
       color: CardColor,
@@ -167,7 +174,7 @@ Widget ListInfo({required String title, required String subTitle}) {
                 title,
                 style: TextStyle(
                   fontSize: 16,
-                  fontFamily: UKFontFamily,
+                  fontFamily: getFontFamily(context),
                   color: TextColor,
                 ),
               ),
@@ -179,7 +186,7 @@ Widget ListInfo({required String title, required String subTitle}) {
                 subTitle,
                 style: TextStyle(
                   fontSize: 16,
-                  fontFamily: UKFontFamily,
+                  fontFamily: getFontFamily(context),
                   color: TextColor,
                 ),
                 softWrap: true,
@@ -194,6 +201,7 @@ Widget ListInfo({required String title, required String subTitle}) {
 }
 
 Widget CardYear({
+  required BuildContext context,
   required String year,
   required String semester,
   required String stage_name,
@@ -222,19 +230,19 @@ Widget CardYear({
         children: [
           Expanded(
             flex: 10,
-            child: _CardYearItem(title: 'ឆ្នាំទី', value: year),
+            child: _CardYearItem(context: context, title: 'ឆ្នាំទី', value: year),
           ),
           Expanded(
             flex: 10,
-            child: _CardYearItem(title: 'ឆមាសទី', value: semester),
+            child: _CardYearItem(context: context, title: 'ឆមាសទី', value: semester),
           ),
           Expanded(
             flex: 10,
-            child: _CardYearItem(title: 'វគ្គទី', value: stage_name),
+            child: _CardYearItem(context: context, title: 'វគ្គទី', value: stage_name),
           ),
           Expanded(
             flex: 15,
-            child: _CardYearItem(title: 'ឆ្នាំសិក្សា', value: academic_year),
+            child: _CardYearItem(context: context, title: 'ឆ្នាំសិក្សា', value: academic_year),
           ),
         ],
       ),
@@ -242,7 +250,7 @@ Widget CardYear({
   );
 }
 
-Widget _CardYearItem({required String title, required String value}) {
+Widget _CardYearItem({required BuildContext context, required String title, required String value}) {
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
@@ -253,7 +261,7 @@ Widget _CardYearItem({required String title, required String value}) {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 16,
-          fontFamily: UKFontFamily,
+          fontFamily: getFontFamily(context),
           color: TextColor,
         ),
       ),
@@ -266,7 +274,7 @@ Widget _CardYearItem({required String title, required String value}) {
           maxLines: 1,
           style: TextStyle(
             fontSize: 16,
-            fontFamily: UKFontFamily,
+            fontFamily: getFontFamily(context),
             color: TextColor,
           ),
         ),

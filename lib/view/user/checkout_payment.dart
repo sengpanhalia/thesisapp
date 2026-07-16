@@ -122,7 +122,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: TextColor,
-                    fontFamily: UKFontFamily,
+                    fontFamily: getFontFamily(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -132,25 +132,229 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: RedColor,
-                    fontFamily: UEFontFamily,
+                    fontFamily: getFontFamily(context),
                   ),
                 ),
                 const SizedBox(height: 14),
                 _InfoCard(
-                  title: 'Order Summary',
+                  title: lang.translate('order_summary'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _InfoRow(
-                        label: 'Items',
-                        value: cartProvider.selectedItems.length.toString(),
-                      ),
-                      const SizedBox(height: 6),
-                      _InfoRow(
-                        label: 'Total',
-                        value: '\$${cartProvider.total.toStringAsFixed(2)}',
-                        valueColor: Colors.green[700],
-                        valueWeight: FontWeight.w700,
+                      Table(
+                        columnWidths: const {
+                          0: FlexColumnWidth(3.5),
+                          1: FlexColumnWidth(1.2),
+                          2: FlexColumnWidth(2.5),
+                          3: FlexColumnWidth(2.5),
+                        },
+                        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                        children: [
+                          // Table Header
+                          TableRow(
+                            children: [
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    lang.translate('item_name'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: TextSoftColor,
+                                      fontFamily: getFontFamily(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    lang.translate('quantity'),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: TextSoftColor,
+                                      fontFamily: getFontFamily(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    lang.translate('price_unit'),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: TextSoftColor,
+                                      fontFamily: getFontFamily(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    lang.translate('price'),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: TextSoftColor,
+                                      fontFamily: getFontFamily(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Item Rows
+                          ...cartProvider.selectedItems.map((item) {
+                            final double price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
+                            final int discount = int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
+                            final double discountedPrice = discount > 0 ? price * (1 - discount / 100) : price;
+                            final int quantity = item['quantity'] ?? 1;
+                            final double totalItemPrice = discountedPrice * quantity;
+
+                            return TableRow(
+                              children: [
+                                TableCell(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                    child: Text(
+                                      item['name'] ?? '',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: TextColor,
+                                        fontFamily: getFontFamily(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                TableCell(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                    child: Text(
+                                      _formatQuantity(quantity, context),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: TextColor,
+                                        fontFamily: getFontFamily(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                TableCell(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                    child: Text(
+                                      _formatCurrency(discountedPrice, context),
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: TextColor,
+                                        fontFamily: getFontFamily(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                TableCell(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                    child: Text(
+                                      _formatCurrency(totalItemPrice, context),
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: TextColor,
+                                        fontFamily: getFontFamily(context),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                          // Divider Row
+                          TableRow(
+                            children: [
+                              TableCell(
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                                  height: 1,
+                                  color: StrokeColor,
+                                ),
+                              ),
+                              TableCell(
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                                  height: 1,
+                                  color: StrokeColor,
+                                ),
+                              ),
+                              TableCell(
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                                  height: 1,
+                                  color: StrokeColor,
+                                ),
+                              ),
+                              TableCell(
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                                  height: 1,
+                                  color: StrokeColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Total Row
+                          TableRow(
+                            children: [
+                              const TableCell(child: SizedBox()),
+                              const TableCell(child: SizedBox()),
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    lang.translate('total'),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: TextColor,
+                                      fontFamily: getFontFamily(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              TableCell(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    _formatCurrency(cartProvider.total, context),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: TextColor,
+                                      fontFamily: getFontFamily(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                       if (_isRefreshing) ...[
                         const SizedBox(height: 10),
@@ -262,11 +466,52 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
   }
 }
 
+String _toKhmerDigits(String input) {
+  const englishToKhmer = {
+    '0': '០',
+    '1': '១',
+    '2': '២',
+    '3': '៣',
+    '4': '៤',
+    '5': '៥',
+    '6': '៦',
+    '7': '៧',
+    '8': '៨',
+    '9': '៩',
+  };
+  return input.split('').map((char) => englishToKhmer[char] ?? char).join();
+}
+
+String _formatCurrency(double amountInUsd, BuildContext context) {
+  final isKhmer = Localizations.localeOf(context).languageCode == 'km';
+  final rielAmount = (amountInUsd * 4000).round();
+  
+  // Format with space as thousands separator
+  final regExp = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+  String formatted = rielAmount.toString().replaceAllMapped(regExp, (Match m) => '${m[1]} ');
+  
+  if (isKhmer) {
+    return _toKhmerDigits(formatted);
+  }
+  return formatted;
+}
+
+String _formatQuantity(int quantity, BuildContext context) {
+  final isKhmer = Localizations.localeOf(context).languageCode == 'km';
+  if (isKhmer) {
+    return _toKhmerDigits(quantity.toString());
+  }
+  return quantity.toString();
+}
+
 class _InfoCard extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _InfoCard({required this.title, required this.child});
+  const _InfoCard({
+    required this.title,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -274,8 +519,12 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: CardColor,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: StrokeCardColor,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -289,10 +538,11 @@ class _InfoCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Colors.black87,
+              color: TextColor,
+              fontFamily: getFontFamily(context),
             ),
           ),
           const SizedBox(height: 10),

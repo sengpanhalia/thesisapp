@@ -145,18 +145,18 @@ class _MainScreenState extends State<MainScreen> {
                   states,
                 ) {
                   if (states.contains(WidgetState.selected)) {
-                    return const TextStyle(
+                    return TextStyle(
                       color: IconOrangeColor, // selected label color
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      fontFamily: UKFontFamily,
+                      fontFamily: getFontFamily(context),
                     );
                   }
 
-                  return const TextStyle(
+                  return TextStyle(
                     color: BlackColor, // unselected label color
                     fontSize: 12,
-                    fontFamily: UKFontFamily,
+                    fontFamily: getFontFamily(context),
                   );
                 }),
                 height: 80,

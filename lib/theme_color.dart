@@ -3,6 +3,15 @@ import 'package:flutter/material.dart';
 const UKFontFamily = "SiemReap";
 const UEFontFamily = "Poppins";
 
+String getFontFamily(BuildContext context) {
+  try {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'km' ? UKFontFamily : UEFontFamily;
+  } catch (e) {
+    return UKFontFamily;
+  }
+}
+
 const WhiteColor = Color(0xFFFFFFFF);
 const RedColor = Color(0xFFEE0000);
 const GreenColor = Color(0xFF2CB037);

@@ -278,9 +278,9 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     return Scaffold(
       backgroundColor: GBackground1,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'KHQR Payment',
-          style: TextStyle(fontFamily: UEFontFamily),
+          style: TextStyle(fontFamily: getFontFamily(context)),
         ),
         backgroundColor: GBackground1,
         surfaceTintColor: Colors.transparent,
@@ -300,17 +300,17 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'Total',
                       style: TextStyle(
-                        fontFamily: UEFontFamily,
+                        fontFamily: getFontFamily(context),
                         color: TextColor,
                       ),
                     ),
                     Text(
                       '\$${widget.total.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontFamily: UEFontFamily,
+                      style: TextStyle(
+                        fontFamily: getFontFamily(context),
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                         color: GText1,
@@ -396,7 +396,7 @@ class _ErrorState extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: RedColor),
+          style: TextStyle(color: RedColor),
         ),
         const SizedBox(height: Height10),
         OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
