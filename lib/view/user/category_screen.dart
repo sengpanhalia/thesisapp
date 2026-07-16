@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 
 class CategoryModel {
@@ -125,34 +126,51 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
+  void _openCategory(CategoryModel category) {
+    final lang = AppLocalizations.of(context)!;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductScreen(
+          categoryName: category.name,
+          categoryTitle: lang.translate(category.name),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryItem(CategoryModel category) {
     final lang = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: StrokeSearchBar, width: 1.5),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openCategory(category),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: StrokeSearchBar, width: 1.5),
+            ),
+            child: Image.asset(category.image, fit: BoxFit.contain),
           ),
-          child: Image.asset(category.image, fit: BoxFit.contain),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          lang.translate(category.name),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            fontFamily: UKFontFamily,
+          const SizedBox(height: 10),
+          Text(
+            lang.translate(category.name),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: UKFontFamily,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

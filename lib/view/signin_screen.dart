@@ -60,20 +60,17 @@ class _SigninScreenState extends State<SigninScreen> {
         return;
       }
 
-      // final response = await http.post(
-      //   url,
-      //   headers: {"Content-Type": "application/json"},
-      //   body: jsonEncode({
-      //     "student_id": _usernameController.text.trim(),
-      //     "pwd": _passwordController.text,
-      //   }),
-      // );
+      // Call the local PHP API which handles USEA login + DB sync
       var response = await http
           .post(
-            Uri.parse(APIStLoginKh),
-            body: {"student_id": studentId, "pwd": password},
+            Uri.parse(APILocalLoginUrl),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "student_id": studentId,
+              "pwd": password,
+            }),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 30));
 
       // Debug: print raw response (remove in production)
       debugPrint('Login response: ${response.body}');
@@ -83,104 +80,34 @@ class _SigninScreenState extends State<SigninScreen> {
         return;
       }
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List<User> users = [];
-        if (data != null) {
-          final studentData = data['student_users'];
-          for (var item in studentData) {
-            final user = User(
-              name_kh: item['name_kh'] ?? '',
-              student_id: item['student_id'] ?? '',
-              pwd: password,
-              role: (item['role'] ?? 'user').toString(),
-            );
-            users.add(user);
-          }
-        }
+      final data = jsonDecode(response.body);
 
-        if (users.isEmpty) {
-          Fluttertoast.showToast(msg: "Invalid server response");
-          return;
-        }
-
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await saveStudentUser(prefs, users);
-
-        if (!mounted) return;
-        await context.read<AuthProvider>().login(users.first);
-
-        if (!mounted) return;
-
-        _openHome();
+      if (data == null || data['status'] != true) {
+        final errorMsg = data?['message']?.toString() ?? 'Login failed';
+        Fluttertoast.showToast(msg: errorMsg);
+        return;
       }
 
-      // final decoded = jsonDecode(response.body);
-      // if (decoded is! Map<String, dynamic>) {
-      //   Fluttertoast.showToast(msg: "Invalid server response");
-      //   return;
-      // }
+      // Get user data from the API response
+      final apiUser = data['user'];
+      final localUser = data['local_user'];
 
-      // final data = decoded;
-      // if (data["status"] != "success") {
-      //   Fluttertoast.showToast(
-      //     msg: data["message"]?.toString() ?? "Login failed",
-      //   );
-      //   return;
-      // }
+      final user = User(
+        name_kh: apiUser?['name_kh']?.toString() ?? localUser?['fullname']?.toString() ?? '',
+        student_id: apiUser?['student_id']?.toString() ?? localUser?['username']?.toString() ?? studentId,
+        pwd: password,
+        role: (localUser?['role'] ?? 'user').toString(),
+      );
 
-      // final userPayload = data['user'];
-      // final Map<String, dynamic> userMap = userPayload is Map
-      //     ? Map<String, dynamic>.from(userPayload)
-      //     : data;
+      // Save to SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await saveStudentUser(prefs, [user]);
 
-      // final dynamic rawId =
-      //     userMap['user_id'] ?? userMap['id'] ?? data['user_id'] ?? data['id'];
-      // final int userId = int.tryParse(rawId?.toString() ?? '') ?? 0;
-      // if (userId <= 0) {
-      //   Fluttertoast.showToast(msg: "Login succeeded but user id is missing");
-      //   return;
-      // }
+      if (!mounted) return;
+      await context.read<AuthProvider>().login(user);
 
-      // final user = User(
-      //   student_id: userMap['student_id']?.toString() ?? data['student_id']?.toString() ?? '',
-      //   username: (userMap['username'] ?? data['username'] ?? '').toString(),
-      //   // email: (userMap['email'] ?? data['email'])?.toString(),
-      //   fullname: (userMap['fullname'] ?? data['fullname'] ?? '').toString(),
-      //   role: (userMap['role'] ?? data['role'] ?? 'user').toString(),
-      //   image: (userMap['image'] ?? data['image'])?.toString(),
-      // );
-      // final user = User(
-      //   name_kh: userMap['name_kh']?.toString() ?? data['name_kh']?.toString() ?? '',
-      //   student_id: userMap['student_id']?.toString() ?? data['student_id']?.toString() ?? '',
-      //   pwd: _passwordController.text,
-      // );
-
-      // Save to AuthProvider
-      // if (!mounted) return;
-      // final authProvider = context.read<AuthProvider>();
-      // await authProvider.login(user);
-
-      // if (!mounted) return;
-
-      // context.read<NavigationProvider>().setIndex(0);
-
-      // Navigate based on role
-      // if (user.isAdmin) {
-      //   Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-      //   );
-      // } else {
-      //   Navigator.pushReplacement(
-      //     context,
-      //     MaterialPageRoute(builder: (_) => const MainScreen()),
-      //   );
-      // }
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => const MainScreen()),
-      // );
+      if (!mounted) return;
+      _openHome();
     } on TimeoutException {
       debugPrint('Login failed: server timeout');
       Fluttertoast.showToast(msg: "Login server timeout. Please try again.");

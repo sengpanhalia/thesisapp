@@ -17,6 +17,7 @@ import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
+import 'package:thesisapp/view/user/user_profile.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -179,26 +180,32 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         actions: [
+          
           Padding(
             padding: const EdgeInsets.only(right: MgPd20),
-            child: CircleAvatar(
-              radius: 22,
-              backgroundColor: Colors.white,
+            child: GestureDetector(
+              onTap: () {
+                context.read<NavigationProvider>().setIndex(3);
+              },
               child: CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.white.withValues(alpha: 0.95),
-                backgroundImage: profileImageUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(profileImageUrl)
-                    : null,
-                child: _isLoadingUser
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : profileImageUrl.isEmpty
-                    ? const Icon(Icons.person, color: Colors.black45)
-                    : null,
+                radius: 22,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.white.withValues(alpha: 0.95),
+                  backgroundImage: profileImageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(profileImageUrl)
+                      : null,
+                  child: _isLoadingUser
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : profileImageUrl.isEmpty
+                      ? const Icon(Icons.person, color: Colors.black45)
+                      : null,
+                ),
               ),
             ),
           ),

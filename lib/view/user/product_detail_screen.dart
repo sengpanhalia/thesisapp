@@ -121,6 +121,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return false;
     }
 
+
     final url = Uri.parse('${widget.baseUrl}/add_to_cart.php');
     try {
       final response = await http.post(
