@@ -78,13 +78,14 @@ class CartSummaryCard extends StatelessWidget {
             children: cartItems.map((item) {
               final double price =
                   double.tryParse(item['price'].toString()) ?? 0.0;
-              final int discount =
-                  int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
-              final bool hasDiscount = discount > 0 && discount < 100;
-              final double displayPrice = hasDiscount
-                  ? price * (1 - discount / 100)
-                  : price;
+              // final int discount =
+                  // int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
+              // final bool hasDiscount = discount > 0 && discount < 100;
+              // final double displayPrice = hasDiscount
+              //     ? price * (1 - discount / 100)
+              //     : price;
               final int quantity = item['quantity'] ?? 1;
+              final double totalPricePerItem = price * quantity;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -113,7 +114,7 @@ class CartSummaryCard extends StatelessWidget {
                     // ),
                     Expanded(
                       child: Text(
-                        displayPrice.toStringAsFixed(2),
+                        totalPricePerItem.toStringAsFixed(2),
                         textAlign: TextAlign.end,
                         style: const TextStyle(color: Colors.white),
                       ),

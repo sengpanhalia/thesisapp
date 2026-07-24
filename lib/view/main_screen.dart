@@ -7,7 +7,7 @@ import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/admin/home_screen.dart';
 import 'package:thesisapp/view/admin/profile_screen.dart';
 import 'package:thesisapp/view/cart_screen.dart';
-import 'package:thesisapp/view/order_screen.dart';
+import 'package:thesisapp/view/user/order_screen.dart';
 import 'package:thesisapp/view/user/category_screen.dart';
 import 'package:thesisapp/view/user/user_home_screen.dart';
 import 'package:thesisapp/view/user/user_profile.dart';

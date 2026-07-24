@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 const UKFontFamily = "SiemReap";
+const UKFontFamilyMool1 = "KhmerMool1";
 const UEFontFamily = "Poppins";
 
 String getFontFamily(BuildContext context) {
@@ -9,6 +10,14 @@ String getFontFamily(BuildContext context) {
     return locale.languageCode == 'km' ? UKFontFamily : UEFontFamily;
   } catch (e) {
     return UKFontFamily;
+  }
+}
+String getFontFamilyMool1(BuildContext context) {
+  try {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'km' ? UKFontFamilyMool1 : UEFontFamily;
+  } catch (e) {
+    return UKFontFamilyMool1;
   }
 }
 

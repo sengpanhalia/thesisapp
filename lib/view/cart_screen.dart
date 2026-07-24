@@ -27,7 +27,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _openKhqrPaymentScreen() async {
-    if (!KhqrPaymentWatcher.hasPayload || KhqrPaymentWatcher.address == null) {
+    if (!KhqrPaymentWatcher.hasPayload) {
       return;
     }
 
@@ -575,7 +575,7 @@ class _CartScreenState extends State<CartScreen> {
                                                               Row(
                                                                 children: [
                                                                   Text(
-                                                                    "\$${displayPrice.toStringAsFixed(2)}",
+                                                                    "\$${originalPrice.toStringAsFixed(2)}",
                                                                     style: TextStyle(
                                                                       color:
                                                                           TextColor,

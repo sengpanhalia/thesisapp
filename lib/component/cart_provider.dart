@@ -156,11 +156,11 @@ class CartProvider extends ChangeNotifier {
     for (var item in _cartItems) {
       if (_selectedItemIds.contains(_parseInt(item['cart_id']))) {
         final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-        final discount = int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
-        final discountedPrice = discount > 0
-            ? price * (1 - discount / 100)
-            : price;
-        t += discountedPrice * (item['quantity'] ?? 1);
+        // final discount = int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
+        // final discountedPrice = discount > 0
+        //     ? price * (1 - discount / 100)
+        //     : price;
+        t += price * (item['quantity'] ?? 1);
       }
     }
     return t;

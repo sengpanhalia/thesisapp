@@ -156,7 +156,6 @@ class _OrderScreenState extends State<OrderScreen> {
         break;
       case OrderHistoryFilter.all:
         return true;
-        break;
     }
 
     return !date.isBefore(cutoff);
@@ -382,7 +381,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        orderNumber > 0
+                                                        trackingNumber != null
                                                             ? "Order #$trackingNumber"
                                                             : "Order #${orderId ?? '-'}",
                                                         style: const TextStyle(

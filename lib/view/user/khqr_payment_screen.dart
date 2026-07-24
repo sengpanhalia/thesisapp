@@ -17,7 +17,6 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/khqr_payment_screen.dart';
 import 'package:thesisapp/view/main_screen.dart';
-import 'package:thesisapp/view/user/checkout_payment.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class KhqrPaymentScreen extends StatefulWidget {
@@ -435,7 +434,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
           final createdAt = _parseServerDate(createdRaw);
           final expiresAt =
               _parseServerDate(expiresRaw) ??
-              (createdAt != null ? createdAt.add(_khqrExpiry) : null);
+              (createdAt?.add(_khqrExpiry));
           _expiresAt = expiresAt;
           final paymentIdRaw = payload['id'] ?? payload['payment_id'];
           final orderIdRaw = payload['order_id'];
@@ -576,34 +575,6 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     return _paymentStatus.toLowerCase() == 'expired';
   }
 
-  String _statusLabel(String status) {
-    switch (status.toLowerCase()) {
-      case 'paid':
-      case 'success':
-      case 'completed':
-        return 'Paid';
-      case 'failed':
-        return 'Failed';
-      case 'expired':
-        return 'Expired';
-      default:
-        return 'Pending';
-    }
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'paid':
-      case 'success':
-      case 'completed':
-        return const Color(0xFF2D6A4F);
-      case 'failed':
-      case 'expired':
-        return Colors.redAccent;
-      default:
-        return Colors.orangeAccent;
-    }
-  }
 
   Future<bool> _ensureGalleryPermission() async {
     if (Platform.isAndroid) {
@@ -676,9 +647,6 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       pixelRatio: 2.5,
     );
 
-    if (bytes == null) {
-      throw Exception('Failed to capture QR card');
-    }
     return bytes;
   }
 
@@ -808,260 +776,21 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final refLabel = _orderId != null && _orderId != 0
-        ? 'Order #$_orderId'
-        : (_paymentId != null ? 'Payment #$_paymentId' : 'Payment Pending');
-    final primary = Theme.of(context).colorScheme.primary;
-    final muted = Colors.grey[600];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F3EE),
+      backgroundColor: const Color(0xFFF5EDE0),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _buildHeader(context, primary),
-              Text(
-                'Scan the KHQR code to complete payment',
-                style: GoogleFonts.poppins(fontSize: 12, color: muted),
-              ),
-              const SizedBox(height: 14),
-              _InfoCard(
-                title: 'Payment Summary',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      refLabel,
-                      style: GoogleFonts.poppins(fontSize: 12, color: muted),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$${widget.total.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.green[700],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _statusColor(
-                              _paymentStatus,
-                            ).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            _statusLabel(_paymentStatus),
-                            style: GoogleFonts.poppins(
-                              color: _statusColor(_paymentStatus),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_expiresAt != null && !_isPaid)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          _isExpired
-                              ? 'QR expired'
-                              : 'Expires in ${_formatRemaining(_timeRemaining)}',
-                          style: GoogleFonts.poppins(
-                            color: _isExpired
-                                ? Colors.redAccent
-                                : Colors.grey[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              _InfoCard(
-                title: 'KHQR Code',
-                child: Column(
-                  children: [
-                    if (_isLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: CircularProgressIndicator(),
-                      )
-                    else if (_errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          children: [
-                            Text(
-                              _errorMessage!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: _loadKhqr,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (_isExpired)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'QR code expired. Please generate a new QR code.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.redAccent),
-                            ),
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: _loadKhqr,
-                              child: const Text('Generate New QR'),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (_qrBytes == null)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Text('QR not available'),
-                      )
-                    else
-                      _buildQrWithLogo(),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _qrBytes == null || _isSaving
-                            ? null
-                            : _saveQrImage,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Icon(Icons.download_rounded),
-                        label: Text(
-                          _isSaving ? 'Saving...' : 'Save QR to Gallery',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D6A4F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildHeader(context),
               const SizedBox(height: 16),
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: OutlinedButton.icon(
-              //     onPressed: _isChecking || _isExpired
-              //         ? null
-              //         : () => _checkPayment(),
-              //     icon: _isChecking
-              //         ? const SizedBox(
-              //             width: 18,
-              //             height: 18,
-              //             child: CircularProgressIndicator(strokeWidth: 2),
-              //           )
-              //         : const Icon(Icons.refresh_rounded),
-              //     // label: Text(
-              //     //   _isChecking ? 'Checking...' : 'Check Payment Status',
-              //     // ),
-              //     style: OutlinedButton.styleFrom(
-              //       padding: const EdgeInsets.symmetric(vertical: 14),
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(12),
-              //       ),
-              //       side: BorderSide(color: primary),
-              //     ),
-              //   ),
-              // ),
-              if (!_isPaid) ...[
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isCancelling ? null : _cancelPayment,
-                    icon: _isCancelling
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.close_rounded),
-                    label: Text(
-                      _isCancelling ? 'Cancelling...' : 'Cancel Payment',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: const BorderSide(color: Colors.redAccent),
-                      foregroundColor: Colors.redAccent,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isPaid && (_orderId != null && _orderId != 0)
-                      ? _openReceipt
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('View Receipt'),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _continueShopping,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    side: BorderSide(color: primary),
-                  ),
-                  child: const Text('Continue Shopping'),
-                ),
-              ),
+              _buildAmountCard(),
+              const SizedBox(height: 16),
+              _buildQrCard(),
+              const SizedBox(height: 20),
+              _buildBottomButtons(),
             ],
           ),
         ),
@@ -1069,34 +798,395 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color primary) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-      child: SizedBox(
-        height: 44,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Align(
-            //   alignment: Alignment.centerLeft,
-            //   child: RoundIconButton(
-            //     icon: Icons.arrow_back_rounded,
-            //     iconColor: primary,
-            //     onPressed: () => Navigator.pop(context),
-            //   ),
-            // ),
-            Center(
+  /// Converts a USD dollar amount to KHR (approximate rate 4100 riel per USD)
+  String _toKhrDisplay(double usd) {
+    final riel = (usd * 4100).round();
+    // Format with space separators like "៣២ ០០០"
+    final formatted = riel.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
+    // Convert ASCII digits to Khmer digits
+    const khmerDigits = ['០','១','២','៣','៤','៥','៦','៧','៨','៩'];
+    return formatted.split('').map((c) {
+      final d = int.tryParse(c);
+      return d != null ? khmerDigits[d] : c;
+    }).join();
+  }
+
+  Widget _buildAmountCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ការទូទាត់សរុប',
+            style: TextStyle(
+              fontFamily: 'KhmerMool1',
+              fontSize: 15,
+              color: Color(0xFF5E574F),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '\u17DB ${_toKhrDisplay(widget.total)}',
+            style: const TextStyle(
+              fontFamily: 'KhmerMool1',
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF2C2822),
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_expiresAt != null && !_isPaid)
+            Text(
+              _isExpired
+                  ? 'ផុតកំណត់ : ០០ នាទី'
+                  : 'ដល់ : ${_formatRemaining(_timeRemaining)} នាទី',
+              style: const TextStyle(
+                fontFamily: 'KhmerMool1',
+                fontSize: 13,
+                color: Color(0xFFCC0000),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          if (_expiresAt != null && !_isPaid) const SizedBox(height: 6),
+          RichText(
+            text: TextSpan(
+              children: [
+                const TextSpan(
+                  text: 'ចំណាំ ៖ ',
+                  style: TextStyle(
+                    fontFamily: 'KhmerMool1',
+                    fontSize: 12,
+                    color: Color(0xFFCC0000),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextSpan(
+                  text: 'KHQR Code',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFCC0000),
+                  ),
+                ),
+                const TextSpan(
+                  text: ' នឹងផុតកំណត់ក្នុងរយៈពេល ៣ នាទី',
+                  style: TextStyle(
+                    fontFamily: 'KhmerMool1',
+                    fontSize: 12,
+                    color: Color(0xFFCC0000),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQrCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 60),
+              child: CircularProgressIndicator(color: Color(0xFFD97F2E)),
+            )
+          else if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Column(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 52),
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadKhqr,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97F2E),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('ព្យាយាមម្ដងទៀត'),
+                  ),
+                ],
+              ),
+            )
+          else if (_isExpired)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Column(
+                children: [
+                  const Icon(Icons.timer_off_rounded, color: Colors.redAccent, size: 52),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'KHQR Code ផុតកំណត់',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'KhmerMool1',
+                      color: Colors.redAccent,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'សូមបង្កើត QR Code ថ្មី',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'KhmerMool1',
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadKhqr,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97F2E),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text(
+                      'បង្កើត QR Code ថ្មី',
+                      style: TextStyle(fontFamily: 'KhmerMool1'),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (_qrBytes == null)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 60),
               child: Text(
-                'KHQR Payment',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
+                'QR មិនមាន',
+                style: TextStyle(fontFamily: 'KhmerMool1', color: Colors.grey, fontSize: 14),
+              ),
+            )
+          else
+            _buildQrWithLogo(size: 240),
+          if (!_isLoading && _qrBytes != null && !_isExpired) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isSaving ? null : _saveQrImage,
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFD97F2E)),
+                        ),
+                      )
+                    : const Icon(Icons.download_rounded, size: 20),
+                label: Text(
+                  _isSaving ? 'កំពុងរក្សាទុក...' : 'រក្សាទុករូបភាព',
+                  style: const TextStyle(
+                    fontFamily: 'KhmerMool1',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD97F2E),
+                  side: const BorderSide(color: Color(0xFFD97F2E), width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomButtons() {
+    return Column(
+      children: [
+        if (_isPaid) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: (_orderId != null && _orderId != 0) ? _openReceipt : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2D8C4E),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: const Text(
+                'View Receipt',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (!_isPaid) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isCancelling ? null : _cancelPayment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE53935),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: _isCancelling
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text(
+                      'បោះបង់ការទូទាត់',
+                      style: TextStyle(
+                        fontFamily: 'KhmerMool1',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _continueShopping,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97F2E),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: const Text(
+              'ត្រឡប់ក្រោយ',
+              style: TextStyle(
+                fontFamily: 'KhmerMool1',
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              children: [
+                const TextSpan(
+                  text: 'ទូទាត់តាមរយៈ ',
+                  style: TextStyle(
+                    fontFamily: 'KhmerMool1',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF2C2822),
+                  ),
+                ),
+                TextSpan(
+                  text: 'KHQR Code',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2C2822),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'សូមចូចស្កែន KHQR Code សម្រាប់ធ្វើការទូទាត់',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'KhmerMool1',
+              fontSize: 13,
+              color: Color(0xFF3A3530),
+            ),
+          ),
+          const SizedBox(height: 4),
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              children: [
+                const TextSpan(
+                  text: 'ចំណាំ ៖ ',
+                  style: TextStyle(
+                    fontFamily: 'KhmerMool1',
+                    fontSize: 12,
+                    color: Color(0xFFCC0000),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const TextSpan(
+                  text: 'រូបិយបណ្ណសម្រាប់ប្រើប្រាស់ក្នុងការបង់ប្រាក់គឺ រៀល (៛)',
+                  style: TextStyle(
+                    fontFamily: 'KhmerMool1',
+                    fontSize: 12,
+                    color: Color(0xFFCC0000),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1143,42 +1233,4 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  final String title;
-  final Widget child;
 
-  const _InfoCard({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 10),
-          child,
-        ],
-      ),
-    );
-  }
-}

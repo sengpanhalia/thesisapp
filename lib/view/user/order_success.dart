@@ -44,7 +44,7 @@ class OrderSuccessScreen extends StatefulWidget {
 
 class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   static const String _appName = 'Harotey Book Store';
-  static const String _logoAssetPath = 'assets/app_logo.png';
+  static const String _logoAssetPath = 'assets/logo_app.png';
   static const MethodChannel _fileSaverChannel = MethodChannel(
     'haroteybookstoresystem/file_saver',
   );
@@ -699,30 +699,27 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         Center(
           child: Column(
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.asset(
-                    _logoAssetPath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.store_rounded,
-                      size: 40,
-                      color: Colors.green,
-                    ),
+              SizedBox(
+                width: 100,
+                height: 100,
+                // decoration: BoxDecoration(
+                //   color: Colors.white,
+                //   borderRadius: BorderRadius.circular(18),
+                //   boxShadow: [
+                //     BoxShadow(
+                //       color: Colors.black.withOpacity(0.08),
+                //       blurRadius: 8,
+                //       offset: const Offset(0, 4),
+                //     ),
+                //   ],
+                // ),
+                child: Image.asset(
+                  _logoAssetPath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.store_rounded,
+                    size: 40,
+                    color: Colors.green,
                   ),
                 ),
               ),
@@ -790,12 +787,13 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                   final name = _itemName(item);
                   final qty = _parseInt(item['quantity']);
                   final originalUnitPrice = _parseDouble(item['price']);
-                  final unitPrice = _discountedUnitPrice(item);
-                  final discount = _parseDouble(item['discount']);
-                  final lineTotal = _lineTotal(item);
-                  final originalLineTotal = originalUnitPrice * qty;
-                  final hasDiscount =
-                      discount > 0 && unitPrice < originalUnitPrice;
+                  // final unitPrice = _discountedUnitPrice(item);
+                  // final discount = _parseDouble(item['discount']);
+                  // final lineTotal = _lineTotal(item);
+                  // final originalLineTotal = originalUnitPrice * qty;
+                  // final hasDiscount =
+                  //     discount > 0 && unitPrice < originalUnitPrice;
+                  final double totalPricePerItem = originalUnitPrice * qty;
                   final imageUrl = showImages
                       ? _resolveItemImageUrl(item)
                       : null;
@@ -847,29 +845,29 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Qty: $qty - ${_money(unitPrice)}',
+                              'Qty: $qty - ${_money(originalUnitPrice)}',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 13,
                               ),
                             ),
-                            if (hasDiscount)
-                              Text(
-                                'Original: ${_money(originalUnitPrice)}',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 12,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                            if (discount > 0)
-                              Text(
-                                'Discount: ${discount.toStringAsFixed(0)}%',
-                                style: TextStyle(
-                                  color: Colors.orange[700],
-                                  fontSize: 12,
-                                ),
-                              ),
+                            // if (hasDiscount)
+                            //   Text(
+                            //     'Original: ${_money(originalUnitPrice)}',
+                            //     style: TextStyle(
+                            //       color: Colors.grey[500],
+                            //       fontSize: 12,
+                            //       decoration: TextDecoration.lineThrough,
+                            //     ),
+                            //   ),
+                            // if (discount > 0)
+                            //   Text(
+                            //     'Discount: ${discount.toStringAsFixed(0)}%',
+                            //     style: TextStyle(
+                            //       color: Colors.orange[700],
+                            //       fontSize: 12,
+                            //     ),
+                            //   ),
                           ],
                         ),
                       ),
@@ -877,18 +875,18 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            _money(lineTotal),
+                            _money(totalPricePerItem),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          if (hasDiscount)
-                            Text(
-                              _money(originalLineTotal),
-                              style: TextStyle(
-                                color: Colors.grey[500],
-                                fontSize: 12,
-                                decoration: TextDecoration.lineThrough,
-                              ),
-                            ),
+                          // if (hasDiscount)
+                          //   Text(
+                          //     _money(originalLineTotal),
+                          //     style: TextStyle(
+                          //       color: Colors.grey[500],
+                          //       fontSize: 12,
+                          //       decoration: TextDecoration.lineThrough,
+                          //     ),
+                          //   ),
                         ],
                       ),
                     ],
@@ -901,7 +899,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         _sectionCard(
           title: 'Total',
           children: [
-            _amountRow('Subtotal', subtotal),
+            // _amountRow('Subtotal', subtotal),
             _amountRow('Grand Total', widget.total, bold: true),
           ],
         ),
@@ -917,7 +915,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
-        // centerTitle: true,
+        centerTitle: true,
       ),
       body: Stack(
         children: [

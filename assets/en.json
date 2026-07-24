@@ -27,5 +27,8 @@
   "quantity": "Quantity",
   "price_unit": "Price/Unit",
   "price": "Price",
-  "total": "Total"
+  "total": "Total",
+  "select Payment Method": "Select Payment Method",
+  "payment": "Payment",
+  "review your order details": "Review your order details"
 }

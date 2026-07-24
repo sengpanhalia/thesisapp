@@ -22,10 +22,13 @@
   "materials": "សម្ភារៈ",
   "review and choose payment method": "សូមពិនិត្យកម្មង់ និងជ្រើសរើសវិធីសាស្រ្តបង់ប្រាក់",
   "note: The currency used for payment is the Cambodian Riel (KHR)": "ចំណាំ៖ រូបិយបណ្ណសម្រាប់ប្រើប្រាស់ក្នុងការបង់ប្រាក់គឺ រៀល (៛)",
-  "order_summary": "ព័ត៌មានសង្ខេប នៃការកុម្ម៉ង់",
+  "order_summary": "ព័ត៌មានសង្ខេប",
   "item_name": "មុខទំនិញ",
   "quantity": "ចំនួន",
   "price_unit": "តម្លៃ/ឯកតា",
   "price": "តម្លៃ",
-  "total": "សរុប"
+  "total": "សរុប",
+  "select Payment Method": "សូមជ្រើសរើសវិធីសាស្រ្តបង់ប្រាក់",
+  "payment": "ការទូទាត់",
+  "review your order details": "សូមពិនិត្យមើលការកម្មង់របស់អ្នក"
 }

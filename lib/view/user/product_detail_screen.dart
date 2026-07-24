@@ -190,9 +190,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         : '${widget.baseUrl}/uploads/products/${widget.product.image}';
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
         title: const Text(
           'ព័ត៌មានលម្អិត',
           style: TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),

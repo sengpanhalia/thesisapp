@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/khqr_payment_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
@@ -171,80 +173,99 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     debugPrint('OrderSummary - items count: ${widget.items.length}');
     debugPrint('OrderSummary - items: ${widget.items}');
     debugPrint('OrderSummary - total: ${widget.total}');
+    final lang = AppLocalizations.of(context)!;
+    final background = const Color(0xFFF7F3EE);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F3EE),
+      backgroundColor: background,
+      appBar: AppBar(
+        title: Text(
+                      lang.translate('order_summary'),
+                      style: TextStyle(
+                        fontSize: 20,
+                        // fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                        fontFamily: getFontFamilyMool1(context),
+                      ),
+                    ),
+                    leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context),
+              // _buildHeader(context),
               Text(
-                'Review your order details',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+                lang.translate('review your order details'),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: TextColor,
+                  fontFamily: getFontFamily(context),
                 ),
               ),
               const SizedBox(height: 14),
-              _InfoCard(
-                title: 'Shipping Address',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Text(
-                    //   widget.address.fullName,
-                    //   style: GoogleFonts.poppins(
-                    //     fontWeight: FontWeight.w600,
-                    //     color: Colors.black87,
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 4),
-                    // Text(
-                    //   'Phone: ${formatPhone(widget.address.phone)}',
-                    //   style: GoogleFonts.poppins(
-                    //     fontSize: 12,
-                    //     color: Colors.grey[600],
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 8),
-                    // Text(
-                    //   widget.address.addressLine1,
-                    //   style: GoogleFonts.poppins(
-                    //     fontSize: 12,
-                    //     color: Colors.grey[600],
-                    //   ),
-                    // ),
-                    // if ((widget.address.addressLine2 ?? '').trim().isNotEmpty)
-                    //   Text(
-                    //     widget.address.addressLine2!.trim(),
-                    //     style: GoogleFonts.poppins(
-                    //       fontSize: 12,
-                    //       color: Colors.grey[600],
-                    //     ),
-                    //   ),
-                    // Text(
-                    //   '${widget.address.city}${(widget.address.state ?? '').trim().isEmpty ? '' : ', ${widget.address.state}'} '
-                    //           '${widget.address.postalCode ?? ''}'
-                    //       .trim(),
-                    //   style: GoogleFonts.poppins(
-                    //     fontSize: 12,
-                    //     color: Colors.grey[600],
-                    //   ),
-                    // ),
-                    // Text(
-                    //   widget.address.country,
-                    //   style: GoogleFonts.poppins(
-                    //     fontSize: 12,
-                    //     color: Colors.grey[600],
-                    //   ),
-                    // ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
+              // _InfoCard(
+              //   title: 'Shipping Address',
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Text(
+              //         widget.address.fullName,
+              //         style: GoogleFonts.poppins(
+              //           fontWeight: FontWeight.w600,
+              //           color: Colors.black87,
+              //         ),
+              //       ),
+              //       const SizedBox(height: 4),
+              //       Text(
+              //         'Phone: ${formatPhone(widget.address.phone)}',
+              //         style: GoogleFonts.poppins(
+              //           fontSize: 12,
+              //           color: Colors.grey[600],
+              //         ),
+              //       ),
+              //       const SizedBox(height: 8),
+              //       Text(
+              //         widget.address.addressLine1,
+              //         style: GoogleFonts.poppins(
+              //           fontSize: 12,
+              //           color: Colors.grey[600],
+              //         ),
+              //       ),
+              //       if ((widget.address.addressLine2 ?? '').trim().isNotEmpty)
+              //         Text(
+              //           widget.address.addressLine2!.trim(),
+              //           style: GoogleFonts.poppins(
+              //             fontSize: 12,
+              //             color: Colors.grey[600],
+              //           ),
+              //         ),
+              //       Text(
+              //         '${widget.address.city}${(widget.address.state ?? '').trim().isEmpty ? '' : ', ${widget.address.state}'} '
+              //                 '${widget.address.postalCode ?? ''}'
+              //             .trim(),
+              //         style: GoogleFonts.poppins(
+              //           fontSize: 12,
+              //           color: Colors.grey[600],
+              //         ),
+              //       ),
+              //       Text(
+              //         widget.address.country,
+              //         style: GoogleFonts.poppins(
+              //           fontSize: 12,
+              //           color: Colors.grey[600],
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
               _InfoCard(
                 title: 'Order Items',
                 child: widget.items.isEmpty
@@ -267,23 +288,22 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                                 item['quantity']?.toString() ?? '0',
                               ) ??
                               0;
+                          // final unitPrice = _parseDouble(item['price']);
+                          // final discount = _parseDouble(item['discount']);
+                          // final discountedUnitPrice = discount > 0
+                          //     ? unitPrice * (1 - (discount / 100))
+                          //     : unitPrice;
+                          // final lineTotal = discountedUnitPrice * qty;
+                          // final originalLineTotal = unitPrice * qty;
+                          // final hasDiscount =
+                          //     discount > 0 &&
+                          //     discountedUnitPrice < unitPrice;
                           final unitPrice = _parseDouble(item['price']);
-                          final discount = _parseDouble(item['discount']);
-                          final discountedUnitPrice = discount > 0
-                              ? unitPrice * (1 - (discount / 100))
-                              : unitPrice;
-                          final lineTotal = discountedUnitPrice * qty;
                           final originalLineTotal = unitPrice * qty;
-                          final hasDiscount =
-                              discount > 0 &&
-                              discountedUnitPrice < unitPrice;
                           return _OrderItemRow(
                             name: item['name'] ?? '',
                             qty: qty,
-                            price: lineTotal,
-                            originalPrice: hasDiscount
-                                ? originalLineTotal
-                                : null,
+                            originalPrice: originalLineTotal,
                             imageUrl:
                                 '${ApiConfig.productsUploadsUrl}/${item['image']}',
                           );
@@ -340,36 +360,37 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-      child: SizedBox(
-        height: 44,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Align(
-            //   alignment: Alignment.centerLeft,
-            //   child: RoundIconButton(
-            //     icon: Icons.arrow_back_rounded,
-            //     iconColor: primary,
-            //     onPressed: () => Navigator.pop(context),
-            //   ),
-            // ),
-            Text(
-              'Order Summary',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildHeader(BuildContext context) {
+  //   final primary = Theme.of(context).colorScheme.primary;
+  //   final lang = AppLocalizations.of(context)!;
+  //   return Padding(
+  //     padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+  //     child: SizedBox(
+  //       height: 44,
+  //       child: Stack(
+  //         alignment: Alignment.center,
+  //         children: [
+  //           // Align(
+  //           //   alignment: Alignment.centerLeft,
+  //           //   child: RoundIconButton(
+  //           //     icon: Icons.arrow_back_rounded,
+  //           //     iconColor: primary,
+  //           //     onPressed: () => Navigator.pop(context),
+  //           //   ),
+  //           // ),
+  //           Text(
+  //             lang.translate('order_summary'),
+  //             style: TextStyle(
+  //                   fontSize: 16,
+  //                   color: Colors.black87,
+  //                   fontFamily: getFontFamilyMool1(context),
+  //                 ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }
 
 class _InfoCard extends StatelessWidget {
@@ -436,7 +457,7 @@ class _InfoRow extends StatelessWidget {
         Text(
           value,
           style: GoogleFonts.poppins(
-            fontSize: 13,
+            fontSize: 16,
             fontWeight: valueWeight ?? FontWeight.w600,
             color: valueColor ?? Colors.black87,
           ),
@@ -449,14 +470,14 @@ class _InfoRow extends StatelessWidget {
 class _OrderItemRow extends StatelessWidget {
   final String name;
   final int qty;
-  final double price;
+  // final double price;
   final double? originalPrice;
   final String imageUrl;
 
   const _OrderItemRow({
     required this.name,
     required this.qty,
-    required this.price,
+    // required this.price,
     this.originalPrice,
     required this.imageUrl,
   });
@@ -464,7 +485,7 @@ class _OrderItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
@@ -483,52 +504,45 @@ class _OrderItemRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Qty: $qty',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Qty: $qty',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+              if (originalPrice != null)
+                Text(
+                  '\$${originalPrice!.toStringAsFixed(2)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
             ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '\$${price.toStringAsFixed(2)}',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.green[700],
-              ),
-            ),
-            if (originalPrice != null && originalPrice! > price)
-              Text(
-                '\$${originalPrice!.toStringAsFixed(2)}',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Colors.grey[500],
-                  decoration: TextDecoration.lineThrough,
-                ),
-              ),
-          ],
         ),
       ],
     );
