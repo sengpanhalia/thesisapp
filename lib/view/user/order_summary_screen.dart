@@ -9,7 +9,7 @@ import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
-import 'package:thesisapp/view/khqr_payment_screen.dart';
+import 'package:thesisapp/view/user/khqr_payment_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
@@ -92,18 +92,48 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       }
 
       if (widget.paymentMethod == 'card') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => KhqrPaymentScreen(
-              // address: widget.address,
-              items: widget.items,
-              total: widget.total,
-              cartIds: cartIds,
-            ),
-          ),
-          (route) => false,
-        );
+        // ✅ Create the order FIRST, then go to KHQR payment screen
+        setState(() => _isLoading = true);
+        try {
+          final response = await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/place_order.php'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': user.student_id,
+              'payment_method': 'card',
+              'cart_ids': cartIds,
+            }),
+          );
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (data['status'] == 'success') {
+              final orderId = int.tryParse(data['order_id']?.toString() ?? '');
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => KhqrPaymentScreen(
+                    orderId: orderId,
+                    items: widget.items,
+                    total: widget.total,
+                    cartIds: cartIds,
+                  ),
+                ),
+                (route) => false,
+              );
+            } else {
+              Fluttertoast.showToast(
+                msg: data['message'] ?? 'Failed to create order',
+              );
+            }
+          } else {
+            Fluttertoast.showToast(msg: 'Server error: ${response.statusCode}');
+          }
+        } catch (e) {
+          Fluttertoast.showToast(msg: 'Network error: $e');
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
         return;
       }
 

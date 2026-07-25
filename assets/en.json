@@ -30,5 +30,11 @@
   "total": "Total",
   "select Payment Method": "Select Payment Method",
   "payment": "Payment",
-  "review your order details": "Review your order details"
+  "review your order details": "Review your order details",
+  "payment Successful!": "Payment Successful!",
+  "thank you for your payment!": "Thank you for your payment! 🙏",
+  "amount": "Amount",
+  "status": "Status",
+  "paid": "Paid",
+  "done": "Done"
 }

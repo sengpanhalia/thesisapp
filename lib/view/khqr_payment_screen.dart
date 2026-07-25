@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -488,7 +490,12 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
             KhqrPaymentWatcher.stop();
             _expiryTimer?.cancel();
             _checkTimer?.cancel();
-            await context.read<CartProvider>().fetchCart();
+            // Clear the ordered cart items then re-fetch to sync with server
+            final cartProvider = context.read<CartProvider>();
+            if (widget.cartIds.isNotEmpty) {
+              cartProvider.removeCheckedOutItems(widget.cartIds);
+            }
+            await cartProvider.fetchCart();
             if (mounted) setState(() {});
             return;
           } else if (_isExpired) {
@@ -510,8 +517,15 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   }
 
   Future<void> _finish() async {
-    if (_isPaid) KhqrPaymentWatcher.stop();
-    await context.read<CartProvider>().fetchCart();
+    final cartProvider = context.read<CartProvider>();
+    if (_isPaid) {
+      KhqrPaymentWatcher.stop();
+      // Clear ordered cart items before navigating away
+      if (widget.cartIds.isNotEmpty) {
+        cartProvider.removeCheckedOutItems(widget.cartIds);
+      }
+    }
+    await cartProvider.fetchCart();
     if (!mounted) return;
     context.read<NavigationProvider>().setIndex(_isPaid ? 0 : 2);
     Navigator.pushAndRemoveUntil(
@@ -556,6 +570,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   }
 
   Widget _buildSuccessScreen() {
+    final lang = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -564,43 +579,51 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
         children: [
           const Spacer(),
           // Animated success icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: GreenColor.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: GreenColor,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_rounded,
-                color: Colors.white,
-                size: 52,
-              ),
-            ),
+          Lottie.asset(
+            'assets/Done.json',
+            width: 200,
+            height: 200,
+            fit: BoxFit.cover,
+            repeat: true,
+            animate: true,
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'ការទូទាត់បានជោគជ័យ!',
+          // Container(
+          //   width: 120,
+          //   height: 120,
+          //   decoration: BoxDecoration(
+          //     color: GreenColor.withOpacity(0.12),
+          //     shape: BoxShape.circle,
+          //   ),
+          //   child: Container(
+          //     margin: const EdgeInsets.all(16),
+          //     decoration: const BoxDecoration(
+          //       color: GreenColor,
+          //       shape: BoxShape.circle,
+          //     ),
+          //     child: const Icon(
+          //       Icons.check_rounded,
+          //       color: Colors.white,
+          //       size: 52,
+          //     ),
+          //   ),
+          // ),
+          const SizedBox(height: 5),
+          Text(
+            lang.translate('payment Successful!'),
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'KhmerMool1',
+              fontFamily: getFontFamilyMool1(context),
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: TitleColor,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'អរគុណ! ការបង់ប្រាក់របស់អ្នកបានទទួលស្គាល់ហើយ',
+          Text(
+            lang.translate('thank you for your payment!'),
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'KhmerMool1',
+              fontFamily: getFontFamily(context),
               fontSize: 14,
               color: TextColor,
             ),
@@ -626,17 +649,19 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'ចំនួនទឹកប្រាក់',
+                    Text(
+                      lang.translate('amount'),
                       style: TextStyle(
-                        fontFamily: 'KhmerMool1',
+                        fontFamily: getFontFamily(context),
                         fontSize: 14,
+                        fontWeight: FontWeight.w700,
                         color: TextColor,
                       ),
                     ),
                     Text(
                       '\$${widget.total.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: getFontFamily(context),
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: GreenColor,
@@ -650,11 +675,12 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'ស្ថានភាព',
+                    Text(
+                      lang.translate('status'),
                       style: TextStyle(
-                        fontFamily: 'KhmerMool1',
+                        fontFamily: getFontFamily(context),
                         fontSize: 14,
+                        fontWeight: FontWeight.w700,
                         color: TextColor,
                       ),
                     ),
@@ -664,12 +690,12 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
                         color: GreenColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(50),
                       ),
-                      child: const Text(
-                        'បានបង់',
+                      child: Text(
+                        lang.translate('paid'),
                         style: TextStyle(
-                          fontFamily: 'KhmerMool1',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontFamily: getFontFamily(context),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                           color: GreenColor,
                         ),
                       ),
@@ -694,10 +720,10 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                'រួចរាល់',
+              child: Text(
+                lang.translate('done'),
                 style: TextStyle(
-                  fontFamily: 'KhmerMool1',
+                  fontFamily: getFontFamily(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),

@@ -30,5 +30,11 @@
   "total": "សរុប",
   "select Payment Method": "សូមជ្រើសរើសវិធីសាស្រ្តបង់ប្រាក់",
   "payment": "ការទូទាត់",
-  "review your order details": "សូមពិនិត្យមើលការកម្មង់របស់អ្នក"
+  "review your order details": "សូមពិនិត្យមើលការកម្មង់របស់អ្នក",
+  "payment Successful!": "ការទូទាត់ជោគជ័យ!",
+  "thank you for your payment!": "សូមអរគុណសម្រាប់ការទូទាត់! 🙏",
+  "amount": "ចំនួនទឹកប្រាក់",
+  "status": "ស្ថានភាព",
+  "paid": "បានបង់រួចរាល់",
+  "done": "រួចរាល់"
 }

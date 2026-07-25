@@ -540,6 +540,17 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
               _notifiedPaid = true;
             }
             _autoCheckTimer?.cancel();
+            _expiryTimer?.cancel();
+            // Clear the ordered cart items and re-fetch cart
+            final cartProvider = context.read<CartProvider>();
+            if (widget.cartIds.isNotEmpty) {
+              cartProvider.removeCheckedOutItems(widget.cartIds);
+            }
+            await cartProvider.fetchCart();
+            // Navigate to order success screen
+            if (mounted) {
+              _openReceipt();
+            }
           } else if (!silent) {
             Fluttertoast.showToast(msg: 'Payment still pending');
           }
