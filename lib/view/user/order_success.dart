@@ -43,10 +43,10 @@ class OrderSuccessScreen extends StatefulWidget {
 }
 
 class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
-  static const String _appName = 'Harotey Book Store';
+  static const String _appName = 'សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេយសៀ';
   static const String _logoAssetPath = 'assets/logo_app.png';
   static const MethodChannel _fileSaverChannel = MethodChannel(
-    'haroteybookstoresystem/file_saver',
+    'university_of_south_east_asia/file_saver',
   );
   // final ScreenshotController _screenshotController = ScreenshotController();
   // bool _isSavingImage = false;
@@ -403,11 +403,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         _appName,
                         style: pw.TextStyle(
                           fontSize: 18,
+                          
                           fontWeight: pw.FontWeight.bold,
                         ),
                       ),
                       pw.Text(
-                        'Receipt',
+                        'University of South-East Asia',
                         style: pw.TextStyle(color: PdfColors.grey600),
                       ),
                     ],
@@ -592,27 +593,40 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     try {
       final bytes = await _buildReceiptPdfBytes();
       final filename = 'receipt_order_${widget.orderId}.pdf';
+      String? savedPath;
+
       if (Platform.isAndroid) {
-        final savedPath = await _fileSaverChannel.invokeMethod<String>(
-          'savePdfToDownloads',
-          {'fileName': filename, 'bytes': bytes},
-        );
-        if (savedPath == null || savedPath.isEmpty) {
-          throw Exception('Unable to save receipt PDF');
+        try {
+          savedPath = await _fileSaverChannel.invokeMethod<String>(
+            'savePdfToDownloads',
+            {'fileName': filename, 'bytes': bytes},
+          );
+        } catch (_) {
+          // Native plugin not compiled in current app session, fallback to direct file write below
         }
-        Fluttertoast.showToast(msg: 'Thida Harotey receipt was saved');
-      } else {
-        final baseDir = await getApplicationDocumentsDirectory();
-        final receiptsDir = Directory('${baseDir.path}/receipts');
-        if (!await receiptsDir.exists()) {
-          await receiptsDir.create(recursive: true);
-        }
-        final file = File('${receiptsDir.path}/$filename');
-        await file.writeAsBytes(bytes, flush: true);
-        Fluttertoast.showToast(msg: 'PDF saved: ${file.path}');
       }
-    } on PlatformException catch (e) {
-      Fluttertoast.showToast(msg: e.message ?? 'Failed to save receipt PDF');
+
+      if (savedPath == null || savedPath.isEmpty) {
+        Directory? targetDir;
+        if (Platform.isAndroid) {
+          final publicDownloadDir = Directory('/storage/emulated/0/Download');
+          if (await publicDownloadDir.exists()) {
+            targetDir = publicDownloadDir;
+          } else {
+            try {
+              targetDir = await getDownloadsDirectory();
+            } catch (_) {}
+            targetDir ??= await getExternalStorageDirectory();
+          }
+        }
+        targetDir ??= await getApplicationDocumentsDirectory();
+
+        final file = File('${targetDir.path}/$filename');
+        await file.writeAsBytes(bytes, flush: true);
+        savedPath = file.path;
+      }
+
+      Fluttertoast.showToast(msg: 'Receipt saved to Download folder');
     } catch (e) {
       Fluttertoast.showToast(msg: 'Failed to save PDF: $e');
     } finally {
