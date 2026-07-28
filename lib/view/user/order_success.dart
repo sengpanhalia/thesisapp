@@ -2,21 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:screenshot/screenshot.dart';
-import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-// import 'package:permission_handler/permission_handler.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/main_screen.dart';
+import 'package:thesisapp/view/user/pdf_receipt_helper.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
   final int orderId;
@@ -46,18 +42,9 @@ class OrderSuccessScreen extends StatefulWidget {
 }
 
 class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
-  static const String _appName = 'សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេយសៀ';
-  static const String _logoAssetPath = 'assets/logo_app.png';
-  static const MethodChannel _fileSaverChannel = MethodChannel(
-    'haroteybookstoresystem/file_saver',
-  );
-  static const double _pdfReceiptWidth = 595;
-  static const double _pdfHorizontalPadding = 16;
   final ScreenshotController _screenshotController = ScreenshotController();
-  // bool _isSavingImage = false;
   bool _isSavingPdf = false;
   String? _resolvedTrackingNumber;
-  // bool _isResolvingDisplayNumber = false;
 
   @override
   void initState() {
@@ -67,14 +54,18 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     _resolveTrackingNumber();
   }
 
-  double _parseDouble(dynamic value) {
-    if (value == null) return 0.0;
-    return double.tryParse(value.toString()) ?? 0.0;
-  }
 
-  int _parseInt(dynamic value) {
-    if (value == null) return 0;
-    return int.tryParse(value.toString()) ?? 0;
+  PdfReceiptHelper _buildPdfHelper() {
+    return PdfReceiptHelper(
+      context: context,
+      orderId: widget.orderId,
+      items: widget.items,
+      total: widget.total,
+      paymentMethod: widget.paymentMethod,
+      createdAt: widget.createdAt,
+      resolvedTrackingNumber: _resolvedTrackingNumber,
+      screenshotController: _screenshotController,
+    );
   }
 
   String? _normalizeTrackingNumber(dynamic value) {
@@ -242,718 +233,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     }
   }
 
-  double _discountedUnitPrice(Map<String, dynamic> item) {
-    final price = _parseDouble(item['price']);
-    final discount = _parseDouble(item['discount']);
-    if (discount <= 0) return price;
-    return price * (1 - (discount / 100));
-  }
-
-  double _lineTotal(Map<String, dynamic> item) {
-    final qty = _parseInt(item['quantity']);
-    return _discountedUnitPrice(item) * qty;
-  }
-
-  double _calcSubtotal() {
-    double subtotal = 0.0;
-    for (final item in widget.items) {
-      subtotal += _lineTotal(item);
-    }
-    return subtotal;
-  }
-
-  String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/$year $hour:$minute';
-  }
-
-  String _paymentLabel(String method) {
-    switch (method) {
-      case 'card':
-        return 'KHQR Payment';
-      case 'cash_on_delivery':
-        return 'pay at store';
-      default:
-        return method;
-    }
-  }
-
-  String _paymentStatus(String method) {
-    return method == 'card' ? 'Paid' : 'pay at store';
-  }
-
-  // String _formatAddress(Address a) {
-  //   final parts = <String>[
-  //     a.fullName,
-  //     a.addressLine1,
-  //     if ((a.addressLine2 ?? '').trim().isNotEmpty) a.addressLine2!.trim(),
-  //     '${a.city}${a.state == null || a.state!.trim().isEmpty ? '' : ', ${a.state}'}'
-  //         '${a.postalCode == null || a.postalCode!.trim().isEmpty ? '' : ' ${a.postalCode}'}',
-  //     a.country,
-  //     'Phone: ${formatPhone(a.phone)}',
-  //   ];
-  //   return parts.where((p) => p.trim().isNotEmpty).join('\n');
-  // }
-
-  // String _addressText() {
-  //   final raw = (widget.addressText ?? '').trim();
-  //   if (raw.isNotEmpty) return raw;
-  //   if (widget.address != null) return _formatAddress(widget.address!);
-  //   return 'N/A';
-  // }
-
-  String _money(double value) => '\$${value.toStringAsFixed(2)}';
-
-  String _itemName(Map<String, dynamic> item) {
-    return (item['name'] ??
-            item['product_name'] ??
-            item['productName'] ??
-            'Item')
-        .toString();
-  }
-
-  String? _resolveItemImageUrl(Map<String, dynamic> item) {
-    final candidates = [
-      item['image'],
-      item['product_image'],
-      item['productImage'],
-      item['image_url'],
-      item['product_image_url'],
-    ];
-
-    for (final c in candidates) {
-      final raw = (c ?? '').toString().trim();
-      if (raw.isEmpty) continue;
-      final lower = raw.toLowerCase();
-      if (lower == 'null' || lower == 'none' || lower == 'undefined') {
-        continue;
-      }
-      if (raw.startsWith('http://') || raw.startsWith('https://')) {
-        return raw;
-      }
-      if (raw.contains('/')) {
-        final base = ApiConfig.baseUrl.endsWith('/')
-            ? ApiConfig.baseUrl.substring(0, ApiConfig.baseUrl.length - 1)
-            : ApiConfig.baseUrl;
-        final relative = raw.startsWith('/') ? raw.substring(1) : raw;
-        return '$base/$relative';
-      }
-      return '${ApiConfig.productsUploadsUrl}/$raw';
-    }
-    return null;
-  }
-
-  double _measurePdfTextHeight(String text, TextStyle style, double maxWidth) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
-    return painter.height;
-  }
-
-  double _estimatePdfReceiptHeight() {
-    final lang = AppLocalizations.of(context)!;
-    final fontFamily = getFontFamily(context);
-    final contentWidth = _pdfReceiptWidth - (_pdfHorizontalPadding * 2);
-    const totalFlex = 7.0;
-    final nameCellWidth = (contentWidth * 3 / totalFlex) - 16;
-    final qtyCellWidth = (contentWidth * 1 / totalFlex) - 16;
-    final amountCellWidth = (contentWidth * 1.5 / totalFlex) - 16;
-
-    final titleStyle = TextStyle(
-      fontFamily: fontFamily,
-      fontSize: 14,
-      fontWeight: FontWeight.bold,
-    );
-    final infoStyle = TextStyle(fontFamily: fontFamily, fontSize: 11);
-    final tableHeaderStyle = TextStyle(
-      fontFamily: fontFamily,
-      fontWeight: FontWeight.bold,
-      fontSize: 11,
-    );
-    final tableBodyStyle = TextStyle(fontFamily: fontFamily, fontSize: 10);
-    final grandTotalStyle = TextStyle(
-      fontFamily: fontFamily,
-      fontSize: 12,
-      fontWeight: FontWeight.bold,
-    );
-
-    double height = _pdfHorizontalPadding;
-    height += 50;
-    height += 16 + 16 + 12;
-    height += _measurePdfTextHeight(
-      lang.translate('order information'),
-      titleStyle,
-      contentWidth,
-    );
-    height += 6;
-    height += _measurePdfTextHeight(
-      '${lang.translate('payment method')}: ${_paymentLabel(widget.paymentMethod)}',
-      infoStyle,
-      contentWidth,
-    );
-    height += _measurePdfTextHeight(
-      '${lang.translate('payment status')}: ${_paymentStatus(widget.paymentMethod)}',
-      infoStyle,
-      contentWidth,
-    );
-    height += _measurePdfTextHeight(
-      '${lang.translate('code number of order')}: ${_resolvedTrackingNumber ?? 'Pending assignment'}',
-      infoStyle,
-      contentWidth,
-    );
-    height += 16;
-    height += _measurePdfTextHeight(
-      lang.translate('items'),
-      titleStyle,
-      contentWidth,
-    );
-    height += 8;
-
-    final headerRowHeight =
-        [
-          _measurePdfTextHeight(
-            lang.translate('items'),
-            tableHeaderStyle,
-            nameCellWidth,
-          ),
-          _measurePdfTextHeight(
-            lang.translate('qty'),
-            tableHeaderStyle,
-            qtyCellWidth,
-          ),
-          _measurePdfTextHeight(
-            lang.translate('price'),
-            tableHeaderStyle,
-            amountCellWidth,
-          ),
-          _measurePdfTextHeight(
-            lang.translate('total'),
-            tableHeaderStyle,
-            amountCellWidth,
-          ),
-        ].reduce((a, b) => a > b ? a : b) +
-        12;
-    height += headerRowHeight;
-
-    for (final item in widget.items) {
-      final qty = _parseInt(item['quantity']);
-      final unit = _discountedUnitPrice(item);
-      final lineTotal = _lineTotal(item);
-      final rowHeight =
-          [
-            _measurePdfTextHeight(
-              _itemName(item),
-              tableBodyStyle,
-              nameCellWidth,
-            ),
-            _measurePdfTextHeight('$qty', tableBodyStyle, qtyCellWidth),
-            _measurePdfTextHeight(
-              _money(unit),
-              tableBodyStyle,
-              amountCellWidth,
-            ),
-            _measurePdfTextHeight(
-              _money(lineTotal),
-              tableBodyStyle,
-              amountCellWidth,
-            ),
-          ].reduce((a, b) => a > b ? a : b) +
-          12;
-      height += rowHeight;
-    }
-
-    height += 16 + 16 + 4;
-    height += _measurePdfTextHeight(
-      '${lang.translate('subtotal')}: ${_money(_calcSubtotal())}',
-      infoStyle,
-      contentWidth,
-    );
-    height += 4;
-    height += _measurePdfTextHeight(
-      '${lang.translate('grand total')}: ${_money(widget.total)}',
-      grandTotalStyle,
-      contentWidth,
-    );
-    height += 24;
-    height += _measurePdfTextHeight(
-      lang.translate('thank you for shopping with us!'),
-      infoStyle,
-      contentWidth,
-    );
-    height += _pdfHorizontalPadding + 4;
-
-    return height.ceilToDouble();
-  }
-
-  Widget _buildPdfReceiptWidget() {
-    final lang = AppLocalizations.of(context)!;
-    final fontFamily = getFontFamilyMool1(context);
-    final subtotal = _calcSubtotal();
-    final paymentStatus = _paymentStatus(widget.paymentMethod);
-    final trackingNumber = _resolvedTrackingNumber;
-
-    return Container(
-      width: _pdfReceiptWidth,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        _logoAssetPath,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _appName,
-                            style: TextStyle(
-                              fontFamily: fontFamily,
-                              fontSize: 14,
-                              // fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Text(
-                            'University of South-East Asia',
-                            style: TextStyle(
-                              fontFamily: fontFamily,
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                _formatDate(widget.createdAt),
-                style: TextStyle(
-                  fontFamily: fontFamily,
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(thickness: 1, color: Colors.grey),
-          const SizedBox(height: 12),
-          Text(
-            lang.translate('order information'),
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${lang.translate('payment method')}: ${_paymentLabel(widget.paymentMethod)}',
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 11,
-              color: Colors.black87,
-            ),
-          ),
-          Text(
-            '${lang.translate('payment status')}: $paymentStatus',
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 11,
-              color: Colors.black87,
-            ),
-          ),
-          Text(
-            '${lang.translate('code number of order')}: ${trackingNumber ?? 'Pending assignment'}',
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 11,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            lang.translate('items'),
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Table(
-            border: TableBorder.all(color: Colors.grey.shade400),
-            columnWidths: const {
-              0: FlexColumnWidth(3),
-              1: FlexColumnWidth(1),
-              2: FlexColumnWidth(1.5),
-              3: FlexColumnWidth(1.5),
-            },
-            children: [
-              TableRow(
-                decoration: BoxDecoration(color: Colors.grey.shade200),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    child: Text(
-                      lang.translate('items'),
-                      style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    child: Text(
-                      lang.translate('qty'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    child: Text(
-                      lang.translate('price'),
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    child: Text(
-                      lang.translate('total'),
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              ...widget.items.map((item) {
-                final name = _itemName(item);
-                final qty = _parseInt(item['quantity']);
-                final unit = _discountedUnitPrice(item);
-                final lineTotal = _lineTotal(item);
-                return TableRow(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        name,
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        '$qty',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        _money(unit),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        _money(lineTotal),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
-                      ),
-                    ),
-                  ],
-                );
-              }),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(thickness: 1, color: Colors.grey),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${lang.translate('subtotal')}: ${_money(subtotal)}',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 11),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${lang.translate('grand total')}: ${_money(widget.total)}',
-                    style: TextStyle(
-                      fontFamily: fontFamily,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            lang.translate('thank you for shopping with us!'),
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 11,
-              color: Colors.grey[700],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<Uint8List> _captureReceiptImage(Size targetSize) async {
-    final theme = Theme.of(context);
-    final mediaQuery = MediaQuery.of(context);
-    final receiptWidget = SizedBox(
-      width: targetSize.width,
-      height: targetSize.height,
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: _buildPdfReceiptWidget(),
-      ),
-    );
-
-    final bytes = await _screenshotController.captureFromWidget(
-      MediaQuery(
-        data: mediaQuery.copyWith(
-          padding: EdgeInsets.zero,
-          viewInsets: EdgeInsets.zero,
-        ),
-        child: Theme(
-          data: theme,
-          child: Material(color: Colors.white, child: receiptWidget),
-        ),
-      ),
-      pixelRatio: 3.0,
-      targetSize: targetSize,
-    );
-
-    return bytes;
-  }
-
-  String _receiptFileTimestamp(DateTime value) {
-    String twoDigits(int number) => number.toString().padLeft(2, '0');
-    return '${value.year}${twoDigits(value.month)}${twoDigits(value.day)}_${twoDigits(value.hour)}${twoDigits(value.minute)}${twoDigits(value.second)}';
-  }
-
-  Future<Uint8List> _buildReceiptPdfBytes() async {
-    final receiptSize = Size(_pdfReceiptWidth, _estimatePdfReceiptHeight());
-    final imageBytes = await _captureReceiptImage(receiptSize);
-    final pdfImage = pw.MemoryImage(imageBytes);
-
-    final doc = pw.Document();
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.zero,
-        build: (pw.Context context) => pw.Align(
-          alignment: pw.Alignment.topCenter,
-          child: pw.Image(
-            pdfImage,
-            width: context.page.pageFormat.availableWidth,
-          ),
-        ),
-      ),
-    );
-
-    return doc.save();
-  }
-
-  // Future<bool> _ensureGalleryPermission() async {
-  //   if (Platform.isAndroid) {
-  //     final status = await Permission.storage.request();
-  //     if (status.isGranted) return true;
-  //     final photos = await Permission.photos.request();
-  //     return photos.isGranted || photos.isLimited;
-  //   }
-  //   if (Platform.isIOS) {
-  //     final addOnly = await Permission.photosAddOnly.request();
-  //     if (addOnly.isGranted || addOnly.isLimited) return true;
-  //     final photos = await Permission.photos.request();
-  //     return photos.isGranted || photos.isLimited;
-  //   }
-  //   return true;
-  // }
-  //
-  // Future<Uint8List> _captureReceiptImage() async {
-  //   final theme = Theme.of(context);
-  //   final mediaQuery = MediaQuery.of(context);
-  //   final content = _buildReceiptContent(showImages: false);
-  //
-  //   final bytes = await _screenshotController.captureFromWidget(
-  //     MediaQuery(
-  //       data: mediaQuery.copyWith(
-  //         padding: EdgeInsets.zero,
-  //         viewInsets: EdgeInsets.zero,
-  //       ),
-  //       child: Theme(
-  //         data: theme,
-  //         child: Material(
-  //           color: Colors.white,
-  //           child: Padding(padding: const EdgeInsets.all(20), child: content),
-  //         ),
-  //       ),
-  //     ),
-  //     pixelRatio: 2.5,
-  //   );
-  //
-  //   if (bytes == null) {
-  //     throw Exception('Failed to capture receipt');
-  //   }
-  //   return bytes;
-  // }
-
-  // Future<void> _saveReceiptImage() async {
-  //   if (_isSavingImage) return;
-  //   setState(() => _isSavingImage = true);
-  //   try {
-  //     final allowed = await _ensureGalleryPermission();
-  //     if (!allowed) {
-  //       Fluttertoast.showToast(msg: 'Permission denied');
-  //       return;
-  //     }
-
-  //     final bytes = await _captureReceiptImage();
-  //     final result = await ImageGallerySaver.saveImage(
-  //       bytes,
-  //       quality: 100,
-  //       name: 'receipt_order_${widget.orderId}',
-  //     );
-
-  //     final isSuccess = result is Map
-  //         ? (result['isSuccess'] == true || result['success'] == true)
-  //         : result == true;
-
-  //     Fluttertoast.showToast(
-  //       msg: isSuccess ? 'Saved to gallery' : 'Save failed',
-  //     );
-  //   } catch (e) {
-  //     Fluttertoast.showToast(msg: 'Failed to save image: $e');
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() => _isSavingImage = false);
-  //     }
-  //   }
-  // }
 
   Future<void> _saveReceiptPdf() async {
     if (_isSavingPdf) return;
     setState(() => _isSavingPdf = true);
     try {
-      final bytes = await _buildReceiptPdfBytes();
-      final filename =
-          'receipt_order_${widget.orderId}_${_receiptFileTimestamp(DateTime.now())}.pdf';
-      String? savedPath;
-
-      if (Platform.isAndroid) {
-        try {
-          savedPath = await _fileSaverChannel.invokeMethod<String>(
-            'savePdfToDownloads',
-            {'fileName': filename, 'bytes': bytes},
-          );
-        } catch (_) {
-          // Native plugin not compiled in current app session, fallback to direct file write below
-        }
-      }
-
-      if (savedPath == null || savedPath.isEmpty) {
-        Directory? targetDir;
-        if (Platform.isAndroid) {
-          final publicDownloadDir = Directory('/storage/emulated/0/Download');
-          if (await publicDownloadDir.exists()) {
-            targetDir = publicDownloadDir;
-          } else {
-            try {
-              targetDir = await getDownloadsDirectory();
-            } catch (_) {}
-            targetDir ??= await getExternalStorageDirectory();
-          }
-        }
-        targetDir ??= await getApplicationDocumentsDirectory();
-
-        final file = File('${targetDir.path}/$filename');
-        await file.writeAsBytes(bytes, flush: true);
-        savedPath = file.path;
-      }
-
-      Fluttertoast.showToast(msg: 'Receipt saved to Download folder');
-    } catch (e) {
-      Fluttertoast.showToast(msg: 'Failed to save PDF: $e');
+      await _buildPdfHelper().saveReceiptPdf();
     } finally {
       if (mounted) {
         setState(() => _isSavingPdf = false);
@@ -992,7 +277,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[700])),
-          Text(_money(amount), style: style),
+          Text(PdfReceiptHelper.money(amount), style: style),
         ],
       ),
     );
@@ -1033,7 +318,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   }
 
   Widget _buildReceiptContent({required bool showImages}) {
-    final paymentStatus = _paymentStatus(widget.paymentMethod);
+    final paymentStatus = PdfReceiptHelper.paymentStatus(widget.paymentMethod);
     final trackingNumber = _trackingNumberLabel();
     final lang = AppLocalizations.of(context)!;
 
@@ -1092,11 +377,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           children: [
             _infoRow(
               lang.translate('receipt date'),
-              _formatDate(widget.createdAt),
+              PdfReceiptHelper.formatDate(widget.createdAt),
             ),
             _infoRow(
               lang.translate('payment method'),
-              _paymentLabel(widget.paymentMethod),
+              PdfReceiptHelper.paymentLabel(widget.paymentMethod),
             ),
             _infoRow(lang.translate('payment status'), paymentStatus),
             _infoRow(lang.translate('code number of order'), trackingNumber),
@@ -1135,18 +420,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 separatorBuilder: (_, __) => const Divider(height: 20),
                 itemBuilder: (context, index) {
                   final item = widget.items[index];
-                  final name = _itemName(item);
-                  final qty = _parseInt(item['quantity']);
-                  final originalUnitPrice = _parseDouble(item['price']);
-                  // final unitPrice = _discountedUnitPrice(item);
-                  // final discount = _parseDouble(item['discount']);
-                  // final lineTotal = _lineTotal(item);
-                  // final originalLineTotal = originalUnitPrice * qty;
-                  // final hasDiscount =
-                  //     discount > 0 && unitPrice < originalUnitPrice;
+                  final name = PdfReceiptHelper.itemName(item);
+                  final qty = PdfReceiptHelper.parseInt(item['quantity']);
+                  final originalUnitPrice = PdfReceiptHelper.parseDouble(item['price']);
                   final double totalPricePerItem = originalUnitPrice * qty;
                   final imageUrl = showImages
-                      ? _resolveItemImageUrl(item)
+                      ? PdfReceiptHelper.resolveItemImageUrl(item)
                       : null;
 
                   return Row(
@@ -1196,7 +475,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${lang.translate('qty')}: $qty - ${_money(originalUnitPrice)}',
+                              '${lang.translate('qty')}: $qty - ${PdfReceiptHelper.money(originalUnitPrice)}',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 13,
@@ -1226,7 +505,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            _money(totalPricePerItem),
+                            PdfReceiptHelper.money(totalPricePerItem),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           // if (hasDiscount)
