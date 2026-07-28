@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-// import 'package:screenshot/screenshot.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -51,10 +51,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   static const MethodChannel _fileSaverChannel = MethodChannel(
     'university_of_south_east_asia/file_saver',
   );
-  // final ScreenshotController _screenshotController = ScreenshotController();
+  final ScreenshotController _screenshotController = ScreenshotController();
   // bool _isSavingImage = false;
   bool _isSavingPdf = false;
-  int? _resolvedDisplayOrderNumber;
   String? _resolvedTrackingNumber;
   // bool _isResolvingDisplayNumber = false;
 
@@ -74,12 +73,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   int _parseInt(dynamic value) {
     if (value == null) return 0;
     return int.tryParse(value.toString()) ?? 0;
-  }
-
-  int _displayOrderNumberValue() {
-    return _resolvedDisplayOrderNumber ??
-        widget.displayOrderNumber ??
-        widget.orderId;
   }
 
   String? _normalizeTrackingNumber(dynamic value) {
@@ -141,11 +134,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   }
 
   Future<void> _resolveDisplayOrderNumber() async {
-    if (widget.displayOrderNumber != null) {
-      _resolvedDisplayOrderNumber = widget.displayOrderNumber;
-      return;
-    }
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
     if (user == null) return;
@@ -203,11 +191,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
 
       if (mounted) {
         setState(() {
-          _resolvedDisplayOrderNumber = index + 1;
           _resolvedTrackingNumber ??= trackingNumber;
         });
       } else {
-        _resolvedDisplayOrderNumber = index + 1;
         _resolvedTrackingNumber ??= trackingNumber;
       }
     } catch (_) {
@@ -360,152 +346,278 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     return null;
   }
 
-  Future<Uint8List> _buildReceiptPdfBytes() async {
-    final logoData = await rootBundle.load(_logoAssetPath);
-    final logoBytes = logoData.buffer.asUint8List();
-    final logoImage = pw.MemoryImage(logoBytes);
+  Widget _buildPdfReceiptWidget() {
     final lang = AppLocalizations.of(context)!;
-    
-
-    final doc = pw.Document();
+    final fontFamily = getFontFamily(context);
     final subtotal = _calcSubtotal();
     final paymentStatus = _paymentStatus(widget.paymentMethod);
-    // final addressText = _addressText();
-    final displayNumber = _displayOrderNumberValue();
     final trackingNumber = _resolvedTrackingNumber;
 
-    final itemRows = widget.items.map((item) {
-      final name = _itemName(item);
-      final qty = _parseInt(item['quantity']);
-      final unit = _discountedUnitPrice(item);
-      final lineTotal = _lineTotal(item);
-      return [name, '$qty', _money(unit), _money(lineTotal)];
-    }).toList();
-
-    doc.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(24),
-        build: (context) => [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+    return Container(
+      width: 595,
+      color: Colors.white,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              pw.Row(
-                children: [
-                  pw.Container(
-                    width: 50,
-                    height: 50,
-                    decoration: pw.BoxDecoration(
-                      borderRadius: pw.BorderRadius.circular(8),
+              Expanded(
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        _logoAssetPath,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    child: pw.Image(logoImage, fit: pw.BoxFit.cover),
-                  ),
-                  pw.SizedBox(width: 12),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        _appName,
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          
-                          fontWeight: pw.FontWeight.bold,
-                        ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _appName,
+                            style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            'University of South-East Asia',
+                            style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
-                      pw.Text(
-                        'University of South-East Asia',
-                        style: pw.TextStyle(color: PdfColors.grey600),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  // pw.Text(
-                  //   'Order #$displayNumber',
-                  //   style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  // ),
-                  pw.Text(
-                    _formatDate(widget.createdAt),
-                    style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Text(
+                _formatDate(widget.createdAt),
+                style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
               ),
             ],
           ),
-          pw.SizedBox(height: 16),
-          pw.Divider(),
-          pw.SizedBox(height: 12),
-          pw.Text(
+          const SizedBox(height: 16),
+          const Divider(thickness: 1, color: Colors.grey),
+          const SizedBox(height: 12),
+          Text(
             lang.translate('order information'),
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 6),
-          pw.Text(lang.translate('payment method: ${_paymentLabel(widget.paymentMethod)}')),
-          pw.Text(lang.translate('payment status: $paymentStatus')),
-          pw.Text(
-            lang.translate('code number of order: ${trackingNumber ?? 'Pending assignment'}'),
-          ),
-          // pw.SizedBox(height: 12),
-          // pw.SizedBox(height: 6),
-          // pw.Text(addressText),
-          pw.SizedBox(height: 16),
-          pw.Text(lang.translate('items'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 8),
-          if (itemRows.isEmpty)
-            pw.Text(lang.translate('no items found'))
-          else
-            pw.Table.fromTextArray(
-              headers: [lang.translate('item'), lang.translate('qty'), lang.translate('price'), lang.translate('total')],
-              data: itemRows,
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              headerDecoration: const pw.BoxDecoration(
-                color: PdfColors.grey300,
-              ),
-              cellStyle: const pw.TextStyle(fontSize: 10),
-              cellAlignment: pw.Alignment.centerLeft,
-              cellAlignments: {
-                1: pw.Alignment.centerRight,
-                2: pw.Alignment.centerRight,
-                3: pw.Alignment.centerRight,
-              },
-              columnWidths: {
-                0: const pw.FlexColumnWidth(3),
-                1: const pw.FlexColumnWidth(1),
-                2: const pw.FlexColumnWidth(1.5),
-                3: const pw.FlexColumnWidth(1.5),
-              },
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
-          pw.SizedBox(height: 16),
-          pw.Divider(),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.end,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${lang.translate('payment method')}: ${_paymentLabel(widget.paymentMethod)}',
+            style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: Colors.black87),
+          ),
+          Text(
+            '${lang.translate('payment status')}: $paymentStatus',
+            style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: Colors.black87),
+          ),
+          Text(
+            '${lang.translate('code number of order')}: ${trackingNumber ?? 'Pending assignment'}',
+            style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: Colors.black87),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            lang.translate('items'),
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Table(
+            border: TableBorder.all(color: Colors.grey.shade400),
+            columnWidths: const {
+              0: FlexColumnWidth(3),
+              1: FlexColumnWidth(1),
+              2: FlexColumnWidth(1.5),
+              3: FlexColumnWidth(1.5),
+            },
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
+              TableRow(
+                decoration: BoxDecoration(color: Colors.grey.shade200),
                 children: [
-                  pw.Text(lang.translate('subtotal: ${_money(subtotal)}')),
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    lang.translate('grand total: ${_money(widget.total)}'),
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      lang.translate('items'),
+                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      lang.translate('qty'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      lang.translate('price'),
+                      textAlign: TextAlign.right,
+                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      lang.translate('total'),
+                      textAlign: TextAlign.right,
+                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+              ...widget.items.map((item) {
+                final name = _itemName(item);
+                final qty = _parseInt(item['quantity']);
+                final unit = _discountedUnitPrice(item);
+                final lineTotal = _lineTotal(item);
+                return TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Text(
+                        name,
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Text(
+                        '$qty',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Text(
+                        _money(unit),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Text(
+                        _money(lineTotal),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 10),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(thickness: 1, color: Colors.grey),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${lang.translate('subtotal')}: ${_money(subtotal)}',
+                    style: TextStyle(fontFamily: fontFamily, fontSize: 11),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${lang.translate('grand total')}: ${_money(widget.total)}',
+                    style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          pw.SizedBox(height: 20),
-          pw.Text(
+          const SizedBox(height: 24),
+          Text(
             lang.translate('thank you for shopping with us!'),
-            style: pw.TextStyle(color: PdfColors.grey700),
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 11,
+              color: Colors.grey[700],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<Uint8List> _captureReceiptImage() async {
+    final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final receiptWidget = _buildPdfReceiptWidget();
+
+    final bytes = await _screenshotController.captureFromWidget(
+      MediaQuery(
+        data: mediaQuery.copyWith(
+          padding: EdgeInsets.zero,
+          viewInsets: EdgeInsets.zero,
+        ),
+        child: Theme(
+          data: theme,
+          child: Material(
+            color: Colors.white,
+            child: receiptWidget,
+          ),
+        ),
+      ),
+      pixelRatio: 3.0,
+    );
+
+    return bytes;
+  }
+
+  Future<Uint8List> _buildReceiptPdfBytes() async {
+    final imageBytes = await _captureReceiptImage();
+    final pdfImage = pw.MemoryImage(imageBytes);
+
+    final doc = pw.Document();
+    doc.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(20),
+        build: (pw.Context context) => pw.Align(
+          alignment: pw.Alignment.topCenter,
+          child: pw.Image(pdfImage, fit: pw.BoxFit.fitWidth),
+        ),
       ),
     );
 
@@ -710,7 +822,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   }
 
   Widget _buildReceiptContent({required bool showImages}) {
-    final subtotal = _calcSubtotal();
     final paymentStatus = _paymentStatus(widget.paymentMethod);
     final trackingNumber = _trackingNumberLabel();
     final lang = AppLocalizations.of(context)!;
