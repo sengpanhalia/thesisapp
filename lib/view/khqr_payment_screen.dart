@@ -19,6 +19,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/main_screen.dart';
+import 'package:thesisapp/view/user/order_success.dart';
 
 class Address {
   final int id;
@@ -530,7 +531,15 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     context.read<NavigationProvider>().setIndex(_isPaid ? 0 : 2);
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const MainScreen()),
+      MaterialPageRoute(
+        builder: (_) => OrderSuccessScreen(
+          orderId: _orderId ?? widget.orderId ?? 0,
+          items: widget.items,
+          total: widget.total,
+          paymentMethod: 'KHQR Payment',
+          createdAt: widget.createdAt,
+        ),
+      ),
       (route) => false,
     );
   }

@@ -49,8 +49,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   static const String _appName = 'សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេយសៀ';
   static const String _logoAssetPath = 'assets/logo_app.png';
   static const MethodChannel _fileSaverChannel = MethodChannel(
-    'university_of_south_east_asia/file_saver',
+    'haroteybookstoresystem/file_saver',
   );
+  static const double _pdfReceiptWidth = 595;
+  static const double _pdfHorizontalPadding = 16;
   final ScreenshotController _screenshotController = ScreenshotController();
   // bool _isSavingImage = false;
   bool _isSavingPdf = false;
@@ -313,7 +315,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             'Item')
         .toString();
   }
-  
 
   String? _resolveItemImageUrl(Map<String, dynamic> item) {
     final candidates = [
@@ -346,17 +347,160 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     return null;
   }
 
-  Widget _buildPdfReceiptWidget() {
+  double _measurePdfTextHeight(String text, TextStyle style, double maxWidth) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+    return painter.height;
+  }
+
+  double _estimatePdfReceiptHeight() {
     final lang = AppLocalizations.of(context)!;
     final fontFamily = getFontFamily(context);
+    final contentWidth = _pdfReceiptWidth - (_pdfHorizontalPadding * 2);
+    const totalFlex = 7.0;
+    final nameCellWidth = (contentWidth * 3 / totalFlex) - 16;
+    final qtyCellWidth = (contentWidth * 1 / totalFlex) - 16;
+    final amountCellWidth = (contentWidth * 1.5 / totalFlex) - 16;
+
+    final titleStyle = TextStyle(
+      fontFamily: fontFamily,
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+    );
+    final infoStyle = TextStyle(fontFamily: fontFamily, fontSize: 11);
+    final tableHeaderStyle = TextStyle(
+      fontFamily: fontFamily,
+      fontWeight: FontWeight.bold,
+      fontSize: 11,
+    );
+    final tableBodyStyle = TextStyle(fontFamily: fontFamily, fontSize: 10);
+    final grandTotalStyle = TextStyle(
+      fontFamily: fontFamily,
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+    );
+
+    double height = _pdfHorizontalPadding;
+    height += 50;
+    height += 16 + 16 + 12;
+    height += _measurePdfTextHeight(
+      lang.translate('order information'),
+      titleStyle,
+      contentWidth,
+    );
+    height += 6;
+    height += _measurePdfTextHeight(
+      '${lang.translate('payment method')}: ${_paymentLabel(widget.paymentMethod)}',
+      infoStyle,
+      contentWidth,
+    );
+    height += _measurePdfTextHeight(
+      '${lang.translate('payment status')}: ${_paymentStatus(widget.paymentMethod)}',
+      infoStyle,
+      contentWidth,
+    );
+    height += _measurePdfTextHeight(
+      '${lang.translate('code number of order')}: ${_resolvedTrackingNumber ?? 'Pending assignment'}',
+      infoStyle,
+      contentWidth,
+    );
+    height += 16;
+    height += _measurePdfTextHeight(
+      lang.translate('items'),
+      titleStyle,
+      contentWidth,
+    );
+    height += 8;
+
+    final headerRowHeight =
+        [
+          _measurePdfTextHeight(
+            lang.translate('items'),
+            tableHeaderStyle,
+            nameCellWidth,
+          ),
+          _measurePdfTextHeight(
+            lang.translate('qty'),
+            tableHeaderStyle,
+            qtyCellWidth,
+          ),
+          _measurePdfTextHeight(
+            lang.translate('price'),
+            tableHeaderStyle,
+            amountCellWidth,
+          ),
+          _measurePdfTextHeight(
+            lang.translate('total'),
+            tableHeaderStyle,
+            amountCellWidth,
+          ),
+        ].reduce((a, b) => a > b ? a : b) +
+        12;
+    height += headerRowHeight;
+
+    for (final item in widget.items) {
+      final qty = _parseInt(item['quantity']);
+      final unit = _discountedUnitPrice(item);
+      final lineTotal = _lineTotal(item);
+      final rowHeight =
+          [
+            _measurePdfTextHeight(
+              _itemName(item),
+              tableBodyStyle,
+              nameCellWidth,
+            ),
+            _measurePdfTextHeight('$qty', tableBodyStyle, qtyCellWidth),
+            _measurePdfTextHeight(
+              _money(unit),
+              tableBodyStyle,
+              amountCellWidth,
+            ),
+            _measurePdfTextHeight(
+              _money(lineTotal),
+              tableBodyStyle,
+              amountCellWidth,
+            ),
+          ].reduce((a, b) => a > b ? a : b) +
+          12;
+      height += rowHeight;
+    }
+
+    height += 16 + 16 + 4;
+    height += _measurePdfTextHeight(
+      '${lang.translate('subtotal')}: ${_money(_calcSubtotal())}',
+      infoStyle,
+      contentWidth,
+    );
+    height += 4;
+    height += _measurePdfTextHeight(
+      '${lang.translate('grand total')}: ${_money(widget.total)}',
+      grandTotalStyle,
+      contentWidth,
+    );
+    height += 24;
+    height += _measurePdfTextHeight(
+      lang.translate('thank you for shopping with us!'),
+      infoStyle,
+      contentWidth,
+    );
+    height += _pdfHorizontalPadding + 4;
+
+    return height.ceilToDouble();
+  }
+
+  Widget _buildPdfReceiptWidget() {
+    final lang = AppLocalizations.of(context)!;
+    final fontFamily = getFontFamilyMool1(context);
     final subtotal = _calcSubtotal();
     final paymentStatus = _paymentStatus(widget.paymentMethod);
     final trackingNumber = _resolvedTrackingNumber;
 
     return Container(
-      width: 595,
+      width: _pdfReceiptWidth,
       color: Colors.white,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,8 +530,8 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             _appName,
                             style: TextStyle(
                               fontFamily: fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              // fontWeight: FontWeight.bold,
                               color: Colors.black,
                             ),
                           ),
@@ -431,15 +575,27 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           const SizedBox(height: 6),
           Text(
             '${lang.translate('payment method')}: ${_paymentLabel(widget.paymentMethod)}',
-            style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: Colors.black87),
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 11,
+              color: Colors.black87,
+            ),
           ),
           Text(
             '${lang.translate('payment status')}: $paymentStatus',
-            style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: Colors.black87),
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 11,
+              color: Colors.black87,
+            ),
           ),
           Text(
             '${lang.translate('code number of order')}: ${trackingNumber ?? 'Pending assignment'}',
-            style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: Colors.black87),
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 11,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -465,34 +621,62 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 decoration: BoxDecoration(color: Colors.grey.shade200),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     child: Text(
                       lang.translate('items'),
-                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     child: Text(
                       lang.translate('qty'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     child: Text(
                       lang.translate('price'),
                       textAlign: TextAlign.right,
-                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     child: Text(
                       lang.translate('total'),
                       textAlign: TextAlign.right,
-                      style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold, fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ],
@@ -505,14 +689,20 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 return TableRow(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Text(
                         name,
                         style: TextStyle(fontFamily: fontFamily, fontSize: 10),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Text(
                         '$qty',
                         textAlign: TextAlign.center,
@@ -520,7 +710,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Text(
                         _money(unit),
                         textAlign: TextAlign.right,
@@ -528,7 +721,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Text(
                         _money(lineTotal),
                         textAlign: TextAlign.right,
@@ -580,10 +776,17 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     );
   }
 
-  Future<Uint8List> _captureReceiptImage() async {
+  Future<Uint8List> _captureReceiptImage(Size targetSize) async {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
-    final receiptWidget = _buildPdfReceiptWidget();
+    final receiptWidget = SizedBox(
+      width: targetSize.width,
+      height: targetSize.height,
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: _buildPdfReceiptWidget(),
+      ),
+    );
 
     final bytes = await _screenshotController.captureFromWidget(
       MediaQuery(
@@ -593,30 +796,37 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         ),
         child: Theme(
           data: theme,
-          child: Material(
-            color: Colors.white,
-            child: receiptWidget,
-          ),
+          child: Material(color: Colors.white, child: receiptWidget),
         ),
       ),
       pixelRatio: 3.0,
+      targetSize: targetSize,
     );
 
     return bytes;
   }
 
+  String _receiptFileTimestamp(DateTime value) {
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+    return '${value.year}${twoDigits(value.month)}${twoDigits(value.day)}_${twoDigits(value.hour)}${twoDigits(value.minute)}${twoDigits(value.second)}';
+  }
+
   Future<Uint8List> _buildReceiptPdfBytes() async {
-    final imageBytes = await _captureReceiptImage();
+    final receiptSize = Size(_pdfReceiptWidth, _estimatePdfReceiptHeight());
+    final imageBytes = await _captureReceiptImage(receiptSize);
     final pdfImage = pw.MemoryImage(imageBytes);
 
     final doc = pw.Document();
     doc.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(20),
+        margin: pw.EdgeInsets.zero,
         build: (pw.Context context) => pw.Align(
           alignment: pw.Alignment.topCenter,
-          child: pw.Image(pdfImage, fit: pw.BoxFit.fitWidth),
+          child: pw.Image(
+            pdfImage,
+            width: context.page.pageFormat.availableWidth,
+          ),
         ),
       ),
     );
@@ -639,12 +849,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   //   }
   //   return true;
   // }
-  // 
+  //
   // Future<Uint8List> _captureReceiptImage() async {
   //   final theme = Theme.of(context);
   //   final mediaQuery = MediaQuery.of(context);
   //   final content = _buildReceiptContent(showImages: false);
-  // 
+  //
   //   final bytes = await _screenshotController.captureFromWidget(
   //     MediaQuery(
   //       data: mediaQuery.copyWith(
@@ -661,7 +871,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   //     ),
   //     pixelRatio: 2.5,
   //   );
-  // 
+  //
   //   if (bytes == null) {
   //     throw Exception('Failed to capture receipt');
   //   }
@@ -706,7 +916,8 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     setState(() => _isSavingPdf = true);
     try {
       final bytes = await _buildReceiptPdfBytes();
-      final filename = 'receipt_order_${widget.orderId}.pdf';
+      final filename =
+          'receipt_order_${widget.orderId}_${_receiptFileTimestamp(DateTime.now())}.pdf';
       String? savedPath;
 
       if (Platform.isAndroid) {
@@ -847,13 +1058,13 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 //   ],
                 // ),
                 child: Lottie.asset(
-            'assets/Done.json',
-            width: 200,
-            height: 200,
-            fit: BoxFit.cover,
-            repeat: true,
-            animate: true,
-          ),
+                  'assets/Done.json',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  repeat: true,
+                  animate: true,
+                ),
               ),
               // const SizedBox(height: 10),
               Text(
@@ -861,11 +1072,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                     ? lang.translate('payment successful')
                     : lang.translate('order placed successfully'),
                 style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: TitleColor,
-            ),
+                  fontFamily: getFontFamily(context),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: TitleColor,
+                ),
               ),
               const SizedBox(height: 4),
               // Text(
@@ -879,8 +1090,14 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         _sectionCard(
           title: lang.translate('order information'),
           children: [
-            _infoRow(lang.translate('receipt date'), _formatDate(widget.createdAt)),
-            _infoRow(lang.translate('payment method'), _paymentLabel(widget.paymentMethod)),
+            _infoRow(
+              lang.translate('receipt date'),
+              _formatDate(widget.createdAt),
+            ),
+            _infoRow(
+              lang.translate('payment method'),
+              _paymentLabel(widget.paymentMethod),
+            ),
             _infoRow(lang.translate('payment status'), paymentStatus),
             _infoRow(lang.translate('code number of order'), trackingNumber),
             // if (_resolvedTrackingNumber != null)
@@ -910,8 +1127,8 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           children: [
             if (widget.items.isEmpty)
               Text(lang.translate('no items found'))
-            else 
-              ListView.separated( 
+            else
+              ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: widget.items.length,
@@ -1057,7 +1274,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           // const BackgroundColor(),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1145,13 +1362,15 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         ),
                         side: BorderSide(color: Theme.of(context).primaryColor),
                       ),
-                      child: Text(lang.translate('continue shopping'),
-                      style: TextStyle(
-                        fontFamily: getFontFamily(context),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).primaryColor,
-                      ),),
+                      child: Text(
+                        lang.translate('continue shopping'),
+                        style: TextStyle(
+                          fontFamily: getFontFamily(context),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
                     ),
                   ),
                 ],
