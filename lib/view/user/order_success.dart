@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 // import 'package:screenshot/screenshot.dart';
@@ -11,7 +12,9 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 // import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/main_screen.dart';
 
@@ -283,16 +286,16 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   String _paymentLabel(String method) {
     switch (method) {
       case 'card':
-        return 'Card Payment';
+        return 'KHQR Payment';
       case 'cash_on_delivery':
-        return 'Cash on Delivery';
+        return 'pay at store';
       default:
         return method;
     }
   }
 
   String _paymentStatus(String method) {
-    return method == 'card' ? 'Paid' : 'Pay on Delivery';
+    return method == 'card' ? 'Paid' : 'pay at store';
   }
 
   // String _formatAddress(Address a) {
@@ -324,6 +327,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             'Item')
         .toString();
   }
+  
 
   String? _resolveItemImageUrl(Map<String, dynamic> item) {
     final candidates = [
@@ -360,6 +364,8 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     final logoData = await rootBundle.load(_logoAssetPath);
     final logoBytes = logoData.buffer.asUint8List();
     final logoImage = pw.MemoryImage(logoBytes);
+    final lang = AppLocalizations.of(context)!;
+    
 
     final doc = pw.Document();
     final subtotal = _calcSubtotal();
@@ -418,10 +424,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text(
-                    'Order #$displayNumber',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                  ),
+                  // pw.Text(
+                  //   'Order #$displayNumber',
+                  //   style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  // ),
                   pw.Text(
                     _formatDate(widget.createdAt),
                     style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
@@ -434,30 +440,26 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           pw.Divider(),
           pw.SizedBox(height: 12),
           pw.Text(
-            'Order Information',
+            lang.translate('order information'),
             style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 6),
-          pw.Text('Payment Method: ${_paymentLabel(widget.paymentMethod)}'),
-          pw.Text('Payment Status: $paymentStatus'),
+          pw.Text(lang.translate('payment method: ${_paymentLabel(widget.paymentMethod)}')),
+          pw.Text(lang.translate('payment status: $paymentStatus')),
           pw.Text(
-            'Code Number of Order: ${trackingNumber ?? 'Pending assignment'}',
+            lang.translate('code number of order: ${trackingNumber ?? 'Pending assignment'}'),
           ),
-          pw.SizedBox(height: 12),
-          pw.Text(
-            'Shipping Address',
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          ),
+          // pw.SizedBox(height: 12),
           // pw.SizedBox(height: 6),
           // pw.Text(addressText),
           pw.SizedBox(height: 16),
-          pw.Text('Items', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+          pw.Text(lang.translate('items'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 8),
           if (itemRows.isEmpty)
-            pw.Text('No items found')
+            pw.Text(lang.translate('no items found'))
           else
             pw.Table.fromTextArray(
-              headers: const ['Item', 'Qty', 'Price', 'Total'],
+              headers: [lang.translate('item'), lang.translate('qty'), lang.translate('price'), lang.translate('total')],
               data: itemRows,
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               headerDecoration: const pw.BoxDecoration(
@@ -485,10 +487,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('Subtotal: ${_money(subtotal)}'),
+                  pw.Text(lang.translate('subtotal: ${_money(subtotal)}')),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    'Grand Total: ${_money(widget.total)}',
+                    lang.translate('grand total: ${_money(widget.total)}'),
                     style: pw.TextStyle(
                       fontSize: 14,
                       fontWeight: pw.FontWeight.bold,
@@ -500,7 +502,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           ),
           pw.SizedBox(height: 20),
           pw.Text(
-            'Thank you for shopping with us!',
+            lang.translate('thank you for shopping with us!'),
             style: pw.TextStyle(color: PdfColors.grey700),
           ),
         ],
@@ -693,7 +695,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: TitleColor,
+            ),
           ),
           const SizedBox(height: 12),
           ...children,
@@ -706,6 +713,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     final subtotal = _calcSubtotal();
     final paymentStatus = _paymentStatus(widget.paymentMethod);
     final trackingNumber = _trackingNumberLabel();
+    final lang = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -727,25 +735,26 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 //     ),
                 //   ],
                 // ),
-                child: Image.asset(
-                  _logoAssetPath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.store_rounded,
-                    size: 40,
-                    color: Colors.green,
-                  ),
-                ),
+                child: Lottie.asset(
+            'assets/Done.json',
+            width: 200,
+            height: 200,
+            fit: BoxFit.cover,
+            repeat: true,
+            animate: true,
+          ),
               ),
-              const SizedBox(height: 10),
+              // const SizedBox(height: 10),
               Text(
                 widget.paymentMethod == 'card'
-                    ? 'Payment Successful'
-                    : 'Order Placed',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                    ? lang.translate('payment successful')
+                    : lang.translate('order placed successfully'),
+                style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: TitleColor,
+            ),
               ),
               const SizedBox(height: 4),
               // Text(
@@ -757,12 +766,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         ),
         const SizedBox(height: 18),
         _sectionCard(
-          title: 'Order Information',
+          title: lang.translate('order information'),
           children: [
-            _infoRow('Receipt Date', _formatDate(widget.createdAt)),
-            _infoRow('Payment Method', _paymentLabel(widget.paymentMethod)),
-            _infoRow('Payment Status', paymentStatus),
-            _infoRow('Code Number of Order', trackingNumber),
+            _infoRow(lang.translate('receipt date'), _formatDate(widget.createdAt)),
+            _infoRow(lang.translate('payment method'), _paymentLabel(widget.paymentMethod)),
+            _infoRow(lang.translate('payment status'), paymentStatus),
+            _infoRow(lang.translate('code number of order'), trackingNumber),
             // if (_resolvedTrackingNumber != null)
             //   Align(
             //     alignment: Alignment.centerRight,
@@ -786,12 +795,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         // ),
         const SizedBox(height: 16),
         _sectionCard(
-          title: 'Items',
+          title: lang.translate('items'),
           children: [
             if (widget.items.isEmpty)
-              const Text('No items found')
-            else
-              ListView.separated(
+              Text(lang.translate('no items found'))
+            else 
+              ListView.separated( 
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: widget.items.length,
@@ -859,7 +868,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Qty: $qty - ${_money(originalUnitPrice)}',
+                              '${lang.translate('qty')}: $qty - ${_money(originalUnitPrice)}',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 13,
@@ -911,10 +920,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         ),
         const SizedBox(height: 16),
         _sectionCard(
-          title: 'Total',
+          title: lang.translate('total'),
           children: [
             // _amountRow('Subtotal', subtotal),
-            _amountRow('Grand Total', widget.total, bold: true),
+            _amountRow(lang.translate('grand total'), widget.total, bold: true),
           ],
         ),
       ],
@@ -923,14 +932,15 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Receipt', style: TextStyle(color: Colors.white)),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-      ),
+      // appBar: AppBar(
+      //   title: Text(lang.translate('receipt'), style: TextStyle(color: Colors.white)),
+      //   backgroundColor: Theme.of(context).primaryColor,
+      //   foregroundColor: Colors.white,
+      //   iconTheme: const IconThemeData(color: Colors.white),
+      //   centerTitle: true,
+      // ),
       body: Stack(
         children: [
           // const BackgroundColor(),
@@ -989,9 +999,14 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         _isSavingPdf
                             ? 'Saving ...'
                             : Platform.isAndroid
-                            ? 'Save Receipt'
-                            : 'Save Receipt',
-                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                            ? lang.translate('save receipt')
+                            : lang.translate('save receipt'),
+                        style: TextStyle(
+                          fontFamily: getFontFamily(context),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFFFFFFF),
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2D6A4F),
@@ -1019,7 +1034,13 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         ),
                         side: BorderSide(color: Theme.of(context).primaryColor),
                       ),
-                      child: const Text('Continue Shopping'),
+                      child: Text(lang.translate('continue shopping'),
+                      style: TextStyle(
+                        fontFamily: getFontFamily(context),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).primaryColor,
+                      ),),
                     ),
                   ),
                 ],

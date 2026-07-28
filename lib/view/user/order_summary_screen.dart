@@ -9,6 +9,7 @@ import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/khqr_payment_screen.dart';
 import 'package:thesisapp/view/user/khqr_payment_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
