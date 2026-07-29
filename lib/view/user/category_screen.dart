@@ -6,10 +6,15 @@ import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 
 class CategoryModel {
-  final String name;
+  final String name;       // translation key (e.g. "books")
   final String image;
+  final String dbCategory; // exact value stored in DB (e.g. "Book")
 
-  const CategoryModel({required this.name, required this.image});
+  const CategoryModel({
+    required this.name,
+    required this.image,
+    required this.dbCategory,
+  });
 }
 
 class CategoryScreen extends StatefulWidget {
@@ -25,9 +30,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
   final TextEditingController searchController = TextEditingController();
 
   final List<CategoryModel> categoryList = const [
-    CategoryModel(name: "books", image: "assets/book.png"),
-    CategoryModel(name: "t-shirts", image: "assets/tshirt.png"),
-    CategoryModel(name: "materials", image: "assets/material.png"),
+    CategoryModel(name: "books",     image: "assets/book.png",     dbCategory: "Book"),
+    CategoryModel(name: "t-shirts",  image: "assets/tshirt.png",   dbCategory: "Shirt"),
+    CategoryModel(name: "materials", image: "assets/material.png", dbCategory: "Materials"),
   ];
 
   @override
@@ -132,7 +137,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ProductScreen(
-          categoryName: category.name,
+          categoryName: category.dbCategory,  // DB value for API filter
           categoryTitle: lang.translate(category.name),
         ),
       ),

@@ -22,41 +22,8 @@ class ProductScreen extends StatefulWidget {
 
 class _ProductScreenState extends State<ProductScreen> {
   static const String _baseUrl = ApiConfig.baseUrl;
-  static const Map<String, Set<String>> _categoryAliases = {
-    'books': {'books', 'book'},
-    't-shirts': {'t-shirts', 't-shirt', 'tshirts', 'tshirt'},
-    'materials': {'materials', 'material'},
-  };
-
   List<Product> product = [];
   bool _isLoadingProduct = true;
-
-  Set<String> get _selectedCategoryValues {
-    final selectedValues = <String>{};
-
-    for (final value in [widget.categoryName, widget.categoryTitle]) {
-      final normalizedValue = _normalizeCategory(value ?? '');
-      if (normalizedValue.isEmpty) continue;
-
-      selectedValues.add(normalizedValue);
-      selectedValues.addAll(
-        _categoryAliases[normalizedValue] ?? const <String>{},
-      );
-    }
-
-    return selectedValues;
-  }
-
-  static String _normalizeCategory(String value) {
-    return value.trim().toLowerCase().replaceAll(RegExp(r'[\s_]+'), '-');
-  }
-
-  bool _matchesSelectedCategory(Product product) {
-    final selectedValues = _selectedCategoryValues;
-    if (selectedValues.isEmpty) return true;
-
-    return selectedValues.contains(_normalizeCategory(product.category));
-  }
 
   @override
   void initState() {
@@ -66,41 +33,18 @@ class _ProductScreenState extends State<ProductScreen> {
     _fetchProducts();
   }
 
-  // Future<void> _fetchProducts() async {
-  //   final url = Uri.parse('$_baseUrl/get_products.php');
-  //   try {
-  //     final response = await http.get(url);
-  //     if (!mounted) return;
-
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.body);
-  //       if (data is Map<String, dynamic> && data['status'] == 'success') {
-  //         final List productsJson = (data['products'] as List?) ?? const [];
-  //         setState(() {
-  //           _products = productsJson
-  //               .whereType<Map<String, dynamic>>()
-  //               .map(Product.fromJson)
-  //               .toList();
-  //           _isLoadingProducts = false;
-  //         });
-  //         return;
-  //       }
-  //     }
-  //   } catch (_) {
-  //     // ignore
-  //   }
-
-  //   if (!mounted) return;
-  //   setState(() => _isLoadingProducts = false);
-  // }
-
   Future<void> _fetchProducts() async {
-    final url = Uri.parse("$_baseUrl/get_products.php");
+    // Build URL: pass category as query param so the API filters server-side
+    final categoryParam = (widget.categoryName ?? '').trim();
+    final uri = categoryParam.isNotEmpty
+        ? Uri.parse('$_baseUrl/get_products_by_category.php')
+            .replace(queryParameters: {'category': categoryParam})
+        : Uri.parse('$_baseUrl/get_products_by_category.php');
+
     try {
-      final response = await http.get(url);
-      if (!mounted) {
-        return;
-      }
+      final response = await http.get(uri);
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['status'] == 'success') {
@@ -109,7 +53,6 @@ class _ProductScreenState extends State<ProductScreen> {
             product = productsJson
                 .whereType<Map<String, dynamic>>()
                 .map(Product.fromJson)
-                .where(_matchesSelectedCategory)
                 .toList();
             _isLoadingProduct = false;
           });
@@ -121,9 +64,7 @@ class _ProductScreenState extends State<ProductScreen> {
     }
 
     if (!mounted) return;
-    setState(() {
-      _isLoadingProduct = false;
-    });
+    setState(() => _isLoadingProduct = false);
   }
 
   @override
