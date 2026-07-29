@@ -11,10 +11,16 @@ import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 
 class ProductScreen extends StatefulWidget {
-  final String? categoryName;
-  final String? categoryTitle;
+  final int?    categoryId;    // FK: categories.id — preferred filter
+  final String? categoryName;  // fallback filter by name
+  final String? categoryTitle; // display title in AppBar
 
-  const ProductScreen({super.key, this.categoryName, this.categoryTitle});
+  const ProductScreen({
+    super.key,
+    this.categoryId,
+    this.categoryName,
+    this.categoryTitle,
+  });
 
   @override
   State<ProductScreen> createState() => _ProductScreenState();
@@ -34,12 +40,20 @@ class _ProductScreenState extends State<ProductScreen> {
   }
 
   Future<void> _fetchProducts() async {
-    // Build URL: pass category as query param so the API filters server-side
-    final categoryParam = (widget.categoryName ?? '').trim();
-    final uri = categoryParam.isNotEmpty
-        ? Uri.parse('$_baseUrl/get_products_by_category.php')
-            .replace(queryParameters: {'category': categoryParam})
-        : Uri.parse('$_baseUrl/get_products_by_category.php');
+    // Prefer FK-based filter (category_id), fallback to name-based filter
+    final catId   = widget.categoryId ?? 0;
+    final catName = (widget.categoryName ?? '').trim();
+
+    Uri uri;
+    if (catId > 0) {
+      uri = Uri.parse('$_baseUrl/get_products_by_category.php')
+          .replace(queryParameters: {'category_id': catId.toString()});
+    } else if (catName.isNotEmpty) {
+      uri = Uri.parse('$_baseUrl/get_products_by_category.php')
+          .replace(queryParameters: {'category': catName});
+    } else {
+      uri = Uri.parse('$_baseUrl/get_products_by_category.php');
+    }
 
     try {
       final response = await http.get(uri);

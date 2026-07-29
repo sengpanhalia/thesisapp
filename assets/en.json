@@ -13,6 +13,7 @@
   "confirm": "Confirm",
   "home": "Home",
   "cart": "Cart",
+  "order": "Order",
   "setting": "Setting",
   "no_data_found": "No data found for search.",
   "history": "History",
@@ -65,5 +66,10 @@
   "language": "Language",
   "year": "Year",
   "related books": "Related Books",
-  "full image": "Full Image"
+  "full image": "Full Image",
+  "good morning": "Good morning",
+  "good afternoon": "Good afternoon",
+  "good evening": "Good evening",
+  "good night": "Good night"
+  
 }

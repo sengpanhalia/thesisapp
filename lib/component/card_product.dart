@@ -22,16 +22,9 @@ class BuildCardProduct extends StatelessWidget {
       // margin: const EdgeInsets.only(bottom: Height10),
       // padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: WhiteColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: StrokeSearchBar, width: 1),
       ),
       child: GestureDetector(
         onTap: () {

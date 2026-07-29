@@ -363,16 +363,6 @@ class _CartScreenState extends State<CartScreen> {
                                         ) ??
                                         0.0;
                                     final originalPrice = price;
-                                    final discount =
-                                        int.tryParse(
-                                          item['discount']?.toString() ?? '0',
-                                        ) ??
-                                        0;
-                                    final hasDiscount =
-                                        discount > 0 && discount < 100;
-                                    final displayPrice = hasDiscount
-                                        ? price * (1 - discount / 100)
-                                        : price;
                                     final quantity = item['quantity'] ?? 1;
                                     final stockQuantity = cartProvider
                                         .itemStockQuantity(item);

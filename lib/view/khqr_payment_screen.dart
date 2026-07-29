@@ -18,7 +18,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
-import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class Address {

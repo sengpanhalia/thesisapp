@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/component_app.dart';
-import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
@@ -18,7 +18,9 @@ import 'package:thesisapp/view/user/personal_information.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
-import 'package:thesisapp/view/user/user_profile.dart';
+
+// ---------------------------------------------------------------------------
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,33 +33,29 @@ class _HomePageState extends State<HomePage> {
   static const String _baseUrl = ApiConfig.baseUrl;
   final TextEditingController searchController = TextEditingController();
 
-  List<Product> _products = [];
+  /// All products from the API, grouped by DB category (lowercase key).
+  Map<String, List<Product>> _productsByCategory = {};
   UserDetail? _userDetail;
   bool _isLoadingProducts = true;
-  bool _isLoadingUser = true;
+  bool _isLoadingUser    = true;
 
+  // ------------------------------------------------------------------
   String getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'អរុណសួស្តី,'; // Good Morning 
-    } else if (hour < 17) {
-      return 'ទិវាសួស្តី,'; // Good Afternoon 
-    } else if (hour < 20) {
-      return 'សាយន្តសួស្តី,'; // Afternoon 
-    } else {
-      return 'រាត្រីសួស្តី,'; // Evening 
-    }
+    if (hour < 12) return 'good morning,';
+    if (hour < 17) return 'good afternoon,';
+    if (hour < 20) return 'good evening,';
+    return 'good night,';
   }
 
   void _openSearch() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SearchScreen(baseUrl: _baseUrl),
-      ),
+      MaterialPageRoute(builder: (_) => SearchScreen(baseUrl: _baseUrl)),
     );
   }
 
+  // ------------------------------------------------------------------
   @override
   void initState() {
     super.initState();
@@ -65,6 +63,7 @@ class _HomePageState extends State<HomePage> {
     _fetchUserData();
   }
 
+  /// Fetch all products in one request then group by category.
   Future<void> _fetchProducts() async {
     final url = Uri.parse('$_baseUrl/get_products.php');
     try {
@@ -75,12 +74,21 @@ class _HomePageState extends State<HomePage> {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['status'] == 'success') {
           final List productsJson = (data['products'] as List?) ?? const [];
+          final allProducts = productsJson
+              .whereType<Map<String, dynamic>>()
+              .map(Product.fromJson)
+              .toList();
+
+          // Group products by normalised category name
+          final grouped = <String, List<Product>>{};
+          for (final p in allProducts) {
+            final key = p.category.trim().toLowerCase();
+            grouped.putIfAbsent(key, () => []).add(p);
+          }
+
           setState(() {
-            _products = productsJson
-                .whereType<Map<String, dynamic>>()
-                .map(Product.fromJson)
-                .toList();
-            _isLoadingProducts = false;
+            _productsByCategory = grouped;
+            _isLoadingProducts  = false;
           });
           return;
         }
@@ -121,7 +129,7 @@ class _HomePageState extends State<HomePage> {
 
           if (!mounted) return;
           setState(() {
-            _userDetail = details.isNotEmpty ? details.first : null;
+            _userDetail    = details.isNotEmpty ? details.first : null;
             _isLoadingUser = false;
           });
           return;
@@ -135,16 +143,18 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isLoadingUser = false);
   }
 
+  // ------------------------------------------------------------------
   @override
   void dispose() {
     searchController.dispose();
     super.dispose();
   }
 
+  // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final canShowProducts = !_isLoadingProducts;
     final profileImageUrl = (_userDetail?.profile_pic ?? '').trim();
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 65,
@@ -180,12 +190,15 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        actions: [ 
+        actions: [
           Padding(
             padding: const EdgeInsets.only(right: MgPd20),
             child: GestureDetector(
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInformation()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => PersonalInformation()),
+                );
               },
               child: CircleAvatar(
                 radius: 22,
@@ -215,7 +228,6 @@ class _HomePageState extends State<HomePage> {
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          // Matching the warm gradient from your design
           gradient: gradientColor(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -228,42 +240,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  //   children: [
-                  //     Column(
-                  //       crossAxisAlignment: CrossAxisAlignment.start,
-                  //       children: [
-                  //         Text(
-                  //           getGreeting(),
-                  //           style: TextStyle(
-                  //             fontSize: 14,
-                  //             color: TextColor,
-                  //             fontFamily: getFontFamily(context),
-                  //           ),
-                  //         ),
-                  //         SizedBox(height: Height5),
-                  //         textGradient(
-                  //           'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
-                  //           TextStyle(
-                  //             fontSize: 15,
-                  //             color: Colors.white,
-                  //             fontFamily: 'KhmerMool1',
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //     CircleAvatar(
-                  //       radius: 22,
-                  //       backgroundColor: Colors.white,
-                  //       child: CircleAvatar(
-                  //         radius: 30,
-                  //         backgroundImage: AssetImage('assets/image.JPG'),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  // SizedBox(height: Height15),
+                  // ── Search bar ──────────────────────────────────────────
                   Container(
                     height: 54,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -284,15 +261,9 @@ class _HomePageState extends State<HomePage> {
                             decoration: InputDecoration(
                               fillColor: Colors.transparent,
                               hintText: 'ស្វែងរក...',
-                              // hintStyle: GoogleFonts.poppins(
-                              //   fontSize: 13,
-                              //   color: Colors.black45,
-                              //   fontWeight: FontWeight.w500,
-                              // ),
                               hintStyle: TextStyle(
                                 fontSize: 13,
                                 color: TextSoftColor,
-                                // fontWeight: FontWeight.w500,
                                 fontFamily: getFontFamily(context),
                               ),
                               border: InputBorder.none,
@@ -302,7 +273,10 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
+
                   SizedBox(height: Height15),
+
+                  // ── Carousel banner ─────────────────────────────────────
                   CarouselSliderWidget(
                     images: [
                       'assets/slide1.png',
@@ -310,98 +284,300 @@ class _HomePageState extends State<HomePage> {
                       'assets/slide3.png',
                     ],
                   ),
-                  SizedBox(height: Height15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'សៀវភៅប្រចាំឆមាស',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: TextColor,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: getFontFamily(context),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (Context) => ProductScreen(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'មើលទាំងអស់',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: GText1,
-                            fontFamily: getFontFamily(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: Height10),
-                  if (!canShowProducts)
-                    const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  if (canShowProducts && _products.isEmpty)
-                    Text(
-                      'មិនមានសៀវភៅទេ',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: TextSoftColor,
-                        fontFamily: getFontFamily(context),
-                      ),
-                    ),
-                  if (canShowProducts && _products.isNotEmpty)
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.65,
-                          ),
-                      itemCount: _products.length,
-                      itemBuilder: (context, index) {
-                        final product = _products[index];
-                        final productImage = (product.image ?? '').trim();
-                        final imageUrl = productImage.startsWith('http')
-                            ? productImage
-                            : '$_baseUrl/uploads/products/$productImage';
 
-                        return BuildCardProduct(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductDetailScreen(
-                                  product: product,
-                                  baseUrl: _baseUrl,
-                                ),
-                              ),
-                            );
-                          },
-                          productName: product.name,
-                          productPrice: product.price,
-                          imageUrl: imageUrl,
-                          productImage: productImage,
-                        );
-                      },
-                    ),
-                  SizedBox(height: Height10),
+                  SizedBox(height: Height15),
+
+                  // ── Category sections ───────────────────────────────────
+                  if (_isLoadingProducts)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: CircularProgressIndicator(color: GText1),
+                      ),
+                    )
+                  else
+                    ..._buildCategorySections(context),
+
+                  SizedBox(height: Height20),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  /// Builds one section widget per category that has at least one product.
+  /// Category list is derived live from [_productsByCategory] —
+  /// no hardcoded list needed. Admin can add/remove categories freely.
+  List<Widget> _buildCategorySections(BuildContext context) {
+    final sections = <Widget>[];
+
+    // Iterate over every category key that came back from the API
+    for (final entry in _productsByCategory.entries) {
+      final products = entry.value;
+      if (products.isEmpty) continue;
+
+      // Use category info from the first product in the list
+      final categoryName = products.first.category;
+      final categoryId   = products.first.categoryId; // FK
+
+      sections.add(_CategorySectionWidget(
+        title:    categoryName,
+        products: products,
+        baseUrl:  _baseUrl,
+        onSeeAll: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductScreen(
+                categoryId:    categoryId,
+                categoryName:  categoryName,
+                categoryTitle: categoryName,
+              ),
+            ),
+          );
+        },
+        onProductTap: (product) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(
+                product: product,
+                baseUrl: _baseUrl,
+              ),
+            ),
+          );
+        },
+      ));
+
+      sections.add(SizedBox(height: Height15));
+    }
+
+    if (sections.isEmpty) {
+      sections.add(
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Text(
+              'មិនមានទំនិញទេ',
+              style: TextStyle(
+                fontSize: 14,
+                color: TextSoftColor,
+                fontFamily: getFontFamily(context),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ── Random products from all categories (always shown at the bottom) ──
+    // Collect all products across every category and shuffle them
+    final allProducts = _productsByCategory.values
+        .expand((list) => list)
+        .toList()
+      ..shuffle(Random());
+    final randomTen = allProducts.take(10).toList();
+
+    if (randomTen.isNotEmpty) {
+      sections.add(SizedBox(height: Height5));
+      sections.add(_RandomProductsSection(
+        title:    'ណែនាំសម្រាប់អ្នក',  // "Recommended for You"
+        products: randomTen,
+        baseUrl:  _baseUrl,
+        onSeeAll: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProductScreen()),
+          );
+        },
+        onProductTap: (product) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(
+                product: product,
+                baseUrl: _baseUrl,
+              ),
+            ),
+          );
+        },
+      ));
+    }
+
+    return sections;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Random-products section — 10 items from all categories, 2-column grid
+// ---------------------------------------------------------------------------
+class _RandomProductsSection extends StatelessWidget {
+  final String title;
+  final List<Product> products;
+  final String baseUrl;
+  final VoidCallback onSeeAll;
+  final void Function(Product) onProductTap;
+
+  const _RandomProductsSection({
+    required this.title,
+    required this.products,
+    required this.baseUrl,
+    required this.onSeeAll,
+    required this.onProductTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Section header ────────────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                color: TextColor,
+                fontWeight: FontWeight.w700,
+                fontFamily: getFontFamily(context),
+              ),
+            ),
+            GestureDetector(
+              onTap: onSeeAll,
+              child: Text(
+                'មើលទាំងអស់',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: GText1,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: getFontFamily(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: Height10),
+
+        // ── 2-column grid (shrink-wrapped, NOT scrollable — parent scrolls) ──
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.65,
+          ),
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            final productImage = (product.image ?? '').trim();
+            final imageUrl = productImage.startsWith('http')
+                ? productImage
+                : '$baseUrl/uploads/products/$productImage';
+
+            return BuildCardProduct(
+              onTap: () => onProductTap(product),
+              productName:  product.name,
+              productPrice: product.price,
+              imageUrl:     imageUrl,
+              productImage: productImage,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reusable product-by-category section widget
+// ---------------------------------------------------------------------------
+class _CategorySectionWidget extends StatelessWidget {
+  final String title;
+  final List<Product> products;
+  final String baseUrl;
+  final VoidCallback onSeeAll;
+  final void Function(Product) onProductTap;
+
+  const _CategorySectionWidget({
+    required this.title,
+    required this.products,
+    required this.baseUrl,
+    required this.onSeeAll,
+    required this.onProductTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                color: TextColor,
+                fontWeight: FontWeight.w700,
+                fontFamily: getFontFamily(context),
+              ),
+            ),
+            GestureDetector(
+              onTap: onSeeAll,
+              child: Text(
+                'មើលទាំងអស់',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: GText1,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: getFontFamily(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: Height10),
+
+        // Horizontal scroll of product cards
+        SizedBox(
+          height: 220,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: products.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final product = products[index];
+              final productImage = (product.image ?? '').trim();
+              final imageUrl = productImage.startsWith('http')
+                  ? productImage
+                  : '$baseUrl/uploads/products/$productImage';
+
+              return SizedBox(
+                width: 148,
+                child: BuildCardProduct(
+                  onTap: () => onProductTap(product),
+                  productName:  product.name,
+                  productPrice: product.price,
+                  imageUrl:     imageUrl,
+                  productImage: productImage,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

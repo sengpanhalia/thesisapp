@@ -1,22 +1,33 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 
+// ---------------------------------------------------------------------------
+// Category model — fetched from categories table (related to products)
+// ---------------------------------------------------------------------------
 class CategoryModel {
-  final String name;       // translation key (e.g. "books")
-  final String image;
-  final String dbCategory; // exact value stored in DB (e.g. "Book")
+  final int    id;   // categories.id (FK referenced by products.category_id)
+  final String name; // categories.name (e.g. "Book", "Shirt", "Materials")
 
-  const CategoryModel({
-    required this.name,
-    required this.image,
-    required this.dbCategory,
-  });
+  const CategoryModel({required this.id, required this.name});
+
+  factory CategoryModel.fromJson(Map<String, dynamic> json) {
+    return CategoryModel(
+      id:   int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name: json['name']?.toString() ?? '',
+    );
+  }
 }
 
+// ---------------------------------------------------------------------------
+// Category screen — fetches categories from API
+// ---------------------------------------------------------------------------
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
 
@@ -29,11 +40,49 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   final TextEditingController searchController = TextEditingController();
 
-  final List<CategoryModel> categoryList = const [
-    CategoryModel(name: "books",     image: "assets/book.png",     dbCategory: "Book"),
-    CategoryModel(name: "t-shirts",  image: "assets/tshirt.png",   dbCategory: "Shirt"),
-    CategoryModel(name: "materials", image: "assets/material.png", dbCategory: "Materials"),
-  ];
+  List<CategoryModel> _categories = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/get_categories.php'),
+      );
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['status'] == 'success') {
+          final List categoriesJson = (data['categories'] as List?) ?? const [];
+          setState(() {
+            _categories = categoriesJson
+                .whereType<Map<String, dynamic>>()
+                .map(CategoryModel.fromJson)
+                .toList();
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load categories: $e');
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,15 +116,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         decoration: InputDecoration(
                           fillColor: Colors.transparent,
                           hintText: 'ស្វែងរក...',
-                          // hintStyle: GoogleFonts.poppins(
-                          //   fontSize: 13,
-                          //   color: Colors.black45,
-                          //   fontWeight: FontWeight.w500,
-                          // ),
                           hintStyle: TextStyle(
                             fontSize: 13,
                             color: TextSoftColor,
-                            // fontWeight: FontWeight.w500,
                             fontFamily: getFontFamily(context),
                           ),
                           border: InputBorder.none,
@@ -101,22 +144,42 @@ class _CategoryScreenState extends State<CategoryScreen> {
               const SizedBox(height: MgPd15),
 
               /// Category Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: categoryList.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 18,
-                  crossAxisSpacing: 18,
-                  childAspectRatio: 0.75,
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: CircularProgressIndicator(color: GText1),
+                  ),
+                )
+              else if (_categories.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Text(
+                      'មិនមានប្រភេទទំនិញទេ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: TextSoftColor,
+                        fontFamily: getFontFamily(context),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _categories.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 18,
+                    crossAxisSpacing: 18,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemBuilder: (context, index) {
+                    return _buildCategoryItem(_categories[index]);
+                  },
                 ),
-                itemBuilder: (context, index) {
-                  final category = categoryList[index];
-
-                  return _buildCategoryItem(category);
-                },
-              ),
             ],
           ),
         ),
@@ -127,25 +190,24 @@ class _CategoryScreenState extends State<CategoryScreen> {
   void _openSearch() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => SearchScreen(baseUrl: _baseUrl)),
+      MaterialPageRoute(builder: (_) => SearchScreen(baseUrl: _baseUrl)),
     );
   }
 
   void _openCategory(CategoryModel category) {
-    final lang = AppLocalizations.of(context)!;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProductScreen(
-          categoryName: category.dbCategory,  // DB value for API filter
-          categoryTitle: lang.translate(category.name),
+        builder: (_) => ProductScreen(
+          categoryId:    category.id,    // FK-based filter (preferred)
+          categoryName:  category.name,  // fallback display
+          categoryTitle: category.name,
         ),
       ),
     );
   }
 
   Widget _buildCategoryItem(CategoryModel category) {
-    final lang = AppLocalizations.of(context)!;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _openCategory(category),
@@ -154,22 +216,23 @@ class _CategoryScreenState extends State<CategoryScreen> {
           Container(
             width: 80,
             height: 80,
-            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: StrokeSearchBar, width: 1.5),
             ),
-            child: Image.asset(category.image, fit: BoxFit.contain),
+            child: Center(
+              child: _categoryIcon(category.name),
+            ),
           ),
           const SizedBox(height: 10),
           Text(
-            lang.translate(category.name),
+            category.name,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
               fontFamily: getFontFamily(context),
             ),
@@ -177,5 +240,33 @@ class _CategoryScreenState extends State<CategoryScreen> {
         ],
       ),
     );
+  }
+
+  /// Returns a fitting icon for the category name.
+  /// Falls back to a generic tag icon for unknown categories.
+  Widget _categoryIcon(String name) {
+    final key = name.trim().toLowerCase();
+
+    // Try asset image first for known categories
+    const assetMap = <String, String>{
+      'book':      'assets/book.png',
+      'books':     'assets/book.png',
+      'shirt':     'assets/tshirt.png',
+      't-shirt':   'assets/tshirt.png',
+      't-shirts':  'assets/tshirt.png',
+      'material':  'assets/material.png',
+      'materials': 'assets/material.png',
+    };
+
+    final assetPath = assetMap[key];
+    if (assetPath != null) {
+      return Padding(
+        padding: const EdgeInsets.all(15),
+        child: Image.asset(assetPath, fit: BoxFit.contain),
+      );
+    }
+
+    // Generic icon for dynamic categories added by admin
+    return const Icon(Icons.category_rounded, size: 36, color: GText1);
   }
 }

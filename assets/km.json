@@ -27,6 +27,7 @@
   "quantity": "ចំនួន",
   "price_unit": "តម្លៃ/ឯកតា",
   "price": "តម្លៃ",
+  "order": "កម្មង់",
   "total": "សរុប",
   "select Payment Method": "សូមជ្រើសរើសវិធីសាស្រ្តបង់ប្រាក់",
   "payment": "ការទូទាត់",
@@ -65,5 +66,9 @@
   "language": "ភាសា",
   "year": "ឆ្នាំបោះពុម្ព",
   "related books": "សៀវភៅណែនាំ",
-  "full image": "រូបភាពពេញទំហំ"
+  "full image": "រូបភាពពេញទំហំ",
+  "good morning": "អរុណសួស្តី",
+  "good afternoon": "ទិវាសួស្តី",
+  "good evening": "សាយន្តសួស្តី",
+  "good night": "រាត្រីសួស្តី"
 }
