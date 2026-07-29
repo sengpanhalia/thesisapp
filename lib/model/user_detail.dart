@@ -1,5 +1,5 @@
 class UserDetail {
-  late final String faculty_name, degree_name, major_name, year_name, semester_name, name_kh, name_en, student_id, stage_name, term_name, academic_year, shift_name, room_name, status_name, date_of_birth, phone_number, profile_pic, job, work_place;
+  late final String faculty_name, degree_name, major_name, year_name, semester_name, name_kh, name_en, student_id, stage_name, term_name, academic_year, shift_name, room_name, status_name, date_of_birth, phone_number, profile_pic, job, work_place, gender;
 
   UserDetail({
     required this.faculty_name,
@@ -20,7 +20,8 @@ class UserDetail {
     required this.phone_number,
     required this.profile_pic,
     required this.job,
-    required this.work_place
+    required this.work_place,
+    this.gender = '',
   });
 
   factory UserDetail.fromJson(Map<String, dynamic> json) {
@@ -43,7 +44,8 @@ class UserDetail {
       phone_number: json['phone_number'] ?? '',
       profile_pic: json['profile_pic'] ?? '',
       job: json['job'] ?? '',
-      work_place: json['work_place'] ?? ''
+      work_place: json['work_place'] ?? '',
+      gender: json['gender'] ?? json['sex_name'] ?? json['sex'] ?? json['gender_name'] ?? '',
     );
   }
 }

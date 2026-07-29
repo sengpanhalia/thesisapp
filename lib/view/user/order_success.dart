@@ -8,8 +8,10 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/view/user/pdf_receipt_helper.dart';
@@ -45,6 +47,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSavingPdf = false;
   String? _resolvedTrackingNumber;
+  UserDetail? _userDetail;
 
   @override
   void initState() {
@@ -52,10 +55,50 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     _resolvedTrackingNumber = _normalizeTrackingNumber(widget.trackingNumber);
     _resolveDisplayOrderNumber();
     _resolveTrackingNumber();
+    _fetchUserData();
   }
 
+  Future<void> _fetchUserData() async {
+    final authUser = context.read<AuthProvider>().user;
+    if (authUser == null) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse(APIStLoginKh),
+        body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          final userData =
+              (decoded['user_data'] as List?) ??
+              (decoded['student_users'] as List?) ??
+              const [];
+          final details = userData
+              .whereType<Map<String, dynamic>>()
+              .map(UserDetail.fromJson)
+              .toList();
+
+          if (mounted && details.isNotEmpty) {
+            setState(() {
+              _userDetail = details.first;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load user detail in order success: $e');
+    }
+  }
 
   PdfReceiptHelper _buildPdfHelper() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    final name = (_userDetail?.name_kh.isNotEmpty == true)
+        ? _userDetail!.name_kh
+        : (user?.name_kh ?? '');
+
     return PdfReceiptHelper(
       context: context,
       orderId: widget.orderId,
@@ -65,6 +108,10 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
       createdAt: widget.createdAt,
       resolvedTrackingNumber: _resolvedTrackingNumber,
       screenshotController: _screenshotController,
+      customerName: name,
+      customerGender: _userDetail?.gender,
+      customerDob: _userDetail?.date_of_birth,
+      customerPhone: _userDetail?.phone_number,
     );
   }
 
@@ -371,7 +418,24 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        // _sectionCard(
+        //   title: 'ព័ត៌មានអតិថិជន',
+        //   children: [
+        //     _infoRow(
+        //       'ឈ្មោះ',
+        //       _userDetail?.name_kh.isNotEmpty == true
+        //           ? _userDetail!.name_kh
+        //           : (context.watch<AuthProvider>().user?.name_kh ?? ''),
+        //     ),
+        //     if ((_userDetail?.gender ?? '').isNotEmpty)
+        //       _infoRow('ភេទ', _userDetail!.gender),
+        //     if ((_userDetail?.date_of_birth ?? '').isNotEmpty)
+        //       _infoRow('ថ្ងៃ ខែ ឆ្នាំកំណើត', _userDetail!.date_of_birth),
+        //     if ((_userDetail?.phone_number ?? '').isNotEmpty)
+        //       _infoRow('លេខទូរសព្ទ', _userDetail!.phone_number),
+        //   ],
+        // ),
+        const SizedBox(height: 16),
         _sectionCard(
           title: lang.translate('order information'),
           children: [
@@ -406,7 +470,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         //     ),
         //   ],
         // ),
-        const SizedBox(height: 16),
+        // const SizedBox(height: 16),
         _sectionCard(
           title: lang.translate('items'),
           children: [

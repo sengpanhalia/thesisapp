@@ -14,9 +14,11 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/user/personal_information.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
+import 'package:thesisapp/view/user/user_profile.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -37,13 +39,13 @@ class _HomePageState extends State<HomePage> {
   String getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'អរុណសួស្តី,'; // Good Morning in Khmer
+      return 'អរុណសួស្តី,'; // Good Morning 
     } else if (hour < 17) {
-      return 'ទិវាសួស្តី,'; // Good Afternoon in Khmer
+      return 'ទិវាសួស្តី,'; // Good Afternoon 
     } else if (hour < 20) {
-      return 'សាយន្តសួស្តី,'; // Afternoon in Khmer
+      return 'សាយន្តសួស្តី,'; // Afternoon 
     } else {
-      return 'រាត្រីសួស្តី,'; // Evening in Khmer
+      return 'រាត្រីសួស្តី,'; // Evening 
     }
   }
 
@@ -183,7 +185,7 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.only(right: MgPd20),
             child: GestureDetector(
               onTap: () {
-                context.read<NavigationProvider>().setIndex(3);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => PersonalInformation()));
               },
               child: CircleAvatar(
                 radius: 22,

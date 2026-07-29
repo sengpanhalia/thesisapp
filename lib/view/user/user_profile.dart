@@ -201,10 +201,10 @@ class _UserProfileState extends State<UserProfile> {
                             );
                           },
                         ),
-                        ComponentProfile(
-                          image: 'assets/graduate.png',
-                          title: lang.translate('account_information'),
-                        ),
+                        // ComponentProfile(
+                        //   image: 'assets/graduate.png',
+                        //   title: lang.translate('account_information'),
+                        // ),
                       ],
                     ),
                   ),

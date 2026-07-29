@@ -9,6 +9,7 @@ import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/model/user.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
@@ -165,6 +166,145 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  Future<int?> _showQuantityDialog(
+    BuildContext context, {
+    required int maxQuantity,
+  }) {
+    if (maxQuantity <= 0) {
+      Fluttertoast.showToast(msg: 'This product is out of stock');
+      return Future.value(null);
+    }
+
+    int quantity = 1;
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              title: Text(
+                'Select quantity',
+                style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: TitleColor,
+              
+            ),textAlign: TextAlign.center,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'How many would you like to add?',
+                    style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: TextColor,
+            ),
+            textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Available stock: $maxQuantity',
+                    style: TextStyle(
+              fontFamily: getFontFamilyMool1(context),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: GreenColor,
+            ),
+            textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    spacing: 10,
+                    children: [
+                      IconButton(
+                        onPressed: quantity > 1
+                            ? () => setState(() => quantity -= 1)
+                            : null,
+                        icon: const Icon(Icons.remove_rounded),
+                        color: TextColor,
+                      ),
+                      // SizedBox(width: 35),
+                      Container(
+                        width: 64,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: CardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.brown[200] ?? Colors.brown,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          quantity.toString(),
+                          style: TextStyle(
+              fontFamily: getFontFamilyMool1(context),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: TitleColor,
+            ),
+                        ),
+                      ),
+                      // SizedBox(width: 35),
+                      IconButton(
+                        onPressed: quantity < maxQuantity
+                            ? () => setState(() => quantity += 1)
+                            : null,
+                        icon: const Icon(Icons.add_rounded),
+                        color: TextColor,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: TitleColor,
+            ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext, quantity),
+
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GText1,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Confirm',
+                    style: TextStyle(
+              fontFamily: getFontFamilyMool1(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: GBackground1,
+            ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _openFullImage(String imageUrl) {
     Navigator.push(
@@ -188,11 +328,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final String? imageUrl = widget.product.image!.startsWith('http')
         ? widget.product.image
         : '${widget.baseUrl}/uploads/products/${widget.product.image}';
+    final lang = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'ព័ត៌មានលម្អិត',
-          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),
+        title: Text(
+          lang.translate('product details'),
+          style: TextStyle(
+              fontFamily: getFontFamilyMool1(context),
+              fontSize: 24,
+              color: TitleColor,
+            ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -266,7 +412,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     // ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'មើលរូបភាព',
+                                      lang.translate('view image'),
                                       style: TextStyle(
                                         fontFamily: getFontFamily(context),
                                         fontSize: 12,
@@ -296,10 +442,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   SizedBox(height: Height5),
                   Text(
-                    'អ្នកនិពន្ធ: $author',
+                    '${lang.translate('author')}: $author',
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 16,
+                      fontSize: 14,
                       color: TextColor,
                     ),
                   ),
@@ -324,11 +470,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     child: Text(
                       isOutOfStock
-                          ? 'អស់ពីស្តុក'
-                          : 'នៅមានក្នុងស្តុក: $stockQuantity',
+                          ? lang.translate('out of stock')
+                          : '${lang.translate('in stock')}: $stockQuantity',
                       style: TextStyle(
                         fontFamily: getFontFamily(context),
-                        fontSize: 16,
+                        fontSize: 12,
                         color: stockColor,
                       ),
                     ),
@@ -343,18 +489,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Row(
                       children: [
                         _SpecItem(
-                          label: 'ទំព័រទាំងអស់',
+                          label: lang.translate('pages'),
                           value: pages.isNotEmpty ? pages : '—',
                         ),
                         const _SpecDivider(),
                         _SpecItem(
-                          label: 'ភាសា',
+                          label: lang.translate('language'),
                           value: language.isNotEmpty ? language : '—',
                         ),
                         const _SpecDivider(),
                         const _SpecDivider(),
                         _SpecItem(
-                          label: 'ឆ្នាំបោះពុម្ព',
+                          label: lang.translate('year'),
                           value: year.isNotEmpty ? year : '—',
                         ),
                       ],
@@ -362,10 +508,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   SizedBox(height: Height20),
                   Text(
-                    'ព័ត៌មានលម្អិត',
+                    lang.translate('product details'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
                       color: GText1,
                     ),
                   ),
@@ -385,10 +532,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   SizedBox(height: Height20),
                   Text(
-                    'សៀវភៅណែនាំ',
+                    lang.translate('related books'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
                       color: GText1,
                     ),
                   ),
@@ -403,7 +551,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 80,
                       child: Center(
                         child: Text(
-                          'មិនមានសៀវភៅណែនាំទេ',
+                          lang.translate('no related books'),
                           style: TextStyle(
                             fontFamily: getFontFamily(context),
                             fontSize: 14,
@@ -470,15 +618,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: isOutOfStock ? null : () => _addToCart(context),
-                  child: const Text('Add to cart'),
+                  onPressed: isOutOfStock
+                      ? null
+                      : () async {
+                          final quantity = await _showQuantityDialog(
+                            context,
+                            maxQuantity: stockQuantity,
+                          );
+                          if (quantity == null) return;
+                          await _addToCart(context, quantity: quantity);
+                        },
+                  child: Text(
+                    'Add to cart',
+                    style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: TitleColor,
+            ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: isOutOfStock ? null : () => _buyNow(),
-                  child: const Text('Buy now'),
+                  onPressed: isOutOfStock
+                      ? null
+                      : () async {
+                          final quantity = await _showQuantityDialog(
+                            context,
+                            maxQuantity: stockQuantity,
+                          );
+                          if (quantity == null) return;
+                          await _buyNow(quantity: quantity);
+                        },
+                  child: Text(
+                    'Buy now',
+                    style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: GBackground3,
+            ),
+                  ),
                 ),
               ),
             ],
@@ -496,11 +678,12 @@ class _FullImageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'រូបភាពពេញទំហំ',
-          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),
+        title: Text(
+          lang.translate('full image'),
+          style: TextStyle(fontFamily: getFontFamilyMool1(context), fontSize: 24),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),

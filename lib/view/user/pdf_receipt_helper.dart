@@ -28,6 +28,10 @@ class PdfReceiptHelper {
   final DateTime createdAt;
   final String? resolvedTrackingNumber;
   final ScreenshotController screenshotController;
+  final String? customerName;
+  final String? customerGender;
+  final String? customerDob;
+  final String? customerPhone;
 
   PdfReceiptHelper({
     required this.context,
@@ -38,6 +42,10 @@ class PdfReceiptHelper {
     required this.createdAt,
     required this.resolvedTrackingNumber,
     required this.screenshotController,
+    this.customerName,
+    this.customerGender,
+    this.customerDob,
+    this.customerPhone,
   });
 
   // ─── Static Helpers (shared with order_success.dart) ───────────────────────
@@ -133,6 +141,32 @@ class PdfReceiptHelper {
     return subtotal;
   }
 
+  // ─── PDF Widget Helpers ──────────────────────────────────────────────────────
+
+  Widget _infoLine(String label, String value, String fontFamily) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 11,
+              color: Colors.black87,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontFamily: fontFamily, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─── PDF Measurement ────────────────────────────────────────────────────────
 
   double _measurePdfTextHeight(
@@ -174,9 +208,20 @@ class PdfReceiptHelper {
       fontWeight: FontWeight.bold,
     );
 
-    double height = pdfHorizontalPadding;
-    height += 50;
-    height += 16 + 16 + 12;
+    double height = 16; // vertical padding (8 top + 8 bottom)
+    height += 50; // Logo & header height
+    height += 16 + 16 + 8; // SizedBox 16, Divider 16, SizedBox 8
+
+    // Customer Info Section
+    height += _measurePdfTextHeight('ព័ត៌មានអតិថិជន', titleStyle, contentWidth);
+    height += 6;
+    height += _measurePdfTextHeight('ឈ្មោះ: ${customerName ?? ''}', infoStyle, contentWidth) + 4;
+    height += _measurePdfTextHeight('ភេទ: ${customerGender ?? ''}', infoStyle, contentWidth) + 4;
+    height += _measurePdfTextHeight('ថ្ងៃ ខែ ឆ្នាំកំណើត: ${customerDob ?? ''}', infoStyle, contentWidth) + 4;
+    height += _measurePdfTextHeight('លេខទូរសព្ទ: ${customerPhone ?? ''}', infoStyle, contentWidth) + 4;
+    height += 12 + 16 + 8; // SizedBox 12, Divider 16, SizedBox 8
+
+    // Order Information Section
     height += _measurePdfTextHeight(
       lang.translate('order information'),
       titleStyle,
@@ -199,6 +244,8 @@ class PdfReceiptHelper {
       contentWidth,
     );
     height += 16;
+
+    // Items Section
     height += _measurePdfTextHeight(
       lang.translate('items'),
       titleStyle,
@@ -277,7 +324,12 @@ class PdfReceiptHelper {
       infoStyle,
       contentWidth,
     );
-    height += pdfHorizontalPadding + 4;
+
+    // Signature section
+    height += 32 + 40 + 4 + 14 + 12;
+
+    // Safety margin to prevent overflow stripes
+    height += 30;
 
     return height.ceilToDouble();
   }
@@ -355,21 +407,31 @@ class PdfReceiptHelper {
           ),
           const SizedBox(height: 16),
           const Divider(thickness: 1, color: Colors.grey),
+          const SizedBox(height: 8),
+          // ─── Customer Info ───────────────────────────────────────────────
           Text(
-            lang.translate('order information'),
+            'ព័ត៌មានអតិថិជន',
             style: TextStyle(
               fontFamily: fontFamily,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
+          const SizedBox(height: 6),
+          _infoLine('ឈ្មោះ', customerName ?? '', fontFamily),
+          // _infoLine('ភេទ', customerGender ?? '', fontFamily),
+          _infoLine('ថ្ងៃ ខែ ឆ្នាំកំណើត', customerDob ?? '', fontFamily),
+          _infoLine('លេខទូរសព្ទ', customerPhone ?? '', fontFamily),
           const SizedBox(height: 12),
+          const Divider(thickness: 1, color: Colors.grey),
+          const SizedBox(height: 8),
+          // ─── Order Info ──────────────────────────────────────────────────
           Text(
             lang.translate('order information'),
             style: TextStyle(
               fontFamily: fontFamily,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -564,6 +626,61 @@ class PdfReceiptHelper {
               ),
             ],
           ),
+          
+          const SizedBox(height: 45),
+          // ─── Signature Section ───────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Colors.black, width: 1)),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'ហត្ថលេខាអតិថិជន',
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 10,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 80),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Colors.black, width: 1)),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'ហត្ថលេខាបុគ្គលិក',
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 10,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // const SizedBox(height: 12),
           const SizedBox(height: 24),
           Text(
             lang.translate('thank you for shopping with us!'),
@@ -585,11 +702,7 @@ class PdfReceiptHelper {
     final mediaQuery = MediaQuery.of(context);
     final receiptWidget = SizedBox(
       width: targetSize.width,
-      height: targetSize.height,
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: buildPdfReceiptWidget(),
-      ),
+      child: buildPdfReceiptWidget(),
     );
 
     final bytes = await screenshotController.captureFromWidget(
