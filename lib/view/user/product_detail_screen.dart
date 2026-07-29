@@ -593,6 +593,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 productPrice: product.price,
                                 imageUrl: imageUrl,
                                 productImage: productImage,
+                                author: product.author,
                               ),
                             ),
                           );

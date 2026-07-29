@@ -4,6 +4,7 @@ import 'package:thesisapp/theme_color.dart';
 class BuildCardProduct extends StatelessWidget {
   final VoidCallback? onTap;
   final String productName;
+  final String author;
   final String productPrice;
   final String imageUrl;
   final String productImage;
@@ -13,7 +14,7 @@ class BuildCardProduct extends StatelessWidget {
     required this.productName,
     required this.productPrice,
     required this.imageUrl,
-    required this.productImage,
+    required this.productImage, required this.author,
   });
 
   @override
@@ -68,9 +69,9 @@ class BuildCardProduct extends StatelessWidget {
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       color: TextColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       fontFamily: getFontFamily(context),
                     ),
                     maxLines: 1,
@@ -78,10 +79,10 @@ class BuildCardProduct extends StatelessWidget {
                   ),
                   // SizedBox(height: Height5),
                   Text(
-                    productName,
+                    author,
                     style: TextStyle(
                       overflow: TextOverflow.ellipsis,
-                      fontSize: 14,
+                      fontSize: 12,
                       color: TextColor,
                       fontFamily: getFontFamily(context),
                     ),

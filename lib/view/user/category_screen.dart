@@ -12,16 +12,32 @@ import 'package:thesisapp/view/user/search_screen.dart';
 // Category model — fetched from categories table (related to products)
 // ---------------------------------------------------------------------------
 class CategoryModel {
-  final int    id;   // categories.id (FK referenced by products.category_id)
-  final String name; // categories.name (e.g. "Book", "Shirt", "Materials")
+  final int    id;     // categories.id (FK referenced by products.category_id)
+  final String name;   // categories.name (English name e.g. "Book", "Shirt", "Materials")
+  final String nameKh; // categories.name_kh (Khmer name)
 
-  const CategoryModel({required this.id, required this.name});
+  const CategoryModel({
+    required this.id,
+    required this.name,
+    this.nameKh = '',
+  });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
-      id:   int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      name: json['name']?.toString() ?? '',
+      id:     int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name:   json['name']?.toString() ?? '',
+      nameKh: json['name_kh']?.toString() ?? json['nameKh']?.toString() ?? '',
     );
+  }
+
+  String getTitle(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+    final isEnglish = lang?.locale.languageCode == 'en';
+    if (isEnglish) {
+      return name.isNotEmpty ? name : nameKh;
+    } else {
+      return nameKh.isNotEmpty ? nameKh : name;
+    }
   }
 }
 
@@ -115,7 +131,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         onTap: _openSearch,
                         decoration: InputDecoration(
                           fillColor: Colors.transparent,
-                          hintText: 'ស្វែងរក...',
+                          hintText: '${lang.translate('search')}...',
                           hintStyle: TextStyle(
                             fontSize: 13,
                             color: TextSoftColor,
@@ -201,13 +217,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
         builder: (_) => ProductScreen(
           categoryId:    category.id,    // FK-based filter (preferred)
           categoryName:  category.name,  // fallback display
-          categoryTitle: category.name,
+          categoryTitle: category.getTitle(context),
         ),
       ),
     );
   }
 
   Widget _buildCategoryItem(CategoryModel category) {
+    final title = category.getTitle(context);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _openCategory(category),
@@ -227,7 +245,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            category.name,
+            title,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

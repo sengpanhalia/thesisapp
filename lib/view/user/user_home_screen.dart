@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
@@ -41,11 +42,12 @@ class _HomePageState extends State<HomePage> {
 
   // ------------------------------------------------------------------
   String getGreeting() {
+    final lang = AppLocalizations.of(context)!;
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'good morning,';
-    if (hour < 17) return 'good afternoon,';
-    if (hour < 20) return 'good evening,';
-    return 'good night,';
+    if (hour < 12) return '${lang.translate('good morning')},';
+    if (hour < 17) return '${lang.translate('good afternoon')},';
+    if (hour < 20) return '${lang.translate('good evening')},';
+    return '${lang.translate('good night')},';
   }
 
   void _openSearch() {
@@ -154,6 +156,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final profileImageUrl = (_userDetail?.profile_pic ?? '').trim();
+    final lang = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
@@ -260,7 +263,7 @@ class _HomePageState extends State<HomePage> {
                             onTap: _openSearch,
                             decoration: InputDecoration(
                               fillColor: Colors.transparent,
-                              hintText: 'ស្វែងរក...',
+                              hintText: '${lang.translate('search')}...',
                               hintStyle: TextStyle(
                                 fontSize: 13,
                                 color: TextSoftColor,
@@ -314,6 +317,8 @@ class _HomePageState extends State<HomePage> {
   /// no hardcoded list needed. Admin can add/remove categories freely.
   List<Widget> _buildCategorySections(BuildContext context) {
     final sections = <Widget>[];
+    final lang = AppLocalizations.of(context)!;
+    final isEnglish = lang.locale.languageCode == 'en';
 
     // Iterate over every category key that came back from the API
     for (final entry in _productsByCategory.entries) {
@@ -321,11 +326,17 @@ class _HomePageState extends State<HomePage> {
       if (products.isEmpty) continue;
 
       // Use category info from the first product in the list
-      final categoryName = products.first.category;
-      final categoryId   = products.first.categoryId; // FK
+      final firstProduct = products.first;
+      final categoryName   = firstProduct.category;
+      final categoryNameKh = firstProduct.categoryKh;
+      final categoryId     = firstProduct.categoryId; // FK
+
+      final categoryTitle = isEnglish
+          ? (categoryName.isNotEmpty ? categoryName : categoryNameKh)
+          : (categoryNameKh.isNotEmpty ? categoryNameKh : categoryName);
 
       sections.add(_CategorySectionWidget(
-        title:    categoryName,
+        title: categoryTitle,
         products: products,
         baseUrl:  _baseUrl,
         onSeeAll: () {
@@ -335,7 +346,7 @@ class _HomePageState extends State<HomePage> {
               builder: (_) => ProductScreen(
                 categoryId:    categoryId,
                 categoryName:  categoryName,
-                categoryTitle: categoryName,
+                categoryTitle: categoryTitle,
               ),
             ),
           );
@@ -362,7 +373,7 @@ class _HomePageState extends State<HomePage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 40),
             child: Text(
-              'មិនមានទំនិញទេ',
+              lang.translate('no items found'),
               style: TextStyle(
                 fontSize: 14,
                 color: TextSoftColor,
@@ -385,7 +396,7 @@ class _HomePageState extends State<HomePage> {
     if (randomTen.isNotEmpty) {
       sections.add(SizedBox(height: Height5));
       sections.add(_RandomProductsSection(
-        title:    'ណែនាំសម្រាប់អ្នក',  // "Recommended for You"
+        title: lang.translate('recommended for you'),  // "Recommended for You"
         products: randomTen,
         baseUrl:  _baseUrl,
         onSeeAll: () {
@@ -432,6 +443,7 @@ class _RandomProductsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,7 +454,7 @@ class _RandomProductsSection extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 color: TextColor,
                 fontWeight: FontWeight.w700,
                 fontFamily: getFontFamily(context),
@@ -451,7 +463,7 @@ class _RandomProductsSection extends StatelessWidget {
             GestureDetector(
               onTap: onSeeAll,
               child: Text(
-                'មើលទាំងអស់',
+                lang.translate('see all'),
                 style: TextStyle(
                   fontSize: 13,
                   color: GText1,
@@ -489,6 +501,7 @@ class _RandomProductsSection extends StatelessWidget {
               productPrice: product.price,
               imageUrl:     imageUrl,
               productImage: productImage,
+              author: product.author,
             );
           },
         ),
@@ -517,6 +530,7 @@ class _CategorySectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -527,7 +541,7 @@ class _CategorySectionWidget extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 color: TextColor,
                 fontWeight: FontWeight.w700,
                 fontFamily: getFontFamily(context),
@@ -536,7 +550,7 @@ class _CategorySectionWidget extends StatelessWidget {
             GestureDetector(
               onTap: onSeeAll,
               child: Text(
-                'មើលទាំងអស់',
+                lang.translate("see all"),
                 style: TextStyle(
                   fontSize: 13,
                   color: GText1,
@@ -552,7 +566,7 @@ class _CategorySectionWidget extends StatelessWidget {
 
         // Horizontal scroll of product cards
         SizedBox(
-          height: 220,
+          height: 250,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: products.length,
@@ -565,13 +579,15 @@ class _CategorySectionWidget extends StatelessWidget {
                   : '$baseUrl/uploads/products/$productImage';
 
               return SizedBox(
-                width: 148,
+                // width: 148,
+                width: 165,
                 child: BuildCardProduct(
                   onTap: () => onProductTap(product),
                   productName:  product.name,
                   productPrice: product.price,
                   imageUrl:     imageUrl,
                   productImage: productImage,
+                  author:       product.author,
                 ),
               );
             },

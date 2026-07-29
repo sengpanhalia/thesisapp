@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_description.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/khqr_payment_screen.dart';
@@ -84,7 +85,7 @@ class _CartScreenState extends State<CartScreen> {
     } else if (!isCartTabVisible) {
       _didRefreshActiveTab = false;
     }
-
+    final lang = AppLocalizations.of(context)!;
     return Scaffold(
       body: Stack(
         children: [
@@ -108,8 +109,8 @@ class _CartScreenState extends State<CartScreen> {
                           color: Colors.grey[400],
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          'Your cart is empty',
+                        Text(
+                          lang.translate('your cart is empty'),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -118,7 +119,7 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Looks like you haven\'t added anything yet',
+                          lang.translate('looks like you haven\'t added anything yet'),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -149,8 +150,8 @@ class _CartScreenState extends State<CartScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                "Total",
+                               Text(
+                                lang.translate("total"),
                                 style: TextStyle(
                                   color: TextColor,
                                   fontSize: 16,
@@ -192,8 +193,8 @@ class _CartScreenState extends State<CartScreen> {
                               alignment: Alignment.center,
                               child: Text(
                                 KhqrPaymentWatcher.isActive
-                                    ? "Continue"
-                                    : "Checkout",
+                                    ? lang.translate("continue")
+                                    : lang.translate("checkout"),
                                 style: TextStyle(
                                   color: Color(0xFFFFFFFF),
                                   fontSize: 16,
@@ -230,7 +231,7 @@ class _CartScreenState extends State<CartScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.',
+                                  lang.translate('KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.'),
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,

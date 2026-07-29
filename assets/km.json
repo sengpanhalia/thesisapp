@@ -70,5 +70,13 @@
   "good morning": "អរុណសួស្តី",
   "good afternoon": "ទិវាសួស្តី",
   "good evening": "សាយន្តសួស្តី",
-  "good night": "រាត្រីសួស្តី"
+  "good night": "រាត្រីសួស្តី",
+  "see all": "មើលទាំងអស់",
+  "recommended for you": "ណែនាំសម្រាប់អ្នក",
+  "your cart is empty": "មិនទាន់មានទំនិញនៅក្នុងកន្រ្តករបស់អ្នកទេ",
+  "looks like you haven't added anything yet": "មើលទៅ អ្នកមិនទាន់បានបន្ថែមទំនិញណាមួយនៅឡើយទេ",
+  "continue": "បន្តទូទាត់",
+  "checkout": "ទូទាត់",
+  "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.": "ការទូទាត់តាមប្រព័ន្ធ KHQR កំពុងដំណើរការ។ អ្នកមិនអាចកែប្រែទំនិញក្នុងកន្រ្តករបស់អ្នកបានទេ រហូតដល់អ្នកបានបញ្ចប់ការទូទាត់ ឬបោះបង់ការទូទាត់។"
+  
 }

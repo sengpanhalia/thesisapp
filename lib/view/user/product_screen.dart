@@ -186,6 +186,7 @@ class _ProductScreenState extends State<ProductScreen> {
                           productPrice: products.price,
                           imageUrl: imageUrl,
                           productImage: productImage,
+                          author: products.author,
                         );
                       },
                     ),

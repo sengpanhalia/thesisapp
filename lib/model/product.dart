@@ -5,7 +5,8 @@ class Product {
   final String price;
   final String? image;
   final String author;
-  final String category;    // text name (kept for display)
+  final String category;    // English category name (categories.name)
+  final String categoryKh;  // Khmer category name (categories.name_kh)
   final int categoryId;     // FK: categories.id
   final String pages;
   final String language;
@@ -20,6 +21,7 @@ class Product {
     required this.image,
     this.author = '',
     this.category = '',
+    this.categoryKh = '',
     this.categoryId = 0,
     this.pages = '',
     this.language = '',
@@ -52,7 +54,12 @@ class Product {
       price: json['price']?.toString() ?? '0',
       image: json['image']?.toString() ?? '',
       author: json['author']?.toString() ?? '',
-      category: json['category_name']?.toString() ?? '',
+      category: json['category_name']?.toString() ?? json['category']?.toString() ?? '',
+      categoryKh: json['category_name_kh']?.toString() ??
+          json['category_nameKh']?.toString() ??
+          json['category_kh']?.toString() ??
+          json['name_kh']?.toString() ??
+          '',
       categoryId: int.tryParse(
         (json['category_id'])?.toString() ?? '0',
       ) ?? 0,
