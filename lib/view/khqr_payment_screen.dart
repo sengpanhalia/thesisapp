@@ -18,6 +18,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class Address {
@@ -487,16 +488,10 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
               (data['payment_status'] ?? data['status_value'] ?? _paymentStatus).toString();
           setState(() => _paymentStatus = nextStatus);
           if (_isPaid) {
-            KhqrPaymentWatcher.stop();
             _expiryTimer?.cancel();
             _checkTimer?.cancel();
-            // Clear the ordered cart items then re-fetch to sync with server
-            final cartProvider = context.read<CartProvider>();
-            if (widget.cartIds.isNotEmpty) {
-              cartProvider.removeCheckedOutItems(widget.cartIds);
-            }
-            await cartProvider.fetchCart();
-            if (mounted) setState(() {});
+            // Delegate everything (cart clear + navigation) to _finish()
+            await _finish();
             return;
           } else if (_isExpired) {
             _markExpired();
@@ -520,27 +515,40 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     final cartProvider = context.read<CartProvider>();
     if (_isPaid) {
       KhqrPaymentWatcher.stop();
-      // Clear ordered cart items before navigating away
+      // 1. Remove locally immediately (instant UI update)
       if (widget.cartIds.isNotEmpty) {
         cartProvider.removeCheckedOutItems(widget.cartIds);
       }
-    }
-    await cartProvider.fetchCart();
-    if (!mounted) return;
-    context.read<NavigationProvider>().setIndex(_isPaid ? 0 : 2);
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OrderSuccessScreen(
-          orderId: _orderId ?? widget.orderId ?? 0,
-          items: widget.items,
-          total: widget.total,
-          paymentMethod: 'KHQR Payment',
-          createdAt: widget.createdAt,
+      // 2. Re-fetch from server — by now check_khqr_payment.php has already
+      //    deleted the cart rows from DB, so this returns an empty cart.
+      //    This ensures CartProvider is in sync before MainScreen/Cart tab builds.
+      await cartProvider.fetchCart();
+      if (!mounted) return;
+      context.read<NavigationProvider>().setIndex(0);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(
+            orderId: _orderId ?? widget.orderId ?? 0,
+            items: widget.items,
+            total: widget.total,
+            paymentMethod: 'KHQR Payment',
+            createdAt: widget.createdAt,
+          ),
         ),
-      ),
-      (route) => false,
-    );
+        (route) => false,
+      );
+    } else {
+      // Payment NOT completed yet — return to Cart screen without clearing products
+      await cartProvider.fetchCart();
+      if (!mounted) return;
+      context.read<NavigationProvider>().setIndex(2);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (route) => false,
+      );
+    }
   }
 
   // ---- UI ----
@@ -555,22 +563,30 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: GBackground1,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 16),
-              _buildAmountCard(),
-              const SizedBox(height: 16),
-              _buildQrCard(),
-              const SizedBox(height: 20),
-              _buildBottomButtons(),
-            ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _finish();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: GBackground1,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 16),
+                _buildAmountCard(),
+                const SizedBox(height: 16),
+                _buildQrCard(),
+                const SizedBox(height: 20),
+                _buildBottomButtons(),
+              ],
+            ),
           ),
         ),
       ),
