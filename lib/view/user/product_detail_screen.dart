@@ -170,6 +170,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     BuildContext context, {
     required int maxQuantity,
   }) {
+    final lang = AppLocalizations.of(context)!;
     if (maxQuantity <= 0) {
       Fluttertoast.showToast(msg: 'This product is out of stock');
       return Future.value(null);
@@ -186,7 +187,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 borderRadius: BorderRadius.circular(18),
               ),
               title: Text(
-                'Select quantity',
+                lang.translate('select quantity'),
                 style: TextStyle(
               fontFamily: getFontFamily(context),
               fontSize: 18,
@@ -199,7 +200,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'How many would you like to add?',
+                    lang.translate('how many would you like to add'),
                     style: TextStyle(
               fontFamily: getFontFamily(context),
               fontSize: 14,

@@ -5,12 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
+import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/khqr_payment_screen.dart';
-import 'package:thesisapp/view/user/khqr_payment_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
@@ -226,165 +226,175 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // _buildHeader(context),
-              Text(
-                lang.translate('review your order details'),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: TextColor,
-                  fontFamily: getFontFamily(context),
-                ),
-              ),
-              const SizedBox(height: 14),
-              // _InfoCard(
-              //   title: 'Shipping Address',
-              //   child: Column(
-              //     crossAxisAlignment: CrossAxisAlignment.start,
-              //     children: [
-              //       Text(
-              //         widget.address.fullName,
-              //         style: GoogleFonts.poppins(
-              //           fontWeight: FontWeight.w600,
-              //           color: Colors.black87,
-              //         ),
-              //       ),
-              //       const SizedBox(height: 4),
-              //       Text(
-              //         'Phone: ${formatPhone(widget.address.phone)}',
-              //         style: GoogleFonts.poppins(
-              //           fontSize: 12,
-              //           color: Colors.grey[600],
-              //         ),
-              //       ),
-              //       const SizedBox(height: 8),
-              //       Text(
-              //         widget.address.addressLine1,
-              //         style: GoogleFonts.poppins(
-              //           fontSize: 12,
-              //           color: Colors.grey[600],
-              //         ),
-              //       ),
-              //       if ((widget.address.addressLine2 ?? '').trim().isNotEmpty)
-              //         Text(
-              //           widget.address.addressLine2!.trim(),
-              //           style: GoogleFonts.poppins(
-              //             fontSize: 12,
-              //             color: Colors.grey[600],
-              //           ),
-              //         ),
-              //       Text(
-              //         '${widget.address.city}${(widget.address.state ?? '').trim().isEmpty ? '' : ', ${widget.address.state}'} '
-              //                 '${widget.address.postalCode ?? ''}'
-              //             .trim(),
-              //         style: GoogleFonts.poppins(
-              //           fontSize: 12,
-              //           color: Colors.grey[600],
-              //         ),
-              //       ),
-              //       Text(
-              //         widget.address.country,
-              //         style: GoogleFonts.poppins(
-              //           fontSize: 12,
-              //           color: Colors.grey[600],
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              _InfoCard(
-                title: 'Order Items',
-                child: widget.items.isEmpty
-                    ? Text(
-                        'No items found',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: widget.items.length,
-                        separatorBuilder: (_, __) => const Divider(height: 20),
-                        itemBuilder: (ctx, i) {
-                          final item = widget.items[i];
-                          final qty =
-                              int.tryParse(
-                                item['quantity']?.toString() ?? '0',
-                              ) ??
-                              0;
-                          // final unitPrice = _parseDouble(item['price']);
-                          // final discount = _parseDouble(item['discount']);
-                          // final discountedUnitPrice = discount > 0
-                          //     ? unitPrice * (1 - (discount / 100))
-                          //     : unitPrice;
-                          // final lineTotal = discountedUnitPrice * qty;
-                          // final originalLineTotal = unitPrice * qty;
-                          // final hasDiscount =
-                          //     discount > 0 &&
-                          //     discountedUnitPrice < unitPrice;
-                          final unitPrice = _parseDouble(item['price']);
-                          final originalLineTotal = unitPrice * qty;
-                          return _OrderItemRow(
-                            name: item['name'] ?? '',
-                            qty: qty,
-                            originalPrice: originalLineTotal,
-                            imageUrl:
-                                '${ApiConfig.productsUploadsUrl}/${item['image']}',
-                          );
-                        },
-                      ),
-              ),
-              const SizedBox(height: 14),
-              _InfoCard(
-                title: 'Total',
-                child: _InfoRow(
-                  label: 'Grand Total',
-                  value: '\$${widget.total.toStringAsFixed(2)}',
-                  valueColor: Colors.green[700],
-                  valueWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _placeOrder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: gradientColor(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // _buildHeader(context),
+                Text(
+                  lang.translate('review your order details'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: TextColor,
+                    fontFamily: getFontFamily(context),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+                ),
+                const SizedBox(height: 14),
+                // _InfoCard(
+                //   title: 'Shipping Address',
+                //   child: Column(
+                //     crossAxisAlignment: CrossAxisAlignment.start,
+                //     children: [
+                //       Text(
+                //         widget.address.fullName,
+                //         style: GoogleFonts.poppins(
+                //           fontWeight: FontWeight.w600,
+                //           color: Colors.black87,
+                //         ),
+                //       ),
+                //       const SizedBox(height: 4),
+                //       Text(
+                //         'Phone: ${formatPhone(widget.address.phone)}',
+                //         style: GoogleFonts.poppins(
+                //           fontSize: 12,
+                //           color: Colors.grey[600],
+                //         ),
+                //       ),
+                //       const SizedBox(height: 8),
+                //       Text(
+                //         widget.address.addressLine1,
+                //         style: GoogleFonts.poppins(
+                //           fontSize: 12,
+                //           color: Colors.grey[600],
+                //         ),
+                //       ),
+                //       if ((widget.address.addressLine2 ?? '').trim().isNotEmpty)
+                //         Text(
+                //           widget.address.addressLine2!.trim(),
+                //           style: GoogleFonts.poppins(
+                //             fontSize: 12,
+                //             color: Colors.grey[600],
+                //           ),
+                //         ),
+                //       Text(
+                //         '${widget.address.city}${(widget.address.state ?? '').trim().isEmpty ? '' : ', ${widget.address.state}'} '
+                //                 '${widget.address.postalCode ?? ''}'
+                //             .trim(),
+                //         style: GoogleFonts.poppins(
+                //           fontSize: 12,
+                //           color: Colors.grey[600],
+                //         ),
+                //       ),
+                //       Text(
+                //         widget.address.country,
+                //         style: GoogleFonts.poppins(
+                //           fontSize: 12,
+                //           color: Colors.grey[600],
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
+                _InfoCard(
+                  title: 'Order Items',
+                  child: widget.items.isEmpty
+                      ? Text(
+                          'No items found',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[600],
                           ),
                         )
-                      : Text(
-                          'Confirm Order',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: widget.items.length,
+                          separatorBuilder: (_, __) => const Divider(height: 20),
+                          itemBuilder: (ctx, i) {
+                            final item = widget.items[i];
+                            final qty =
+                                int.tryParse(
+                                  item['quantity']?.toString() ?? '0',
+                                ) ??
+                                0;
+                            // final unitPrice = _parseDouble(item['price']);
+                            // final discount = _parseDouble(item['discount']);
+                            // final discountedUnitPrice = discount > 0
+                            //     ? unitPrice * (1 - (discount / 100))
+                            //     : unitPrice;
+                            // final lineTotal = discountedUnitPrice * qty;
+                            // final originalLineTotal = unitPrice * qty;
+                            // final hasDiscount =
+                            //     discount > 0 &&
+                            //     discountedUnitPrice < unitPrice;
+                            final unitPrice = _parseDouble(item['price']);
+                            final originalLineTotal = unitPrice * qty;
+                            return _OrderItemRow(
+                              name: item['name'] ?? '',
+                              qty: qty,
+                              originalPrice: originalLineTotal,
+                              imageUrl:
+                                  '${ApiConfig.productsUploadsUrl}/${item['image']}',
+                            );
+                          },
                         ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                _InfoCard(
+                  title: 'Total',
+                  child: _InfoRow(
+                    label: 'Grand Total',
+                    value: '\$${widget.total.toStringAsFixed(2)}',
+                    valueColor: Colors.green[700],
+                    valueWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _placeOrder,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Confirm Order',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

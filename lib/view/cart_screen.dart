@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_description.dart';
 import 'package:thesisapp/component/cart_provider.dart';
+import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
@@ -89,635 +90,644 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // const BackgroundColor(),
-          SafeArea(
-            child: Consumer<CartProvider>(
-              builder: (context, cartProvider, child) {
-                if (cartProvider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                // Empty cart state
-                if (cartProvider.cartItems.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shopping_cart_rounded,
-                          size: 100,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          lang.translate('your cart is empty'),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          lang.translate('looks like you haven\'t added anything yet'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  );
-                }
-
-                final isPaymentLocked = KhqrPaymentWatcher.isActive;
-                final canContinue =
-                    isPaymentLocked || cartProvider.selectedItemIds.isNotEmpty;
-
-                // Cart with items
-                return Column(
-                  children: [
-                    // Top row: Total and Checkout
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Container(
+            width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: gradientColor(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+            child: SafeArea(
+              child: Consumer<CartProvider>(
+                builder: (context, cartProvider, child) {
+                  if (cartProvider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+            
+                  // Empty cart state
+                  if (cartProvider.cartItems.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                               Text(
-                                lang.translate("total"),
-                                style: TextStyle(
-                                  color: TextColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                "\$${cartProvider.total.toStringAsFixed(2)}",
-                                style: const TextStyle(
-                                  color: TextColor,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                          Icon(
+                            Icons.shopping_cart_rounded,
+                            size: 100,
+                            color: Colors.grey[400],
                           ),
-                          GestureDetector(
-                            onTap: !canContinue
-                                ? null
-                                : () async {
-                                    if (KhqrPaymentWatcher.isActive &&
-                                        KhqrPaymentWatcher.hasPayload) {
-                                      await _openKhqrPaymentScreen();
-                                      return;
-                                    }
-                                    await _openCheckoutPaymentScreen();
-                                  },
-                            child: Container(
-                              height: 50,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 50,
-                              ),
-                              decoration: BoxDecoration(
-                                color: canContinue
-                                    ? ButtonColor
-                                    : Colors.grey[400],
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                KhqrPaymentWatcher.isActive
-                                    ? lang.translate("continue")
-                                    : lang.translate("checkout"),
-                                style: TextStyle(
-                                  color: Color(0xFFFFFFFF),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          const SizedBox(height: 20),
+                          Text(
+                            lang.translate('your cart is empty'),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            lang.translate('looks like you haven\'t added anything yet'),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
                         ],
                       ),
-                    ),
-                    if (isPaymentLocked)
+                    );
+                  }
+            
+                  final isPaymentLocked = KhqrPaymentWatcher.isActive;
+                  final canContinue =
+                      isPaymentLocked || cartProvider.selectedItemIds.isNotEmpty;
+            
+                  // Cart with items
+                  return Column(
+                    children: [
+                      // Top row: Total and Checkout
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.92),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: StrokeCardColor,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.lock_clock_rounded,
-                                color: IconColor,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  lang.translate('KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.'),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 15,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                 Text(
+                                  lang.translate("total"),
+                                  style: TextStyle(
                                     color: TextColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  "\$${cartProvider.total.toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                    color: TextColor,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTap: !canContinue
+                                  ? null
+                                  : () async {
+                                      if (KhqrPaymentWatcher.isActive &&
+                                          KhqrPaymentWatcher.hasPayload) {
+                                        await _openKhqrPaymentScreen();
+                                        return;
+                                      }
+                                      await _openCheckoutPaymentScreen();
+                                    },
+                              child: Container(
+                                height: 50,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 50,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: canContinue
+                                      ? ButtonColor
+                                      : Colors.grey[400],
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  KhqrPaymentWatcher.isActive
+                                      ? lang.translate("continue")
+                                      : lang.translate("checkout"),
+                                  style: TextStyle(
+                                    color: Color(0xFFFFFFFF),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-
-                    // Cart Summary Card
-                    Builder(
-                      builder: (context) {
-                        final selectedItems = cartProvider.selectedItems;
-                        if (selectedItems.isNotEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: CartSummaryCard(cartItems: selectedItems),
+                      if (isPaymentLocked)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
                             ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-
-                    // Blue main container 
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: CardColor,
-                            borderRadius: BorderRadius.circular(25),
-                            border: Border.all(color: Color(0xFFFFFFFF)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 20),
-
-                              // Select all row
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                ),
-                                child: Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: isPaymentLocked
-                                          ? null
-                                          : () {
-                                              final allSelected =
-                                                  cartProvider.allSelected;
-                                              cartProvider.toggleSelectAll(
-                                                !allSelected,
-                                              );
-                                            },
-                                      child: Container(
-                                        width: 22,
-                                        height: 22,
-                                        decoration: BoxDecoration(
-                                          color: cartProvider.allSelected
-                                              ? checkboxColor
-                                              : Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          // border: Border.all(
-                                          //   color:
-                                          //       (cartProvider
-                                          //                   .selectedItemIds
-                                          //                   .length ==
-                                          //               cartProvider
-                                          //                   .cartItems
-                                          //                   .length &&
-                                          //           cartProvider
-                                          //               .cartItems
-                                          //               .isNotEmpty)
-                                          //       ? yellow
-                                          //       : Colors.white70,
-                                          // ),
-                                        ),
-                                        child: cartProvider.allSelected
-                                            ? const Icon(
-                                                Icons.check_rounded,
-                                                size: 16,
-                                                color: Colors.white,
-                                              )
-                                            : null,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    const Text(
-                                      "Select all available",
-                                      style: TextStyle(
-                                        color: Color(0xFF9A9288),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.92),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: StrokeCardColor,
                               ),
-                              const SizedBox(height: 15),
-
-                              // List of cart items
-                              Expanded(
-                                child: ListView.separated(
-                                  itemCount: cartProvider.cartItems.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    final item = cartProvider.cartItems[index];
-                                    final cartId = item['cart_id'];
-                                    final price =
-                                        double.tryParse(
-                                          item['price']?.toString() ?? '0',
-                                        ) ??
-                                        0.0;
-                                    final originalPrice = price;
-                                    final quantity = item['quantity'] ?? 1;
-                                    final stockQuantity = cartProvider
-                                        .itemStockQuantity(item);
-                                    final stockIssue = cartProvider
-                                        .stockIssueForItem(item);
-                                    final isPurchasable = cartProvider
-                                        .isItemPurchasable(item);
-
-                                    return Dismissible(
-                                      key: Key(cartId.toString()),
-                                      direction: isPaymentLocked
-                                          ? DismissDirection.none
-                                          : DismissDirection.endToStart,
-                                      onDismissed: isPaymentLocked
-                                          ? null
-                                          : (_) =>
-                                                cartProvider.removeItem(cartId),
-                                      background: Container(
-                                        alignment: Alignment.centerRight,
-                                        padding: const EdgeInsets.only(
-                                          right: 20,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Color.fromARGB(255, 241, 221, 201),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.lock_clock_rounded,
+                                  color: IconColor,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    lang.translate('KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.'),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: TextColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+            
+                      // Cart Summary Card
+                      Builder(
+                        builder: (context) {
+                          final selectedItems = cartProvider.selectedItems;
+                          if (selectedItems.isNotEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(25),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: CartSummaryCard(cartItems: selectedItems),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+            
+                      // Blue main container 
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: CardColor,
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(color: Color(0xFFFFFFFF)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 20),
+            
+                                // Select all row
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: isPaymentLocked
+                                            ? null
+                                            : () {
+                                                final allSelected =
+                                                    cartProvider.allSelected;
+                                                cartProvider.toggleSelectAll(
+                                                  !allSelected,
+                                                );
+                                              },
+                                        child: Container(
+                                          width: 22,
+                                          height: 22,
+                                          decoration: BoxDecoration(
+                                            color: cartProvider.allSelected
+                                                ? checkboxColor
+                                                : Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            // border: Border.all(
+                                            //   color:
+                                            //       (cartProvider
+                                            //                   .selectedItemIds
+                                            //                   .length ==
+                                            //               cartProvider
+                                            //                   .cartItems
+                                            //                   .length &&
+                                            //           cartProvider
+                                            //               .cartItems
+                                            //               .isNotEmpty)
+                                            //       ? yellow
+                                            //       : Colors.white70,
+                                            // ),
                                           ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.delete_rounded,
-                                          color: IconColor,
-                                          size: 30,
+                                          child: cartProvider.allSelected
+                                              ? const Icon(
+                                                  Icons.check_rounded,
+                                                  size: 16,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
                                         ),
                                       ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
+                                      const SizedBox(width: 10),
+                                      const Text(
+                                        "Select all available",
+                                        style: TextStyle(
+                                          color: Color(0xFF9A9288),
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Yellow checkbox
-                                            GestureDetector(
-                                              onTap:
-                                                  isPaymentLocked ||
-                                                      !isPurchasable
-                                                  ? null
-                                                  : () =>
-                                                        cartProvider.toggleItem(
-                                                          cartId,
-                                                          !cartProvider
-                                                              .selectedItemIds
-                                                              .contains(cartId),
-                                                        ),
-                                              child: Container(
-                                                width: 22,
-                                                height: 22,
-                                                margin: const EdgeInsets.only(
-                                                  top: 8,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      cartProvider
-                                                              .selectedItemIds
-                                                              .contains(
-                                                                cartId,
-                                                              ) &&
-                                                          isPurchasable
-                                                      ? checkboxColor
-                                                      : isPurchasable
-                                                      ? Colors.white
-                                                      : Colors.grey[200],
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                  // border: Border.all(
-                                                  //   color:
-                                                  //       cartProvider
-                                                  //           .selectedItemIds
-                                                  //           .contains(cartId)
-                                                  //       ? Color(
-                                                  //           0xFFE39A4F,
-                                                  //         ).withOpacity(0.7)
-                                                  //       : Colors.white,
-                                                  // ),
-                                                ),
-                                                child:
-                                                    cartProvider.selectedItemIds
-                                                        .contains(cartId)
-                                                    ? const Icon(
-                                                        Icons.check_rounded,
-                                                        size: 16,
-                                                        color: Colors.white,
-                                                      )
-                                                    : null,
-                                              ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 15),
+            
+                                // List of cart items
+                                Expanded(
+                                  child: ListView.separated(
+                                    itemCount: cartProvider.cartItems.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final item = cartProvider.cartItems[index];
+                                      final cartId = item['cart_id'];
+                                      final price =
+                                          double.tryParse(
+                                            item['price']?.toString() ?? '0',
+                                          ) ??
+                                          0.0;
+                                      final originalPrice = price;
+                                      final quantity = item['quantity'] ?? 1;
+                                      final stockQuantity = cartProvider
+                                          .itemStockQuantity(item);
+                                      final stockIssue = cartProvider
+                                          .stockIssueForItem(item);
+                                      final isPurchasable = cartProvider
+                                          .isItemPurchasable(item);
+            
+                                      return Dismissible(
+                                        key: Key(cartId.toString()),
+                                        direction: isPaymentLocked
+                                            ? DismissDirection.none
+                                            : DismissDirection.endToStart,
+                                        onDismissed: isPaymentLocked
+                                            ? null
+                                            : (_) =>
+                                                  cartProvider.removeItem(cartId),
+                                        background: Container(
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.only(
+                                            right: 20,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Color.fromARGB(255, 241, 221, 201),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
                                             ),
-                                            const SizedBox(width: 12),
-
-                                            // Product info
-                                            Expanded(
-                                              child: Container(
-                                                padding: const EdgeInsets.all(
-                                                  12,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                ),
-                                                child: Column(
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        // Product image
-                                                        ClipRRect(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                          child: Image.network(
-                                                            "${ApiConfig.productsUploadsUrl}/${item['image']}",
-                                                            width: 50,
-                                                            height: 50,
-                                                            fit: BoxFit.cover,
-                                                            errorBuilder:
-                                                                (
-                                                                  _,
-                                                                  __,
-                                                                  ___,
-                                                                ) => Container(
-                                                                  width: 50,
-                                                                  height: 50,
-                                                                  color: Colors
-                                                                      .grey[200],
-                                                                  child: const Icon(
-                                                                    Icons
-                                                                        .image_rounded,
-                                                                    size: 30,
-                                                                  ),
-                                                                ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.delete_rounded,
+                                            color: IconColor,
+                                            size: 30,
+                                          ),
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              // Yellow checkbox
+                                              GestureDetector(
+                                                onTap:
+                                                    isPaymentLocked ||
+                                                        !isPurchasable
+                                                    ? null
+                                                    : () =>
+                                                          cartProvider.toggleItem(
+                                                            cartId,
+                                                            !cartProvider
+                                                                .selectedItemIds
+                                                                .contains(cartId),
                                                           ),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 12,
-                                                        ),
-
-                                                        // Name and price
-                                                        Expanded(
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(
-                                                                item['name'] ??
-                                                                    'Product',
-                                                                style: const TextStyle(
-                                                                  color: TextColor,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 16,
+                                                child: Container(
+                                                  width: 22,
+                                                  height: 22,
+                                                  margin: const EdgeInsets.only(
+                                                    top: 8,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        cartProvider
+                                                                .selectedItemIds
+                                                                .contains(
+                                                                  cartId,
+                                                                ) &&
+                                                            isPurchasable
+                                                        ? checkboxColor
+                                                        : isPurchasable
+                                                        ? Colors.white
+                                                        : Colors.grey[200],
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                    // border: Border.all(
+                                                    //   color:
+                                                    //       cartProvider
+                                                    //           .selectedItemIds
+                                                    //           .contains(cartId)
+                                                    //       ? Color(
+                                                    //           0xFFE39A4F,
+                                                    //         ).withOpacity(0.7)
+                                                    //       : Colors.white,
+                                                    // ),
+                                                  ),
+                                                  child:
+                                                      cartProvider.selectedItemIds
+                                                          .contains(cartId)
+                                                      ? const Icon(
+                                                          Icons.check_rounded,
+                                                          size: 16,
+                                                          color: Colors.white,
+                                                        )
+                                                      : null,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+            
+                                              // Product info
+                                              Expanded(
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(20),
+                                                  ),
+                                                  child: Column(
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          // Product image
+                                                          ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
                                                                 ),
-                                                              ),
-                                                              const SizedBox(
-                                                                height: 4,
-                                                              ),
-                                                              if (stockIssue !=
-                                                                  null) ...[
-                                                                Text(
-                                                                  stockIssue,
-                                                                  style: const TextStyle(
+                                                            child: Image.network(
+                                                              "${ApiConfig.productsUploadsUrl}/${item['image']}",
+                                                              width: 50,
+                                                              height: 50,
+                                                              fit: BoxFit.cover,
+                                                              errorBuilder:
+                                                                  (
+                                                                    _,
+                                                                    __,
+                                                                    ___,
+                                                                  ) => Container(
+                                                                    width: 50,
+                                                                    height: 50,
                                                                     color: Colors
-                                                                        .redAccent,
-                                                                    fontSize:
-                                                                        11,
+                                                                        .grey[200],
+                                                                    child: const Icon(
+                                                                      Icons
+                                                                          .image_rounded,
+                                                                      size: 30,
+                                                                    ),
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 12,
+                                                          ),
+            
+                                                          // Name and price
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
+                                                              children: [
+                                                                Text(
+                                                                  item['name'] ??
+                                                                      'Product',
+                                                                  style: const TextStyle(
+                                                                    color: TextColor,
                                                                     fontWeight:
                                                                         FontWeight
-                                                                            .w600,
+                                                                            .bold,
+                                                                    fontSize: 16,
                                                                   ),
                                                                 ),
                                                                 const SizedBox(
                                                                   height: 4,
                                                                 ),
-                                                              ],
-                                                              // else
-                                                              //   Text(
-                                                              //     'Stock: $stockQuantity',
-                                                              //     style: const TextStyle(
-                                                              //       color: Color(
-                                                              //         0xFF9A9288,
-                                                              //       ),
-                                                              //       fontSize:
-                                                              //           11,
-                                                              //       fontWeight:
-                                                              //           FontWeight
-                                                              //               .w500,
-                                                              //     ),
-                                                              //   ),
-                                                              Row(
-                                                                children: [
+                                                                if (stockIssue !=
+                                                                    null) ...[
                                                                   Text(
-                                                                    "\$${originalPrice.toStringAsFixed(2)}",
-                                                                    style: TextStyle(
-                                                                      color:
-                                                                          TextColor,
-
+                                                                    stockIssue,
+                                                                    style: const TextStyle(
+                                                                      color: Colors
+                                                                          .redAccent,
                                                                       fontSize:
-                                                                          14,
+                                                                          11,
                                                                       fontWeight:
                                                                           FontWeight
                                                                               .w600,
                                                                     ),
                                                                   ),
-                                                                  // -======
                                                                   const SizedBox(
-                                                                    width: 5,
+                                                                    height: 4,
                                                                   ),
-                                                                  // if (hasDiscount)
-                                                                  //   Text(
-                                                                  //     "\$${originalPrice.toStringAsFixed(2)}",
-                                                                  //     style: GoogleFonts.poppins(
-                                                                  //       fontSize:
-                                                                  //           11,
-                                                                  //       fontWeight:
-                                                                  //           FontWeight.w500,
-                                                                  //       color: Colors
-                                                                  //           .black45,
-                                                                  //       decoration:
-                                                                  //           TextDecoration.lineThrough,
-                                                                  //     ),
-                                                                  //   ),
                                                                 ],
+                                                                // else
+                                                                //   Text(
+                                                                //     'Stock: $stockQuantity',
+                                                                //     style: const TextStyle(
+                                                                //       color: Color(
+                                                                //         0xFF9A9288,
+                                                                //       ),
+                                                                //       fontSize:
+                                                                //           11,
+                                                                //       fontWeight:
+                                                                //           FontWeight
+                                                                //               .w500,
+                                                                //     ),
+                                                                //   ),
+                                                                Row(
+                                                                  children: [
+                                                                    Text(
+                                                                      "\$${originalPrice.toStringAsFixed(2)}",
+                                                                      style: TextStyle(
+                                                                        color:
+                                                                            TextColor,
+            
+                                                                        fontSize:
+                                                                            14,
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .w600,
+                                                                      ),
+                                                                    ),
+                                                                    // -======
+                                                                    const SizedBox(
+                                                                      width: 5,
+                                                                    ),
+                                                                    // if (hasDiscount)
+                                                                    //   Text(
+                                                                    //     "\$${originalPrice.toStringAsFixed(2)}",
+                                                                    //     style: GoogleFonts.poppins(
+                                                                    //       fontSize:
+                                                                    //           11,
+                                                                    //       fontWeight:
+                                                                    //           FontWeight.w500,
+                                                                    //       color: Colors
+                                                                    //           .black45,
+                                                                    //       decoration:
+                                                                    //           TextDecoration.lineThrough,
+                                                                    //     ),
+                                                                    //   ),
+                                                                  ],
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+            
+                                                          // Quantity controls
+                                                          Row(
+                                                            children: [
+                                                              GestureDetector(
+                                                                onTap:
+                                                                    isPaymentLocked
+                                                                    ? null
+                                                                    : stockQuantity <=
+                                                                          0
+                                                                    ? null
+                                                                    : quantity > 1
+                                                                    ? () => cartProvider
+                                                                          .updateQuantity(
+                                                                            cartId,
+                                                                            -1,
+                                                                          )
+                                                                    : null,
+                                                                child: Container(
+                                                                  width: 28,
+                                                                  height: 28,
+                                                                  decoration: BoxDecoration(
+                                                                    color:
+                                                                        checkboxColor,
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          8,
+                                                                        ),
+                                                                  ),
+                                                                  child: const Icon(
+                                                                    Icons
+                                                                        .remove_rounded,
+                                                                    size: 16,
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              // const SizedBox(
+                                                              //   width: 20,
+                                                              // ),
+                                                              Container(
+                                                                width: 35,
+                                                                alignment: Alignment.center,
+                                                                child: Text(
+                                                                  "$quantity",
+                                                                  style: const TextStyle(
+                                                                    color: TextColor,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize: 16,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              // const SizedBox(
+                                                              //   width: 20,
+                                                              // ),
+                                                              GestureDetector(
+                                                                onTap:
+                                                                    isPaymentLocked
+                                                                    ? null
+                                                                    : stockQuantity <=
+                                                                          0
+                                                                    ? null
+                                                                    : quantity >=
+                                                                          stockQuantity
+                                                                    ? null
+                                                                    : () => cartProvider
+                                                                          .updateQuantity(
+                                                                            cartId,
+                                                                            1,
+                                                                          ),
+                                                                child: Container(
+                                                                  width: 28,
+                                                                  height: 28,
+                                                                  decoration: BoxDecoration(
+                                                                    color:
+                                                                        checkboxColor,
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          8,
+                                                                        ),
+                                                                  ),
+                                                                  child: const Icon(
+                                                                    Icons
+                                                                        .add_rounded,
+                                                                    size: 16,
+                                                                    color: Colors
+                                                                        .white,
+                                                                  ),
+                                                                ),
                                                               ),
                                                             ],
                                                           ),
-                                                        ),
-
-                                                        // Quantity controls
-                                                        Row(
-                                                          children: [
-                                                            GestureDetector(
-                                                              onTap:
-                                                                  isPaymentLocked
-                                                                  ? null
-                                                                  : stockQuantity <=
-                                                                        0
-                                                                  ? null
-                                                                  : quantity > 1
-                                                                  ? () => cartProvider
-                                                                        .updateQuantity(
-                                                                          cartId,
-                                                                          -1,
-                                                                        )
-                                                                  : null,
-                                                              child: Container(
-                                                                width: 28,
-                                                                height: 28,
-                                                                decoration: BoxDecoration(
-                                                                  color:
-                                                                      checkboxColor,
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        8,
-                                                                      ),
-                                                                ),
-                                                                child: const Icon(
-                                                                  Icons
-                                                                      .remove_rounded,
-                                                                  size: 16,
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            // const SizedBox(
-                                                            //   width: 20,
-                                                            // ),
-                                                            Container(
-                                                              width: 35,
-                                                              alignment: Alignment.center,
-                                                              child: Text(
-                                                                "$quantity",
-                                                                style: const TextStyle(
-                                                                  color: TextColor,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 16,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            // const SizedBox(
-                                                            //   width: 20,
-                                                            // ),
-                                                            GestureDetector(
-                                                              onTap:
-                                                                  isPaymentLocked
-                                                                  ? null
-                                                                  : stockQuantity <=
-                                                                        0
-                                                                  ? null
-                                                                  : quantity >=
-                                                                        stockQuantity
-                                                                  ? null
-                                                                  : () => cartProvider
-                                                                        .updateQuantity(
-                                                                          cartId,
-                                                                          1,
-                                                                        ),
-                                                              child: Container(
-                                                                width: 28,
-                                                                height: 28,
-                                                                decoration: BoxDecoration(
-                                                                  color:
-                                                                      checkboxColor,
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        8,
-                                                                      ),
-                                                                ),
-                                                                child: const Icon(
-                                                                  Icons
-                                                                      .add_rounded,
-                                                                  size: 16,
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const Divider(),
-                                                  ],
+                                                        ],
+                                                      ),
+                                                      const Divider(),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],

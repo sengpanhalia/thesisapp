@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
@@ -615,108 +616,118 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
       body: Stack(
         children: [
           // const BackgroundColor(),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildReceiptContent(showImages: true),
-                  const SizedBox(height: 16),
-                  // SizedBox(
-                  //   width: double.infinity,
-                  //   child: ElevatedButton.icon(
-                  //     onPressed: _isSavingImage ? null : _saveReceiptImage,
-                  //     icon: _isSavingImage
-                  //         ? const SizedBox(
-                  //             width: 18,
-                  //             height: 18,
-                  //             child: CircularProgressIndicator(
-                  //               strokeWidth: 2,
-                  //               valueColor: AlwaysStoppedAnimation<Color>(
-                  //                 Colors.white,
-                  //               ),
-                  //             ),
-                  //           )
-                  //         : const Icon(Icons.photo_library_rounded),
-                  //     label: Text(
-                  //       _isSavingImage
-                  //           ? 'Saving to Gallery...'
-                  //           : 'Save to Gallery',
-                  //     ),
-                  //     style: ElevatedButton.styleFrom(
-                  //       backgroundColor: const Color(0xFF2D6A4F),
-                  //       foregroundColor: Colors.white,
-                  //       padding: const EdgeInsets.symmetric(vertical: 14),
-                  //       shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(12),
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _isSavingPdf ? null : _saveReceiptPdf,
-                      icon: _isSavingPdf
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.picture_as_pdf_rounded),
-                      label: Text(
-                        _isSavingPdf
-                            ? 'Saving ...'
-                            : Platform.isAndroid
-                            ? lang.translate('save receipt')
-                            : lang.translate('save receipt'),
-                        style: TextStyle(
-                          fontFamily: getFontFamily(context),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFFFFFFF),
+          Container(
+            width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: gradientColor(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildReceiptContent(showImages: true),
+                    const SizedBox(height: 16),
+                    // SizedBox(
+                    //   width: double.infinity,
+                    //   child: ElevatedButton.icon(
+                    //     onPressed: _isSavingImage ? null : _saveReceiptImage,
+                    //     icon: _isSavingImage
+                    //         ? const SizedBox(
+                    //             width: 18,
+                    //             height: 18,
+                    //             child: CircularProgressIndicator(
+                    //               strokeWidth: 2,
+                    //               valueColor: AlwaysStoppedAnimation<Color>(
+                    //                 Colors.white,
+                    //               ),
+                    //             ),
+                    //           )
+                    //         : const Icon(Icons.photo_library_rounded),
+                    //     label: Text(
+                    //       _isSavingImage
+                    //           ? 'Saving to Gallery...'
+                    //           : 'Save to Gallery',
+                    //     ),
+                    //     style: ElevatedButton.styleFrom(
+                    //       backgroundColor: const Color(0xFF2D6A4F),
+                    //       foregroundColor: Colors.white,
+                    //       padding: const EdgeInsets.symmetric(vertical: 14),
+                    //       shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(12),
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isSavingPdf ? null : _saveReceiptPdf,
+                        icon: _isSavingPdf
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.picture_as_pdf_rounded),
+                        label: Text(
+                          _isSavingPdf
+                              ? 'Saving ...'
+                              : Platform.isAndroid
+                              ? lang.translate('save receipt')
+                              : lang.translate('save receipt'),
+                          style: TextStyle(
+                            fontFamily: getFontFamily(context),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFFFFFFF),
+                          ),
                         ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D6A4F),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MainScreen()),
-                        (route) => false,
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(color: Theme.of(context).primaryColor),
-                      ),
-                      child: Text(
-                        lang.translate('continue shopping'),
-                        style: TextStyle(
-                          fontFamily: getFontFamily(context),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Theme.of(context).primaryColor,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D6A4F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MainScreen()),
+                          (route) => false,
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Theme.of(context).primaryColor),
+                        ),
+                        child: Text(
+                          lang.translate('continue shopping'),
+                          style: TextStyle(
+                            fontFamily: getFontFamily(context),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

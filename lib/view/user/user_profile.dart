@@ -143,7 +143,7 @@ class _UserProfileState extends State<UserProfile> {
                           Text(
                             _userDetail?.name_kh ?? "",
                             style: TextStyle(
-                              fontFamily: getFontFamily(context),
+                              fontFamily: 'SiemReap',
                               color: TextColor,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -156,7 +156,7 @@ class _UserProfileState extends State<UserProfile> {
                               fontFamily: getFontFamily(context),
                               color: TextColor,
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],

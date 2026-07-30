@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
+import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/order_summary_screen.dart';
@@ -87,7 +88,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
     // });
 
     return Scaffold(
-      backgroundColor: background,
+      // backgroundColor: background,
       appBar: AppBar(
         title: Text(
                       lang.translate('payment'),
@@ -106,373 +107,383 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
         elevation: 0,
         backgroundColor: background,
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshCart,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Padding(
-                //   padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-                //   child: SizedBox(
-                //     height: 44,
-                //     child: Text(
-                //       lang.translate('payment'),
-                //       style: TextStyle(
-                //         fontSize: 20,
-                //         fontWeight: FontWeight.w700,
-                //         color: Colors.black87,
-                //         fontFamily: getFontFamilyMool1(context),
-                //       ),
-                //     ),
-                //   ),
-                // ),
-                Text(
-                  lang.translate('select Payment Method'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                    fontFamily: getFontFamily(context),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  lang.translate('review and choose payment method'),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: TextColor,
-                    fontFamily: getFontFamily(context),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  lang.translate('note: The currency used for payment is the Cambodian Riel (KHR)'),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: RedColor,
-                    fontFamily: getFontFamily(context),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                // _InfoCard(
-                //   title: lang.translate('order_summary'),
-                //   child: Column(
-                //     crossAxisAlignment: CrossAxisAlignment.start,
-                //     children: [
-                //       Table(
-                //         columnWidths: const {
-                //           0: FlexColumnWidth(3.5),
-                //           1: FlexColumnWidth(1.2),
-                //           2: FlexColumnWidth(2.5),
-                //           3: FlexColumnWidth(2.5),
-                //         },
-                //         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                //         children: [
-                //           // Table Header
-                //           TableRow(
-                //             children: [
-                //               TableCell(
-                //                 child: Padding(
-                //                   padding: const EdgeInsets.only(bottom: 8.0),
-                //                   child: Text(
-                //                     lang.translate('item_name'),
-                //                     style: TextStyle(
-                //                       fontSize: 12,
-                //                       fontWeight: FontWeight.bold,
-                //                       color: TextSoftColor,
-                //                       fontFamily: getFontFamily(context),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Padding(
-                //                   padding: const EdgeInsets.only(bottom: 8.0),
-                //                   child: Text(
-                //                     lang.translate('quantity'),
-                //                     textAlign: TextAlign.center,
-                //                     style: TextStyle(
-                //                       fontSize: 12,
-                //                       fontWeight: FontWeight.bold,
-                //                       color: TextSoftColor,
-                //                       fontFamily: getFontFamily(context),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Padding(
-                //                   padding: const EdgeInsets.only(bottom: 8.0),
-                //                   child: Text(
-                //                     lang.translate('price_unit'),
-                //                     textAlign: TextAlign.right,
-                //                     style: TextStyle(
-                //                       fontSize: 12,
-                //                       fontWeight: FontWeight.bold,
-                //                       color: TextSoftColor,
-                //                       fontFamily: getFontFamily(context),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Padding(
-                //                   padding: const EdgeInsets.only(bottom: 8.0),
-                //                   child: Text(
-                //                     lang.translate('price'),
-                //                     textAlign: TextAlign.right,
-                //                     style: TextStyle(
-                //                       fontSize: 12,
-                //                       fontWeight: FontWeight.bold,
-                //                       color: TextSoftColor,
-                //                       fontFamily: getFontFamily(context),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //             ],
-                //           ),
-                //           // Item Rows
-                //           ...cartProvider.selectedItems.map((item) {
-                //             final double price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-                //             final int quantity = item['quantity'] ?? 1;
-                //             final double totalPricePerItem = price * quantity;
-
-                //             return TableRow(
-                //               children: [
-                //                 TableCell(
-                //                   child: Padding(
-                //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
-                //                     child: Text(
-                //                       item['name'] ?? '',
-                //                       maxLines: 2,
-                //                       overflow: TextOverflow.ellipsis,
-                //                       style: TextStyle(
-                //                         fontSize: 13,
-                //                         color: TextColor,
-                //                         fontFamily: getFontFamily(context),
-                //                       ),
-                //                     ),
-                //                   ),
-                //                 ),
-                //                 TableCell(
-                //                   child: Padding(
-                //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
-                //                     child: Text(
-                //                       _formatQuantity(quantity, context),
-                //                       textAlign: TextAlign.center,
-                //                       style: TextStyle(
-                //                         fontSize: 13,
-                //                         color: TextColor,
-                //                         fontFamily: getFontFamily(context),
-                //                       ),
-                //                     ),
-                //                   ),
-                //                 ),
-                //                 TableCell(
-                //                   child: Padding(
-                //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
-                //                     child: Text(
-                //                       '\$${price.toStringAsFixed(2)}',
-                //                       textAlign: TextAlign.right,
-                //                       style: TextStyle(
-                //                         fontSize: 13,
-                //                         color: TextColor,
-                //                         fontFamily: getFontFamily(context),
-                //                       ),
-                //                     ),
-                //                   ),
-                //                 ),
-                //                 TableCell(
-                //                   child: Padding(
-                //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
-                //                     child: Text(
-                //                       '\$${totalPricePerItem.toStringAsFixed(2)}',
-                //                       textAlign: TextAlign.right,
-                //                       style: TextStyle(
-                //                         fontSize: 13,
-                //                         color: TextColor,
-                //                         fontFamily: getFontFamily(context),
-                //                       ),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ],
-                //             );
-                //           }),
-                //           // Divider Row
-                //           TableRow(
-                //             children: [
-                //               TableCell(
-                //                 child: Container(
-                //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
-                //                   height: 1,
-                //                   color: StrokeColor,
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Container(
-                //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
-                //                   height: 1,
-                //                   color: StrokeColor,
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Container(
-                //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
-                //                   height: 1,
-                //                   color: StrokeColor,
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Container(
-                //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
-                //                   height: 1,
-                //                   color: StrokeColor,
-                //                 ),
-                //               ),
-                //             ],
-                //           ),
-                //           // Total Row
-                //           TableRow(
-                //             children: [
-                //               const TableCell(child: SizedBox()),
-                //               const TableCell(child: SizedBox()),
-                //               TableCell(
-                //                 child: Padding(
-                //                   padding: const EdgeInsets.only(top: 4.0),
-                //                   child: Text(
-                //                     lang.translate('total'),
-                //                     textAlign: TextAlign.right,
-                //                     style: TextStyle(
-                //                       fontSize: 14,
-                //                       fontWeight: FontWeight.bold,
-                //                       color: TextColor,
-                //                       fontFamily: getFontFamily(context),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //               TableCell(
-                //                 child: Padding(
-                //                   padding: const EdgeInsets.only(top: 4.0),
-                //                   child: Text(
-                //                     '\$${totalSum.toStringAsFixed(2)}',
-                //                     textAlign: TextAlign.right,
-                //                     style: TextStyle(
-                //                       fontSize: 14,
-                //                       fontWeight: FontWeight.bold,
-                //                       color: TextColor,
-                //                       fontFamily: getFontFamily(context),
-                //                     ),
-                //                   ),
-                //                 ),
-                //               ),
-                //             ],
-                //           ),
-                //         ],
-                //       ),
-                //       if (_isRefreshing) ...[
-                //         const SizedBox(height: 10),
-                //         const LinearProgressIndicator(),
-                //       ],
-                //     ],
-                //   ),
-                // ),
-                // const SizedBox(height: 14),
-                // _InfoCard(
-                //   title: 'Shipping Address',
-                //   child: Column(
-                //     crossAxisAlignment: CrossAxisAlignment.start,
-                //     children: [
-                //       Text(
-                //         address.fullName,
-                //         style: GoogleFonts.poppins(
-                //           fontWeight: FontWeight.w600,
-                //           color: Colors.black87,
-                //         ),
-                //       ),
-                //       const SizedBox(height: 4),
-                //       Text(
-                //         'Phone: ${formatPhone(address.phone)}',
-                //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
-                //       ),
-                //       const SizedBox(height: 8),
-                //       Text(
-                //         address.addressLine1,
-                //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
-                //       ),
-                //       if ((address.addressLine2 ?? '').trim().isNotEmpty)
-                //         Text(
-                //           address.addressLine2!.trim(),
-                //           style: GoogleFonts.poppins(
-                //             fontSize: 12,
-                //             color: muted,
-                //           ),
-                //         ),
-                //       Text(
-                //         '${address.city}${(address.state ?? '').trim().isEmpty ? '' : ', ${address.state}'} '
-                //                 '${address.postalCode ?? ''}'
-                //             .trim(),
-                //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
-                //       ),
-                //       Text(
-                //         address.country,
-                //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                
-                const SizedBox(height: 10),
-                _PaymentOptionCard(
-                  title: 'Cash on Delivery',
-                  subtitle: 'Pay when you receive',
-                  icon: Icons.payments_rounded,
-                  selected: selectedMethod == 'cash_on_delivery',
-                  primary: primary,
-                  onTap: () =>
-                      setState(() => selectedMethod = 'cash_on_delivery'),
-                ),
-                const SizedBox(height: 12),
-                _PaymentOptionCard(
-                  title: 'Card Payment',
-                  subtitle: 'Credit or debit card',
-                  icon: Icons.credit_card_rounded,
-                  selected: selectedMethod == 'card',
-                  primary: primary,
-                  onTap: () => setState(() => selectedMethod = 'card'),
-                ),
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: canPlaceOrder ? placeOrder : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(
-                      'Place Order',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: gradientColor(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _refreshCart,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Padding(
+                  //   padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                  //   child: SizedBox(
+                  //     height: 44,
+                  //     child: Text(
+                  //       lang.translate('payment'),
+                  //       style: TextStyle(
+                  //         fontSize: 20,
+                  //         fontWeight: FontWeight.w700,
+                  //         color: Colors.black87,
+                  //         fontFamily: getFontFamilyMool1(context),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  Text(
+                    lang.translate('select Payment Method'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                      fontFamily: getFontFamily(context),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+        
+                  Text(
+                    lang.translate('review and choose payment method'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: TextColor,
+                      fontFamily: getFontFamily(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    lang.translate('note: The currency used for payment is the Cambodian Riel (KHR)'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: RedColor,
+                      fontFamily: getFontFamily(context),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // _InfoCard(
+                  //   title: lang.translate('order_summary'),
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Table(
+                  //         columnWidths: const {
+                  //           0: FlexColumnWidth(3.5),
+                  //           1: FlexColumnWidth(1.2),
+                  //           2: FlexColumnWidth(2.5),
+                  //           3: FlexColumnWidth(2.5),
+                  //         },
+                  //         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  //         children: [
+                  //           // Table Header
+                  //           TableRow(
+                  //             children: [
+                  //               TableCell(
+                  //                 child: Padding(
+                  //                   padding: const EdgeInsets.only(bottom: 8.0),
+                  //                   child: Text(
+                  //                     lang.translate('item_name'),
+                  //                     style: TextStyle(
+                  //                       fontSize: 12,
+                  //                       fontWeight: FontWeight.bold,
+                  //                       color: TextSoftColor,
+                  //                       fontFamily: getFontFamily(context),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Padding(
+                  //                   padding: const EdgeInsets.only(bottom: 8.0),
+                  //                   child: Text(
+                  //                     lang.translate('quantity'),
+                  //                     textAlign: TextAlign.center,
+                  //                     style: TextStyle(
+                  //                       fontSize: 12,
+                  //                       fontWeight: FontWeight.bold,
+                  //                       color: TextSoftColor,
+                  //                       fontFamily: getFontFamily(context),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Padding(
+                  //                   padding: const EdgeInsets.only(bottom: 8.0),
+                  //                   child: Text(
+                  //                     lang.translate('price_unit'),
+                  //                     textAlign: TextAlign.right,
+                  //                     style: TextStyle(
+                  //                       fontSize: 12,
+                  //                       fontWeight: FontWeight.bold,
+                  //                       color: TextSoftColor,
+                  //                       fontFamily: getFontFamily(context),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Padding(
+                  //                   padding: const EdgeInsets.only(bottom: 8.0),
+                  //                   child: Text(
+                  //                     lang.translate('price'),
+                  //                     textAlign: TextAlign.right,
+                  //                     style: TextStyle(
+                  //                       fontSize: 12,
+                  //                       fontWeight: FontWeight.bold,
+                  //                       color: TextSoftColor,
+                  //                       fontFamily: getFontFamily(context),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //           // Item Rows
+                  //           ...cartProvider.selectedItems.map((item) {
+                  //             final double price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
+                  //             final int quantity = item['quantity'] ?? 1;
+                  //             final double totalPricePerItem = price * quantity;
+        
+                  //             return TableRow(
+                  //               children: [
+                  //                 TableCell(
+                  //                   child: Padding(
+                  //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  //                     child: Text(
+                  //                       item['name'] ?? '',
+                  //                       maxLines: 2,
+                  //                       overflow: TextOverflow.ellipsis,
+                  //                       style: TextStyle(
+                  //                         fontSize: 13,
+                  //                         color: TextColor,
+                  //                         fontFamily: getFontFamily(context),
+                  //                       ),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //                 TableCell(
+                  //                   child: Padding(
+                  //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  //                     child: Text(
+                  //                       _formatQuantity(quantity, context),
+                  //                       textAlign: TextAlign.center,
+                  //                       style: TextStyle(
+                  //                         fontSize: 13,
+                  //                         color: TextColor,
+                  //                         fontFamily: getFontFamily(context),
+                  //                       ),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //                 TableCell(
+                  //                   child: Padding(
+                  //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  //                     child: Text(
+                  //                       '\$${price.toStringAsFixed(2)}',
+                  //                       textAlign: TextAlign.right,
+                  //                       style: TextStyle(
+                  //                         fontSize: 13,
+                  //                         color: TextColor,
+                  //                         fontFamily: getFontFamily(context),
+                  //                       ),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //                 TableCell(
+                  //                   child: Padding(
+                  //                     padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  //                     child: Text(
+                  //                       '\$${totalPricePerItem.toStringAsFixed(2)}',
+                  //                       textAlign: TextAlign.right,
+                  //                       style: TextStyle(
+                  //                         fontSize: 13,
+                  //                         color: TextColor,
+                  //                         fontFamily: getFontFamily(context),
+                  //                       ),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ],
+                  //             );
+                  //           }),
+                  //           // Divider Row
+                  //           TableRow(
+                  //             children: [
+                  //               TableCell(
+                  //                 child: Container(
+                  //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                  //                   height: 1,
+                  //                   color: StrokeColor,
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Container(
+                  //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                  //                   height: 1,
+                  //                   color: StrokeColor,
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Container(
+                  //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                  //                   height: 1,
+                  //                   color: StrokeColor,
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Container(
+                  //                   margin: const EdgeInsets.only(top: 6.0, bottom: 6.0),
+                  //                   height: 1,
+                  //                   color: StrokeColor,
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //           // Total Row
+                  //           TableRow(
+                  //             children: [
+                  //               const TableCell(child: SizedBox()),
+                  //               const TableCell(child: SizedBox()),
+                  //               TableCell(
+                  //                 child: Padding(
+                  //                   padding: const EdgeInsets.only(top: 4.0),
+                  //                   child: Text(
+                  //                     lang.translate('total'),
+                  //                     textAlign: TextAlign.right,
+                  //                     style: TextStyle(
+                  //                       fontSize: 14,
+                  //                       fontWeight: FontWeight.bold,
+                  //                       color: TextColor,
+                  //                       fontFamily: getFontFamily(context),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //               TableCell(
+                  //                 child: Padding(
+                  //                   padding: const EdgeInsets.only(top: 4.0),
+                  //                   child: Text(
+                  //                     '\$${totalSum.toStringAsFixed(2)}',
+                  //                     textAlign: TextAlign.right,
+                  //                     style: TextStyle(
+                  //                       fontSize: 14,
+                  //                       fontWeight: FontWeight.bold,
+                  //                       color: TextColor,
+                  //                       fontFamily: getFontFamily(context),
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ],
+                  //       ),
+                  //       if (_isRefreshing) ...[
+                  //         const SizedBox(height: 10),
+                  //         const LinearProgressIndicator(),
+                  //       ],
+                  //     ],
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 14),
+                  // _InfoCard(
+                  //   title: 'Shipping Address',
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+                  //       Text(
+                  //         address.fullName,
+                  //         style: GoogleFonts.poppins(
+                  //           fontWeight: FontWeight.w600,
+                  //           color: Colors.black87,
+                  //         ),
+                  //       ),
+                  //       const SizedBox(height: 4),
+                  //       Text(
+                  //         'Phone: ${formatPhone(address.phone)}',
+                  //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
+                  //       ),
+                  //       const SizedBox(height: 8),
+                  //       Text(
+                  //         address.addressLine1,
+                  //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
+                  //       ),
+                  //       if ((address.addressLine2 ?? '').trim().isNotEmpty)
+                  //         Text(
+                  //           address.addressLine2!.trim(),
+                  //           style: GoogleFonts.poppins(
+                  //             fontSize: 12,
+                  //             color: muted,
+                  //           ),
+                  //         ),
+                  //       Text(
+                  //         '${address.city}${(address.state ?? '').trim().isEmpty ? '' : ', ${address.state}'} '
+                  //                 '${address.postalCode ?? ''}'
+                  //             .trim(),
+                  //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
+                  //       ),
+                  //       Text(
+                  //         address.country,
+                  //         style: GoogleFonts.poppins(fontSize: 12, color: muted),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  
+                  const SizedBox(height: 10),
+                  _PaymentOptionCard(
+                    title: 'Cash on Delivery',
+                    subtitle: 'Pay when you receive',
+                    icon: Icons.payments_rounded,
+                    selected: selectedMethod == 'cash_on_delivery',
+                    primary: primary,
+                    onTap: () =>
+                        setState(() => selectedMethod = 'cash_on_delivery'),
+                  ),
+                  const SizedBox(height: 12),
+                  _PaymentOptionCard(
+                    title: 'Card Payment',
+                    subtitle: 'Credit or debit card',
+                    icon: Icons.credit_card_rounded,
+                    selected: selectedMethod == 'card',
+                    primary: primary,
+                    onTap: () => setState(() => selectedMethod = 'card'),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: canPlaceOrder ? placeOrder : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'Place Order',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

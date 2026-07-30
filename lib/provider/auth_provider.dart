@@ -82,6 +82,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> updateUserInfo({
     String? student_id,
     String? name_kh,
+    String? name_en,
     String? pwd,
   }) async {
     await initialized;
@@ -101,6 +102,7 @@ class AuthProvider extends ChangeNotifier {
     if (_user != null) {
       _user = User(
         name_kh: name_kh ?? _user!.name_kh,
+        name_en: name_en ?? _user!.name_en,
         student_id: student_id ?? _user!.student_id,
         pwd: pwd ?? _user!.pwd,
         role: _user!.role,

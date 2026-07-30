@@ -46,7 +46,8 @@ class _SigninScreenState extends State<SigninScreen> {
         }
 
         final admin = User(
-          name_kh: 'Admin',
+          name_kh: 'admin',
+          name_en: 'admin',
           student_id: studentId,
           pwd: password,
           role: 'admin',
@@ -96,7 +97,8 @@ class _SigninScreenState extends State<SigninScreen> {
         name_kh: apiUser?['name_kh']?.toString() ?? localUser?['fullname']?.toString() ?? '',
         student_id: apiUser?['student_id']?.toString() ?? localUser?['username']?.toString() ?? studentId,
         pwd: password,
-        role: (localUser?['role'] ?? 'user').toString(),
+        role: (localUser?['role'] ?? 'user').toString(), 
+        name_en: apiUser?['name_en']?.toString() ?? localUser?['fullname']?.toString() ?? '',
       );
 
       // Save to SharedPreferences

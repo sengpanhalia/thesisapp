@@ -77,5 +77,16 @@
   "looks like you haven't added anything yet": "Looks like you haven't added anything yet",
   "continue": "Continue",
   "checkout": "Checkout",
-  "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.": "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment."
+  "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.": "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.",
+  "student_id": "Student_id",
+  "full_name": "Full Name",
+  "date_of_birth": "Date of Birth",
+  "faculty": "Faculty",
+  "major": "Major",
+  "semester": "Semester",
+  "stage": "Stage",
+  "acad_year": "Acad Year",
+  "student_study_year": "Year",
+  "select quantity": "Select Quantity",
+  "how many would you like to add": "How many would you like to add?"
 }

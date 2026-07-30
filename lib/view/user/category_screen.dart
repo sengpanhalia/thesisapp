@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
@@ -104,99 +105,109 @@ class _CategoryScreenState extends State<CategoryScreen> {
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: MgPd20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// Search Bar
-              Container(
-                height: 54,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: StrokeSearchBar, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search_rounded, color: Colors.black45),
-                    const SizedBox(width: Width5),
-                    Expanded(
-                      child: TextField(
-                        controller: searchController,
-                        readOnly: true,
-                        onTap: _openSearch,
-                        decoration: InputDecoration(
-                          fillColor: Colors.transparent,
-                          hintText: '${lang.translate('search')}...',
-                          hintStyle: TextStyle(
-                            fontSize: 13,
-                            color: TextSoftColor,
-                            fontFamily: getFontFamily(context),
+    return Container(
+      width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: gradientColor(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MgPd20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Search Bar
+                Container(
+                  height: 54,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: StrokeSearchBar, width: 1.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded, color: Colors.black45),
+                      const SizedBox(width: Width5),
+                      Expanded(
+                        child: TextField(
+                          controller: searchController,
+                          readOnly: true,
+                          onTap: _openSearch,
+                          decoration: InputDecoration(
+                            fillColor: Colors.transparent,
+                            hintText: '${lang.translate('search')}...',
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: TextSoftColor,
+                              fontFamily: getFontFamily(context),
+                            ),
+                            border: InputBorder.none,
                           ),
-                          border: InputBorder.none,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+      
+                const SizedBox(height: MgPd15),
+      
+                /// Title
+                Text(
+                  lang.translate('category'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: getFontFamily(context),
+                  ),
+                ),
+      
+                const SizedBox(height: MgPd15),
+      
+                /// Category Grid
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: CircularProgressIndicator(color: GText1),
+                    ),
+                  )
+                else if (_categories.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        'មិនមានប្រភេទទំនិញទេ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: TextSoftColor,
+                          fontFamily: getFontFamily(context),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: MgPd15),
-
-              /// Title
-              Text(
-                lang.translate('category'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: getFontFamily(context),
-                ),
-              ),
-
-              const SizedBox(height: MgPd15),
-
-              /// Category Grid
-              if (_isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: CircularProgressIndicator(color: GText1),
-                  ),
-                )
-              else if (_categories.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Text(
-                      'មិនមានប្រភេទទំនិញទេ',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: TextSoftColor,
-                        fontFamily: getFontFamily(context),
-                      ),
+                  )
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _categories.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 18,
+                      crossAxisSpacing: 18,
+                      childAspectRatio: 0.75,
                     ),
+                    itemBuilder: (context, index) {
+                      return _buildCategoryItem(_categories[index]);
+                    },
                   ),
-                )
-              else
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _categories.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 18,
-                    crossAxisSpacing: 18,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemBuilder: (context, index) {
-                    return _buildCategoryItem(_categories[index]);
-                  },
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

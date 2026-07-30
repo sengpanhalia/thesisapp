@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
@@ -55,6 +56,117 @@ class _PersonalInformationState extends State<PersonalInformation> {
     }
   }
 
+  String getNameUser(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+    final isEnglish = lang?.locale.languageCode == 'en';
+    if (isEnglish) {
+      return _userDetail?.name_en ?? "";
+    } else {
+      return _userDetail?.name_kh ?? "";
+    }
+  }
+
+  String getStatusUser(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+    final isEnglish = lang?.locale.languageCode == 'en';
+    if (!isEnglish) {
+      return _userDetail?.status_name ?? "";
+    } else {
+      final List<Map<String, String>> status = [
+        {
+          "kh": "កំពុងសិក្សា",
+          "en": "Studying",
+        },
+        {
+          "kh": "បញ្ចប់ការសិក្សា",
+          "en": "Graduated",
+        },
+        {
+          "kh": "បោះបង់ការសិក្សា",
+          "en": "Dropout",
+        },
+      ];
+      for (final status in status) {
+        if (status["kh"] == _userDetail?.status_name) {
+          return status["en"]!;
+        }
+      }
+      return _userDetail?.status_name ?? "";
+    }
+  }
+
+  String getUserFaculty(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+    final isEnglish = lang?.locale.languageCode == 'en';
+
+    if (!isEnglish) {
+      return _userDetail?.faculty_name ?? "";
+    }
+
+    final List<Map<String, String>> faculties = [
+      {
+        "kh": "មហាវិទ្យាល័យ វិទ្យាសាស្ត្រ និងបច្ចេកវិទ្យា",
+        "en": "Faculty of Science and Technology",
+      },
+      {
+        "kh": "មហាវិទ្យាល័យ សេដ្ឋកិច្ច ពាណិជ្ជកម្ម និងទេសចរណ៍",
+        "en": "Faculty of Economics, Business and Tourism",
+      },
+      {
+        "kh": "មហាវិទ្យាល័យ សិល្បៈ មនុស្សសាស្រ្ត និងភាសា",
+        "en": "Faculty of Arts, Humanities and Languages",
+      },
+      {
+        "kh": "មហាវិទ្យាល័យ វិទ្យាសាស្ត្រសង្គម និងនីតិសាស្រ្ត",
+        "en": "Faculty of Social Sciences and Law",
+      },
+    ];
+
+    for (final faculty in faculties) {
+      if (faculty["kh"] == _userDetail?.faculty_name) {
+        return faculty["en"]!;
+      }
+    }
+
+    return _userDetail?.faculty_name ?? "";
+  }
+
+  // String getUserMajor(BuildContext context) {
+  //   final lang = AppLocalizations.of(context);
+  //   final isEnglish = lang?.locale.languageCode == 'en';
+
+  //   if (!isEnglish) {
+  //     return _userDetail?.faculty_name ?? "";
+  //   }
+
+  //   final List<Map<String, String>> faculties = [
+  //     {
+  //       "kh": "មហាវិទ្យាល័យ វិទ្យាសាស្ត្រ និងបច្ចេកវិទ្យា",
+  //       "en": "Faculty of Science and Technology",
+  //     },
+  //     {
+  //       "kh": "មហាវិទ្យាល័យ គ្រប់គ្រងទេសចរណ៍",
+  //       "en": "Faculty of Tourism Management",
+  //     },
+  //     {
+  //       "kh": "មហាវិទ្យាល័យ ភាសាបរទេស",
+  //       "en": "Faculty of Foreign Languages",
+  //     },
+  //     {
+  //       "kh": "មហាវិទ្យាល័យ សេដ្ឋកិច្ច និងហិរញ្ញវត្ថុ",
+  //       "en": "Faculty of Economics and Finance",
+  //     },
+  //   ];
+
+  //   for (final faculty in faculties) {
+  //     if (faculty["kh"] == _userDetail?.faculty_name) {
+  //       return faculty["en"]!;
+  //     }
+  //   }
+
+  //   return _userDetail?.faculty_name ?? "";
+  // }
+
   @override
   void initState() {
     // TODO: implement initState
@@ -64,6 +176,8 @@ class _PersonalInformationState extends State<PersonalInformation> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
+    final nameUser = getNameUser(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -99,37 +213,37 @@ class _PersonalInformationState extends State<PersonalInformation> {
               children: [
                 ListInfo(
                   context: context,
-                  title: "អត្តលេខ",
+                  title: lang.translate('student_id'),
                   subTitle: _userDetail?.student_id ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
                   context: context,
-                  title: "គោត្តនាម-នាម",
-                  subTitle: _userDetail?.name_kh ?? "",
+                  title: lang.translate('full_name'),
+                  subTitle: nameUser,
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
                   context: context,
-                  title: "អត្តលេខ",
-                  subTitle: _userDetail?.status_name ?? "",
+                  title: lang.translate('status'),
+                  subTitle: getStatusUser(context),
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
                   context: context,
-                  title: "ថ្ងៃខែឆ្នាំកំណើត",
+                  title: lang.translate('date_of_birth'),
                   subTitle: _userDetail?.date_of_birth ?? "",
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
                   context: context,
-                  title: "មហាវិទ្យាល័យ",
-                  subTitle: _userDetail?.faculty_name ?? "",
+                  title: lang.translate('faculty'),
+                  subTitle: getUserFaculty(context),
                 ),
                 SizedBox(height: Height15),
                 ListInfo(
                   context: context,
-                  title: "មុខជំនាញ",
+                  title: lang.translate('major'),
                   subTitle: _userDetail?.major_name ?? "",
                 ),
                 SizedBox(height: Height15),
@@ -207,6 +321,7 @@ Widget CardYear({
   required String stage_name,
   required String academic_year,
 }) {
+  final lang = AppLocalizations.of(context)!;
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -230,19 +345,19 @@ Widget CardYear({
         children: [
           Expanded(
             flex: 10,
-            child: _CardYearItem(context: context, title: 'ឆ្នាំទី', value: year),
+            child: _CardYearItem(context: context, title: lang.translate('student_study_year'), value: year),
           ),
           Expanded(
             flex: 10,
-            child: _CardYearItem(context: context, title: 'ឆមាសទី', value: semester),
+            child: _CardYearItem(context: context, title: lang.translate('semester'), value: semester),
           ),
           Expanded(
             flex: 10,
-            child: _CardYearItem(context: context, title: 'វគ្គទី', value: stage_name),
+            child: _CardYearItem(context: context, title: lang.translate('stage'), value: stage_name),
           ),
           Expanded(
             flex: 15,
-            child: _CardYearItem(context: context, title: 'ឆ្នាំសិក្សា', value: academic_year),
+            child: _CardYearItem(context: context, title: lang.translate('acad_year'), value: academic_year),
           ),
         ],
       ),

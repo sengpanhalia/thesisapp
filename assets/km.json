@@ -77,6 +77,16 @@
   "looks like you haven't added anything yet": "មើលទៅ អ្នកមិនទាន់បានបន្ថែមទំនិញណាមួយនៅឡើយទេ",
   "continue": "បន្តទូទាត់",
   "checkout": "ទូទាត់",
-  "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.": "ការទូទាត់តាមប្រព័ន្ធ KHQR កំពុងដំណើរការ។ អ្នកមិនអាចកែប្រែទំនិញក្នុងកន្រ្តករបស់អ្នកបានទេ រហូតដល់អ្នកបានបញ្ចប់ការទូទាត់ ឬបោះបង់ការទូទាត់។"
-  
+  "KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.": "ការទូទាត់តាមប្រព័ន្ធ KHQR កំពុងដំណើរការ។ អ្នកមិនអាចកែប្រែទំនិញក្នុងកន្រ្តករបស់អ្នកបានទេ រហូតដល់អ្នកបានបញ្ចប់ការទូទាត់, ឬបោះបង់ការទូទាត់។",
+  "student_id": "អត្តលេខ",
+  "full_name": "គោត្តនាម-នាម",
+  "date_of_birth": "ថ្ងៃខែឆ្នាំកំណើត",
+  "faculty": "មហាវិទ្យាល័យ",
+  "major": "ជំនាញ",
+  "semester": "ឆមាសទី",
+  "stage": "ថ្នាក់",
+  "acad_year": "ឆ្នាំសិក្សា",
+  "student_study_year": "ឆ្នាំទី",
+  "select quantity": "សូមជ្រើសរើសចំនួន",
+  "how many would you like to add": "តើអ្នកចង់បន្ថែមចំនួនប៉ុន្មាន?"
 }
