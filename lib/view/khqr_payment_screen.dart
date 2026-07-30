@@ -539,7 +539,26 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
         (route) => false,
       );
     } else {
-      // Payment NOT completed yet — return to Cart screen without clearing products
+      // Payment NOT completed yet — cancel backend record so pending order is deleted & stock restored
+      try {
+        final authUser = context.read<AuthProvider>().user;
+        final targetPaymentId = _paymentId ?? widget.paymentId;
+        final targetOrderId = _orderId ?? widget.orderId;
+        if (authUser != null && (targetPaymentId != null || targetOrderId != null)) {
+          final payload = <String, dynamic>{
+            'user_id': authUser.student_id,
+            'reason': 'User backed out without paying',
+          };
+          if (targetPaymentId != null) payload['payment_id'] = targetPaymentId;
+          if (targetOrderId != null) payload['order_id'] = targetOrderId;
+          await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/cancel_khqr_payment.php'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          );
+        }
+      } catch (_) {}
+
       await cartProvider.fetchCart();
       if (!mounted) return;
       context.read<NavigationProvider>().setIndex(2);
