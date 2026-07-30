@@ -99,7 +99,7 @@ class _ProductScreenState extends State<ProductScreen> {
         shadowColor: Colors.transparent,
         title: Text(
           screenTitle,
-          style: const TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),
+          style: const TextStyle(fontFamily: 'KhmerMool1', fontSize: 24),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),

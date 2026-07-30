@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
@@ -215,13 +216,18 @@ class _OrderScreenState extends State<OrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "My Orders",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 24),
+        title: Text(
+          lang.translate('order history'),
+          style: TextStyle(
+              fontFamily: getFontFamilyMool1(context),
+              fontSize: 24,
+              color: TitleColor,
+            ),
         ),
       ),
       body: Container(
@@ -529,17 +535,18 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Widget _buildFilterBar() {
+    final lang = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildFilterButton("All", OrderHistoryFilter.all),
+          _buildFilterButton(lang.translate('all'), OrderHistoryFilter.all),
           const SizedBox(width: 10),
-          _buildFilterButton("Week", OrderHistoryFilter.week),
+          _buildFilterButton(lang.translate('week'), OrderHistoryFilter.week),
           const SizedBox(width: 10),
-          _buildFilterButton("Month", OrderHistoryFilter.month),
+          _buildFilterButton(lang.translate('month'), OrderHistoryFilter.month),
           const SizedBox(width: 10),
-          _buildFilterButton("Year", OrderHistoryFilter.year),
+          _buildFilterButton(lang.translate('year_filter'), OrderHistoryFilter.year),
         ],
       ),
     );

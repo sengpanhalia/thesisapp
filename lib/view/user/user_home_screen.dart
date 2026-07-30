@@ -5,9 +5,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
+import 'package:thesisapp/component/category_section_widget.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/product.dart';
 import 'package:thesisapp/model/user_detail.dart';
@@ -22,7 +23,6 @@ import 'package:thesisapp/view/user/search_screen.dart';
 
 // ---------------------------------------------------------------------------
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -36,9 +36,10 @@ class _HomePageState extends State<HomePage> {
 
   /// All products from the API, grouped by DB category (lowercase key).
   Map<String, List<Product>> _productsByCategory = {};
+  List<Product> _randomProducts = [];
   UserDetail? _userDetail;
   bool _isLoadingProducts = true;
-  bool _isLoadingUser    = true;
+  bool _isLoadingUser = true;
 
   // ------------------------------------------------------------------
   String getGreeting() {
@@ -88,9 +89,14 @@ class _HomePageState extends State<HomePage> {
             grouped.putIfAbsent(key, () => []).add(p);
           }
 
+          // Pick 10 random products once during fetch so UI remains stable
+          final randomList = List<Product>.from(allProducts)..shuffle(Random());
+          final randomTen = randomList.take(10).toList();
+
           setState(() {
             _productsByCategory = grouped;
-            _isLoadingProducts  = false;
+            _randomProducts = randomTen;
+            _isLoadingProducts = false;
           });
           return;
         }
@@ -131,7 +137,7 @@ class _HomePageState extends State<HomePage> {
 
           if (!mounted) return;
           setState(() {
-            _userDetail    = details.isNotEmpty ? details.first : null;
+            _userDetail = details.isNotEmpty ? details.first : null;
             _isLoadingUser = false;
           });
           return;
@@ -313,8 +319,6 @@ class _HomePageState extends State<HomePage> {
 
   // ------------------------------------------------------------------
   /// Builds one section widget per category that has at least one product.
-  /// Category list is derived live from [_productsByCategory] —
-  /// no hardcoded list needed. Admin can add/remove categories freely.
   List<Widget> _buildCategorySections(BuildContext context) {
     final sections = <Widget>[];
     final lang = AppLocalizations.of(context)!;
@@ -327,25 +331,25 @@ class _HomePageState extends State<HomePage> {
 
       // Use category info from the first product in the list
       final firstProduct = products.first;
-      final categoryName   = firstProduct.category;
+      final categoryName = firstProduct.category;
       final categoryNameKh = firstProduct.categoryKh;
-      final categoryId     = firstProduct.categoryId; // FK
+      final categoryId = firstProduct.categoryId; // FK
 
       final categoryTitle = isEnglish
           ? (categoryName.isNotEmpty ? categoryName : categoryNameKh)
           : (categoryNameKh.isNotEmpty ? categoryNameKh : categoryName);
 
-      sections.add(_CategorySectionWidget(
+      sections.add(CategorySectionWidget(
         title: categoryTitle,
         products: products,
-        baseUrl:  _baseUrl,
+        baseUrl: _baseUrl,
         onSeeAll: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => ProductScreen(
-                categoryId:    categoryId,
-                categoryName:  categoryName,
+                categoryId: categoryId,
+                categoryName: categoryName,
                 categoryTitle: categoryTitle,
               ),
             ),
@@ -386,19 +390,12 @@ class _HomePageState extends State<HomePage> {
     }
 
     // ── Random products from all categories (always shown at the bottom) ──
-    // Collect all products across every category and shuffle them
-    final allProducts = _productsByCategory.values
-        .expand((list) => list)
-        .toList()
-      ..shuffle(Random());
-    final randomTen = allProducts.take(10).toList();
-
-    if (randomTen.isNotEmpty) {
+    if (_randomProducts.isNotEmpty) {
       sections.add(SizedBox(height: Height5));
-      sections.add(_RandomProductsSection(
-        title: lang.translate('recommended for you'),  // "Recommended for You"
-        products: randomTen,
-        baseUrl:  _baseUrl,
+      sections.add(RecommendedProductsSection(
+        title: lang.translate('general product'),
+        products: _randomProducts,
+        baseUrl: _baseUrl,
         onSeeAll: () {
           Navigator.push(
             context,
@@ -420,180 +417,5 @@ class _HomePageState extends State<HomePage> {
     }
 
     return sections;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Random-products section — 10 items from all categories, 2-column grid
-// ---------------------------------------------------------------------------
-class _RandomProductsSection extends StatelessWidget {
-  final String title;
-  final List<Product> products;
-  final String baseUrl;
-  final VoidCallback onSeeAll;
-  final void Function(Product) onProductTap;
-
-  const _RandomProductsSection({
-    required this.title,
-    required this.products,
-    required this.baseUrl,
-    required this.onSeeAll,
-    required this.onProductTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Section header ────────────────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                color: TextColor,
-                fontWeight: FontWeight.w700,
-                fontFamily: getFontFamily(context),
-              ),
-            ),
-            GestureDetector(
-              onTap: onSeeAll,
-              child: Text(
-                lang.translate('see all'),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: GText1,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: getFontFamily(context),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: Height10),
-
-        // ── 2-column grid (shrink-wrapped, NOT scrollable — parent scrolls) ──
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.65,
-          ),
-          itemCount: products.length,
-          itemBuilder: (context, index) {
-            final product = products[index];
-            final productImage = (product.image ?? '').trim();
-            final imageUrl = productImage.startsWith('http')
-                ? productImage
-                : '$baseUrl/uploads/products/$productImage';
-
-            return BuildCardProduct(
-              onTap: () => onProductTap(product),
-              productName:  product.name,
-              productPrice: product.price,
-              imageUrl:     imageUrl,
-              productImage: productImage,
-              author: product.author,
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Reusable product-by-category section widget
-// ---------------------------------------------------------------------------
-class _CategorySectionWidget extends StatelessWidget {
-  final String title;
-  final List<Product> products;
-  final String baseUrl;
-  final VoidCallback onSeeAll;
-  final void Function(Product) onProductTap;
-
-  const _CategorySectionWidget({
-    required this.title,
-    required this.products,
-    required this.baseUrl,
-    required this.onSeeAll,
-    required this.onProductTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section header row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                color: TextColor,
-                fontWeight: FontWeight.w700,
-                fontFamily: getFontFamily(context),
-              ),
-            ),
-            GestureDetector(
-              onTap: onSeeAll,
-              child: Text(
-                lang.translate("see all"),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: GText1,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: getFontFamily(context),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        SizedBox(height: Height10),
-
-        // Horizontal scroll of product cards
-        SizedBox(
-          height: 250,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final product = products[index];
-              final productImage = (product.image ?? '').trim();
-              final imageUrl = productImage.startsWith('http')
-                  ? productImage
-                  : '$baseUrl/uploads/products/$productImage';
-
-              return SizedBox(
-                // width: 148,
-                width: 165,
-                child: BuildCardProduct(
-                  onTap: () => onProductTap(product),
-                  productName:  product.name,
-                  productPrice: product.price,
-                  imageUrl:     imageUrl,
-                  productImage: productImage,
-                  author:       product.author,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
   }
 }

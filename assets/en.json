@@ -88,5 +88,16 @@
   "acad_year": "Acad Year",
   "student_study_year": "Year",
   "select quantity": "Select Quantity",
-  "how many would you like to add": "How many would you like to add?"
+  "how many would you like to add": "How many would you like to add?",
+  "available stock": "Available stock",
+  "added to cart": "Added to cart",
+  "add to cart": "Add to cart",
+  "buy now": "Buy now",
+  "recommended products": "Recommended products",
+  "general product": "General products",
+  "order history": "Order History",
+  "all": "All",
+  "week": "Week",
+  "month": "Month",
+  "year_filter": "Year"
 }

@@ -88,5 +88,16 @@
   "acad_year": "ឆ្នាំសិក្សា",
   "student_study_year": "ឆ្នាំទី",
   "select quantity": "សូមជ្រើសរើសចំនួន",
-  "how many would you like to add": "តើអ្នកចង់បន្ថែមចំនួនប៉ុន្មាន?"
+  "how many would you like to add": "តើអ្នកចង់បន្ថែមចំនួនប៉ុន្មាន?",
+  "available stock": "ចំនួនស្តុកដែលនៅសល់",
+  "added to cart": "បានបន្ថែមទៅក្នុងកន្ត្រកចំនួន",
+  "add to cart": "ដាក់ចូលកន្ត្រក",
+  "buy now": "ទិញឥឡូវនេះ",
+  "recommended products": "ទំនិញណែនាំបន្ថែម",
+  "general product": "ទំនិញទូទៅ",
+  "order history": "ការកម្មង់",
+  "all": "ទាំងអស់",
+  "week": "សប្ដាហ៍",
+  "month": "ខែ",
+  "year_filter": "ឆ្នាំ"
 }

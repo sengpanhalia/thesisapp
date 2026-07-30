@@ -1,20 +1,25 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+
 import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
+import 'package:thesisapp/component/full_image_view.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
+import 'package:thesisapp/component/product_spec_row.dart';
+import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/product.dart';
-import 'package:thesisapp/model/user.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/user/product_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -31,17 +36,18 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   static const String baseUrl = ApiConfig.baseUrl;
-  late List<User> user;
   List<Product> relatedProducts = [];
+  List<Product> recommendedProducts = [];
   bool _isLoadingRelatedProducts = true;
+  bool _isLoadingRecommendedProducts = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchRelatedProducts();
+    _fetchProductsData();
   }
 
-  Future<void> _fetchRelatedProducts() async {
+  Future<void> _fetchProductsData() async {
     final url = Uri.parse('$baseUrl/get_products.php');
 
     try {
@@ -52,7 +58,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['status'] == 'success') {
           final List productsJson = (data['products'] as List?) ?? const [];
-          final products = productsJson
+          final allOtherProducts = productsJson
               .whereType<Map<String, dynamic>>()
               .map(Product.fromJson)
               .where((product) => product.id != widget.product.id)
@@ -63,50 +69,59 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
           final sameCategory = currentCategory.isEmpty
               ? <Product>[]
-              : products
-                    .where(
-                      (product) =>
-                          product.category.trim().toLowerCase() ==
-                          currentCategory,
-                    )
-                    .toList();
+              : allOtherProducts
+                  .where(
+                    (product) =>
+                        product.category.trim().toLowerCase() ==
+                        currentCategory,
+                  )
+                  .toList();
 
           final sameAuthor = currentAuthor.isEmpty
               ? <Product>[]
-              : products
-                    .where(
-                      (product) =>
-                          product.author.trim().toLowerCase() == currentAuthor,
-                    )
-                    .toList();
+              : allOtherProducts
+                  .where(
+                    (product) =>
+                        product.author.trim().toLowerCase() == currentAuthor,
+                  )
+                  .toList();
 
           final related = [
             ...sameCategory,
             ...sameAuthor.where(
               (product) => !sameCategory.any((item) => item.id == product.id),
             ),
-            ...products.where(
+            ...allOtherProducts.where(
               (product) =>
                   !sameCategory.any((item) => item.id == product.id) &&
                   !sameAuthor.any((item) => item.id == product.id),
             ),
           ].take(10).toList();
 
+          // Prepare recommended products (random 10 from all other products)
+          final recommended = List<Product>.from(allOtherProducts)
+            ..shuffle(Random());
+          final randomTen = recommended.take(10).toList();
+
           setState(() {
             relatedProducts = related;
+            recommendedProducts = randomTen;
             _isLoadingRelatedProducts = false;
+            _isLoadingRecommendedProducts = false;
           });
           return;
         }
       }
     } catch (_) {
-      // Ignore and fall back to empty state.
+      // Ignore error and fall back to empty states
     }
 
     if (!mounted) return;
     setState(() {
       relatedProducts = [];
+      recommendedProducts = [];
       _isLoadingRelatedProducts = false;
+      _isLoadingRecommendedProducts = false;
     });
   }
 
@@ -121,7 +136,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       Fluttertoast.showToast(msg: 'This product is out of stock');
       return false;
     }
-
 
     final url = Uri.parse('${widget.baseUrl}/add_to_cart.php');
     try {
@@ -141,8 +155,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           if (!context.mounted) return false;
           final cartProvider = context.read<CartProvider>();
           await cartProvider.fetchCart();
+          final lang = AppLocalizations.of(context)!;
           Fluttertoast.showToast(
-            msg: 'Added to cart (x$quantity)',
+            msg: '${lang.translate('added to cart')} (x$quantity)',
             backgroundColor: Colors.green,
           );
           return true;
@@ -189,12 +204,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               title: Text(
                 lang.translate('select quantity'),
                 style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: TitleColor,
-              
-            ),textAlign: TextAlign.center,
+                  fontFamily: getFontFamily(context),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: TitleColor,
+                ),
+                textAlign: TextAlign.center,
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -202,23 +217,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Text(
                     lang.translate('how many would you like to add'),
                     style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: TextColor,
-            ),
-            textAlign: TextAlign.center,
+                      fontFamily: getFontFamily(context),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: TextColor,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Available stock: $maxQuantity',
+                    '${lang.translate('available stock')}: $maxQuantity',
                     style: TextStyle(
-              fontFamily: getFontFamilyMool1(context),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: GreenColor,
-            ),
-            textAlign: TextAlign.center,
+                      fontFamily: getFontFamily(context),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: GreenColor,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -232,7 +247,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         icon: const Icon(Icons.remove_rounded),
                         color: TextColor,
                       ),
-                      // SizedBox(width: 35),
                       Container(
                         width: 64,
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -247,14 +261,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: Text(
                           quantity.toString(),
                           style: TextStyle(
-              fontFamily: getFontFamilyMool1(context),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: TitleColor,
-            ),
+                            fontFamily: getFontFamilyMool1(context),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: TitleColor,
+                          ),
                         ),
                       ),
-                      // SizedBox(width: 35),
                       IconButton(
                         onPressed: quantity < maxQuantity
                             ? () => setState(() => quantity += 1)
@@ -270,18 +283,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
                   child: Text(
-                    'Cancel',
+                    lang.translate('cancel'),
                     style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: TitleColor,
-            ),
+                      fontFamily: getFontFamily(context),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: TitleColor,
+                    ),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(dialogContext, quantity),
-
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GText1,
                     foregroundColor: Colors.white,
@@ -290,13 +302,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   child: Text(
-                    'Confirm',
+                    lang.translate('confirm'),
                     style: TextStyle(
-              fontFamily: getFontFamilyMool1(context),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: GBackground1,
-            ),
+                      fontFamily: getFontFamily(context),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: GBackground1,
+                    ),
                   ),
                 ),
               ],
@@ -310,7 +322,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _openFullImage(String imageUrl) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => _FullImageView(imageUrl: imageUrl)),
+      MaterialPageRoute(builder: (_) => FullImageView(imageUrl: imageUrl)),
     );
   }
 
@@ -336,10 +348,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         title: Text(
           lang.translate('product details'),
           style: TextStyle(
-              fontFamily: getFontFamilyMool1(context),
-              fontSize: 24,
-              color: TitleColor,
-            ),
+            fontFamily: getFontFamilyMool1(context),
+            fontSize: 24,
+            color: TitleColor,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -406,11 +418,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // const Icon(
-                                    //   Icons.fullscreen_rounded,
-                                    //   size: 16,
-                                    //   color: TextColor,
-                                    // ),
                                     const SizedBox(width: 6),
                                     Text(
                                       lang.translate('view image'),
@@ -452,7 +459,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   SizedBox(height: Height10),
                   Text(
-                    '​៛ ${basePrice.toStringAsFixed(2)}',
+                    '៛ ${basePrice.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
                       fontSize: 24,
@@ -481,32 +488,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   SizedBox(height: Height15),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: CardColor,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      children: [
-                        _SpecItem(
-                          label: lang.translate('pages'),
-                          value: pages.isNotEmpty ? pages : '—',
-                        ),
-                        const _SpecDivider(),
-                        _SpecItem(
-                          label: lang.translate('language'),
-                          value: language.isNotEmpty ? language : '—',
-                        ),
-                        const _SpecDivider(),
-                        const _SpecDivider(),
-                        _SpecItem(
-                          label: lang.translate('year'),
-                          value: year.isNotEmpty ? year : '—',
-                        ),
-                      ],
-                    ),
+
+                  // Spec item row (pages, language, year)
+                  ProductSpecRow(
+                    pages: pages,
+                    language: language,
+                    year: year,
+                    pagesLabel: lang.translate('pages'),
+                    languageLabel: lang.translate('language'),
+                    yearLabel: lang.translate('year'),
                   ),
+
                   SizedBox(height: Height20),
                   Text(
                     lang.translate('product details'),
@@ -532,6 +524,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     textAlign: TextAlign.justify,
                   ),
                   SizedBox(height: Height20),
+
+                  // Related Books Section
                   Text(
                     lang.translate('related books'),
                     style: TextStyle(
@@ -602,6 +596,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
 
+                  // Recommended Products Section
+                  if (!_isLoadingRecommendedProducts && recommendedProducts.isNotEmpty) ...[
+                    const SizedBox(height: Height20),
+                    RecommendedProductsSection(
+                      title: lang.translate('recommended products'),
+                      products: recommendedProducts,
+                      baseUrl: widget.baseUrl,
+                      onSeeAll: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProductScreen(),
+                          ),
+                        );
+                      },
+                      onProductTap: (product) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetailScreen(
+                              product: product,
+                              baseUrl: widget.baseUrl,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -631,13 +654,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           await _addToCart(context, quantity: quantity);
                         },
                   child: Text(
-                    'Add to cart',
+                    lang.translate('add to cart'),
                     style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: TitleColor,
-            ),
+                      fontFamily: getFontFamily(context),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: TitleColor,
+                    ),
                   ),
                 ),
               ),
@@ -655,13 +678,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           await _buyNow(quantity: quantity);
                         },
                   child: Text(
-                    'Buy now',
+                    lang.translate('buy now'),
                     style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: GBackground3,
-            ),
+                      fontFamily: getFontFamily(context),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: GBackground3,
+                    ),
                   ),
                 ),
               ),
@@ -671,93 +694,4 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
     );
   }
-}
-
-class _FullImageView extends StatelessWidget {
-  const _FullImageView({required this.imageUrl});
-
-  final String imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lang.translate('full image'),
-          style: TextStyle(fontFamily: getFontFamilyMool1(context), fontSize: 24),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.8,
-          maxScale: 4.0,
-          child: CachedNetworkImage(
-            imageUrl: imageUrl,
-            fit: BoxFit.contain,
-            placeholder: (context, url) =>
-                const Center(child: CircularProgressIndicator()),
-            errorWidget: (context, url, error) =>
-                const Center(child: Icon(Icons.broken_image_rounded, size: 64)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SpecItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _SpecItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: TitleColor,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: getFontFamily(context),
-              fontSize: 11,
-              color: Colors.brown[400],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SpecDivider extends StatelessWidget {
-  const _SpecDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(height: 32, width: 1, color: StrokeSearchBar);
-  }
-}
-
-Widget buildRecommendProduct(){
-  return Container(
-    
-  );
 }
