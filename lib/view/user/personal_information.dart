@@ -353,7 +353,7 @@ Widget CardYear({
           ),
           Expanded(
             flex: 10,
-            child: _CardYearItem(context: context, title: lang.translate('stage'), value: stage_name),
+            child: _CardYearItem(context: context, title: lang.translate('promotion'), value: stage_name),
           ),
           Expanded(
             flex: 15,

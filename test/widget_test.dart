@@ -3,7 +3,7 @@ import 'package:thesisapp/model/user.dart';
 
 void main() {
   test('user role defaults to user', () {
-    final user = User(name_kh: 'Student', student_id: '001', pwd: 'secret');
+    final user = User(name_kh: 'Student', student_id: '001', pwd: 'secret', name_en: 'Student');
 
     expect(user.role, 'user');
     expect(user.isAdmin, isFalse);
@@ -15,6 +15,7 @@ void main() {
       student_id: 'admin',
       pwd: 'admin123',
       role: ' Admin ',
+      name_en: 'Admin',
     );
 
     expect(user.role, 'admin');

@@ -1192,24 +1192,29 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   }
 }
 
-class _ErrorState extends StatelessWidget {
+class _ErrorState extends StatefulWidget {
   const _ErrorState({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
 
   @override
+  State<_ErrorState> createState() => _ErrorStateState();
+}
+
+class _ErrorStateState extends State<_ErrorState> {
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          message,
+          widget.message,
           textAlign: TextAlign.center,
           style: const TextStyle(color: RedColor),
         ),
         const SizedBox(height: Height10),
-        OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+        OutlinedButton(onPressed: widget.onRetry, child: const Text('Retry')),
       ],
     );
   }
