@@ -9,10 +9,15 @@ class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
   @override
-  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+  State<AdminHomeScreen> createState() => AdminHomeScreenState();
 }
 
-class _AdminHomeScreenState extends State<AdminHomeScreen> {
+class AdminHomeScreenState extends State<AdminHomeScreen> {
+  void refresh() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   static const List<_AdminFeatureItem> _featureItems = [
     _AdminFeatureItem(
       image: 'assets/home.png',

@@ -102,6 +102,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   bool _isChecking = false;
   bool _isSaving = false;
   bool _isCancelling = false;
+  bool _isCancelled = false; // set true the moment user confirms cancel
   String _paymentStatus = 'pending';
   String? _errorMessage;
   Uint8List? _qrBytes;
@@ -129,7 +130,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     );
     _loadKhqr();
     _checkTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted && !_isPaid && !_isChecking && !_isExpired) {
+      if (mounted && !_isCancelled && !_isPaid && !_isChecking && !_isExpired) {
         _checkPayment(silent: true);
       }
     });
@@ -234,6 +235,12 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     if (confirm != true) return;
     if (!mounted) return;
 
+    // Stop the periodic timer and mark cancelled BEFORE the async cancel call,
+    // so any in-flight _checkPayment response is ignored.
+    _isCancelled = true;
+    _checkTimer?.cancel();
+    _expiryTimer?.cancel();
+
     setState(() => _isCancelling = true);
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -245,6 +252,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       final payload = <String, dynamic>{
         'user_id': user.student_id,
         'reason': 'User cancelled payment',
+        'stop_watcher': true,  // explicit cancel → tell Python to stop watching
       };
       if (_paymentId != null) payload['payment_id'] = _paymentId;
       if (_orderId != null) payload['order_id'] = _orderId;
@@ -257,11 +265,9 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == 'success') {
-          _checkTimer?.cancel();
-          _expiryTimer?.cancel();
           KhqrPaymentWatcher.stop();
           Fluttertoast.showToast(msg: 'បានបោះបង់ការទូទាត់');
-          await _finish();
+          await _leaveScreen(); // navigate away after explicit cancel
           return;
         }
         Fluttertoast.showToast(msg: data['message'] ?? 'Failed to cancel');
@@ -468,6 +474,9 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   }
 
   Future<void> _checkPayment({bool silent = false}) async {
+    // If the user has already cancelled, do not check or process any response.
+    if (_isCancelled) return;
+
     final idParam = _paymentId != null
         ? 'payment_id=$_paymentId'
         : (_orderId != null ? 'order_id=$_orderId' : '');
@@ -481,11 +490,14 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/check_khqr_payment.php?$idParam'),
       );
+      // Guard again after the await: cancel might have happened while waiting.
+      if (_isCancelled) return;
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['status'] == 'success') {
           final nextStatus =
               (data['payment_status'] ?? data['status_value'] ?? _paymentStatus).toString();
+          if (_isCancelled) return; // double-check before mutating state
           setState(() => _paymentStatus = nextStatus);
           if (_isPaid) {
             _expiryTimer?.cancel();
@@ -511,6 +523,25 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
     }
   }
 
+  /// Called when the user explicitly leaves the screen WITHOUT cancelling.
+  /// We do NOT cancel the order or QR — everything stays alive so the user
+  /// can open the banking app, pay, and have the watcher detect it.
+  Future<void> _leaveScreen() async {
+    if (_isPaid) {
+      // Edge case: paid right as they pressed back — go to success
+      await _finish();
+      return;
+    }
+    // Just navigate away. Order, QR code, and Python watcher all stay running.
+    if (!mounted) return;
+    context.read<NavigationProvider>().setIndex(2); // go to Cart tab
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MainScreen()),
+      (route) => false,
+    );
+  }
+
   Future<void> _finish() async {
     final cartProvider = context.read<CartProvider>();
     if (_isPaid) {
@@ -519,9 +550,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       if (widget.cartIds.isNotEmpty) {
         cartProvider.removeCheckedOutItems(widget.cartIds);
       }
-      // 2. Re-fetch from server — by now check_khqr_payment.php has already
-      //    deleted the cart rows from DB, so this returns an empty cart.
-      //    This ensures CartProvider is in sync before MainScreen/Cart tab builds.
+      // 2. Re-fetch from server so CartProvider is in sync
       await cartProvider.fetchCart();
       if (!mounted) return;
       context.read<NavigationProvider>().setIndex(0);
@@ -536,35 +565,6 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
             createdAt: widget.createdAt,
           ),
         ),
-        (route) => false,
-      );
-    } else {
-      // Payment NOT completed yet — cancel backend record so pending order is deleted & stock restored
-      try {
-        final authUser = context.read<AuthProvider>().user;
-        final targetPaymentId = _paymentId ?? widget.paymentId;
-        final targetOrderId = _orderId ?? widget.orderId;
-        if (authUser != null && (targetPaymentId != null || targetOrderId != null)) {
-          final payload = <String, dynamic>{
-            'user_id': authUser.student_id,
-            'reason': 'User backed out without paying',
-          };
-          if (targetPaymentId != null) payload['payment_id'] = targetPaymentId;
-          if (targetOrderId != null) payload['order_id'] = targetOrderId;
-          await http.post(
-            Uri.parse('${ApiConfig.baseUrl}/cancel_khqr_payment.php'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(payload),
-          );
-        }
-      } catch (_) {}
-
-      await cartProvider.fetchCart();
-      if (!mounted) return;
-      context.read<NavigationProvider>().setIndex(2);
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
         (route) => false,
       );
     }
@@ -586,7 +586,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          _finish();
+          _leaveScreen(); // just navigate away, keep QR & order alive
         }
       },
       child: Scaffold(
@@ -1167,7 +1167,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _finish,
+            onPressed: _isPaid ? _finish : _leaveScreen,
             style: ElevatedButton.styleFrom(
               backgroundColor: ButtonColor,
               foregroundColor: Colors.white,

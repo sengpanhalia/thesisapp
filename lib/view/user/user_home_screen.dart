@@ -27,10 +27,10 @@ class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   static const String _baseUrl = ApiConfig.baseUrl;
   final TextEditingController searchController = TextEditingController();
 
@@ -40,6 +40,18 @@ class _HomePageState extends State<HomePage> {
   UserDetail? _userDetail;
   bool _isLoadingProducts = true;
   bool _isLoadingUser = true;
+
+  Future<void> refresh() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingProducts = true;
+      _isLoadingUser = true;
+    });
+    await Future.wait([
+      _fetchProducts(),
+      _fetchUserData(),
+    ]);
+  }
 
   // ------------------------------------------------------------------
   String getGreeting() {

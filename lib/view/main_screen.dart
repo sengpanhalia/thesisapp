@@ -20,6 +20,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final GlobalKey<HomePageState> _homePageKey = GlobalKey<HomePageState>();
+  final GlobalKey<AdminHomeScreenState> _adminHomePageKey =
+      GlobalKey<AdminHomeScreenState>();
   final Set<int> _builtIndexes = <int>{0};
   bool? _lastIsAdmin;
 
@@ -32,13 +35,13 @@ class _MainScreenState extends State<MainScreen> {
         final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
 
         final screens = isAdmin
-            ? const [AdminHomeScreen(), ProfileScreen()]
-            : const [
-                HomePage(),
-                CategoryScreen(),
-                CartScreen(),
-                OrderScreen(),
-                UserProfile(),
+            ? [AdminHomeScreen(key: _adminHomePageKey), const ProfileScreen()]
+            : [
+                HomePage(key: _homePageKey),
+                const CategoryScreen(),
+                const CartScreen(),
+                const OrderScreen(),
+                const UserProfile(),
               ];
         final destinations = isAdmin
             ? const [
@@ -176,6 +179,13 @@ class _MainScreenState extends State<MainScreen> {
                 selectedIndex: safeIndex,
 
                 onDestinationSelected: (index) {
+                  if (index == 0) {
+                    if (isAdmin) {
+                      _adminHomePageKey.currentState?.refresh();
+                    } else {
+                      _homePageKey.currentState?.refresh();
+                    }
+                  }
                   navigationProvider.setIndex(index);
                 },
 
