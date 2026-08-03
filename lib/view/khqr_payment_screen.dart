@@ -561,7 +561,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
             orderId: _orderId ?? widget.orderId ?? 0,
             items: widget.items,
             total: widget.total,
-            paymentMethod: 'KHQR Payment',
+            paymentMethod: 'card',
             createdAt: widget.createdAt,
           ),
         ),

@@ -118,7 +118,8 @@ class PdfReceiptHelper {
   }
 
   static String paymentStatus(String method) {
-    return method == 'card' ? 'Paid' : 'pay at store';
+    if (method == 'card' || method == 'KHQR Payment') return 'paid';
+    return 'pay at store';
   }
 
   static double discountedUnitPrice(Map<String, dynamic> item) {
