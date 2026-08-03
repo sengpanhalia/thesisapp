@@ -161,15 +161,15 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    lang.translate('note: The currency used for payment is the Cambodian Riel (KHR)'),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: RedColor,
-                      fontFamily: getFontFamily(context),
-                    ),
-                  ),
+                  // Text(
+                  //   lang.translate('note: The currency used for payment is the Cambodian Riel (KHR)'),
+                  //   style: TextStyle(
+                  //     fontSize: 12,
+                  //     fontWeight: FontWeight.w500,
+                  //     color: RedColor,
+                  //     fontFamily: getFontFamily(context),
+                  //   ),
+                  // ),
                   const SizedBox(height: 14),
                   // _InfoCard(
                   //   title: lang.translate('order_summary'),
@@ -443,8 +443,8 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                   
                   const SizedBox(height: 10),
                   _PaymentOptionCard(
-                    title: 'Cash on Delivery',
-                    subtitle: 'Pay when you receive',
+                    title: 'Pay at Store',
+                    subtitle: 'Pay at the store',
                     icon: Icons.payments_rounded,
                     selected: selectedMethod == 'cash_on_delivery',
                     primary: primary,
@@ -453,9 +453,9 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                   ),
                   const SizedBox(height: 12),
                   _PaymentOptionCard(
-                    title: 'Card Payment',
-                    subtitle: 'Credit or debit card',
-                    icon: Icons.credit_card_rounded,
+                    title: 'KHQR',
+                    subtitle: 'Pay by scan QR Code',
+                    icon: Icons.qr_code_2_rounded,
                     selected: selectedMethod == 'card',
                     primary: primary,
                     onTap: () => setState(() => selectedMethod = 'card'),

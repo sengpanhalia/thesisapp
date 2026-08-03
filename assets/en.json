@@ -99,5 +99,7 @@
   "all": "All",
   "week": "Week",
   "month": "Month",
-  "year_filter": "Year"
+  "year_filter": "Year",
+  "customer_information": "Customer Information",
+  "phone": "Phone"
 }

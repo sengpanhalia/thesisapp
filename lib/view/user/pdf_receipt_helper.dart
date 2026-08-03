@@ -185,6 +185,7 @@ class PdfReceiptHelper {
   double estimatePdfReceiptHeight() {
     final lang = AppLocalizations.of(context)!;
     final fontFamily = getFontFamily(context);
+    final TitleFontFamily = getFontFamilyMool1(context);
     final contentWidth = pdfReceiptWidth - (pdfHorizontalPadding * 2);
     const totalFlex = 7.0;
     final nameCellWidth = (contentWidth * 3 / totalFlex) - 16;
@@ -192,9 +193,9 @@ class PdfReceiptHelper {
     final amountCellWidth = (contentWidth * 1.5 / totalFlex) - 16;
 
     final titleStyle = TextStyle(
-      fontFamily: fontFamily,
+      fontFamily: TitleFontFamily,
       fontSize: 14,
-      fontWeight: FontWeight.bold,
+      // fontWeight: FontWeight.bold,
     );
     final infoStyle = TextStyle(fontFamily: fontFamily, fontSize: 11);
     final tableHeaderStyle = TextStyle(
@@ -214,12 +215,12 @@ class PdfReceiptHelper {
     height += 16 + 16 + 8; // SizedBox 16, Divider 16, SizedBox 8
 
     // Customer Info Section
-    height += _measurePdfTextHeight('ព័ត៌មានអតិថិជន', titleStyle, contentWidth);
+    height += _measurePdfTextHeight(lang.translate('customer_information'), titleStyle, contentWidth);
     height += 6;
-    height += _measurePdfTextHeight('ឈ្មោះ: ${customerName ?? ''}', infoStyle, contentWidth) + 4;
-    height += _measurePdfTextHeight('ភេទ: ${customerGender ?? ''}', infoStyle, contentWidth) + 4;
-    height += _measurePdfTextHeight('ថ្ងៃ ខែ ឆ្នាំកំណើត: ${customerDob ?? ''}', infoStyle, contentWidth) + 4;
-    height += _measurePdfTextHeight('លេខទូរសព្ទ: ${customerPhone ?? ''}', infoStyle, contentWidth) + 4;
+    height += _measurePdfTextHeight('${lang.translate('full_name')}: ${customerName ?? ''}', infoStyle, contentWidth) + 4;
+    // height += _measurePdfTextHeight('ភេទ: ${customerGender ?? ''}', infoStyle, contentWidth) + 4;
+    height += _measurePdfTextHeight('${lang.translate('date_of_birth')}: ${customerDob ?? ''}', infoStyle, contentWidth) + 4;
+    height += _measurePdfTextHeight('${lang.translate('phone')}: ${customerPhone ?? ''}', infoStyle, contentWidth) + 4;
     height += 12 + 16 + 8; // SizedBox 12, Divider 16, SizedBox 8
 
     // Order Information Section

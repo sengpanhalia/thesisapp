@@ -284,18 +284,18 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
   // ---- KHR helpers ----
 
   /// Converts USD to KHR Khmer-digit string like "៛ ៣២ ០០០"
-  String _toKhrDisplay(double usd) {
-    final riel = (usd * 4100).round();
-    final formatted = riel.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]} ',
-    );
-    const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
-    return formatted.split('').map((c) {
-      final d = int.tryParse(c);
-      return d != null ? khmerDigits[d] : c;
-    }).join();
-  }
+  // String _toKhrDisplay(double usd) {
+  //   final riel = (usd * 4100).round();
+  //   final formatted = riel.toString().replaceAllMapped(
+  //     RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+  //     (m) => '${m[1]} ',
+  //   );
+  //   const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+  //   return formatted.split('').map((c) {
+  //     final d = int.tryParse(c);
+  //     return d != null ? khmerDigits[d] : c;
+  //   }).join();
+  // }
 
   String _formatRemaining(Duration d) {
     final m = (d.inSeconds ~/ 60).toString().padLeft(2, '0');
@@ -595,7 +595,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
                 const SizedBox(height: 16),
@@ -812,42 +812,42 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
           ),
           const SizedBox(height: 10),
           // Subtitle
-          const Text(
-            'សូមចូចស្កែន KHQR Code សម្រាប់ធ្វើការទូទាត់',
-            textAlign: TextAlign.center,
+           Text(
+            'សូមចុចទាញយក KHQR Code សម្រាប់ធ្វើការទូទាត់',
+            textAlign: TextAlign.left,
             style: TextStyle(
-              fontFamily: 'KhmerMool1',
+              fontFamily: getFontFamily(context),
               fontSize: 13,
               color: TextColor,
             ),
           ),
           const SizedBox(height: 4),
           // Red currency note
-          RichText(
-            textAlign: TextAlign.center,
-            text: const TextSpan(
-              children: [
-                TextSpan(
-                  text: 'ចំណាំ ៖ ',
-                  style: TextStyle(
-                    fontFamily: 'KhmerMool1',
-                    fontSize: 12,
-                    color: RedColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                TextSpan(
-                  text: 'រូបិយបណ្ណសម្រាប់ប្រើប្រាស់ក្នុងការបង់ប្រាក់គឺ រៀល (៛)',
-                  style: TextStyle(
-                    fontFamily: 'KhmerMool1',
-                    fontSize: 12,
-                    color: RedColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // RichText(
+          //   textAlign: TextAlign.center,
+          //   text: const TextSpan(
+          //     children: [
+          //       TextSpan(
+          //         text: 'ចំណាំ ៖ ',
+          //         style: TextStyle(
+          //           fontFamily: 'KhmerMool1',
+          //           fontSize: 12,
+          //           color: RedColor,
+          //           fontWeight: FontWeight.w600,
+          //         ),
+          //       ),
+          //       TextSpan(
+          //         text: 'រូបិយបណ្ណសម្រាប់ប្រើប្រាស់ក្នុងការបង់ប្រាក់គឺ រៀល (៛)',
+          //         style: TextStyle(
+          //           fontFamily: 'KhmerMool1',
+          //           fontSize: 12,
+          //           color: RedColor,
+          //           fontWeight: FontWeight.w600,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
         ],
       ),
     );
@@ -882,10 +882,10 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
           const SizedBox(height: 6),
           // Large KHR amount in Khmer digits
           Text(
-            '៛ ${_toKhrDisplay(widget.total)}',
+            '\$ ${widget.total.toStringAsFixed(2)} USD',
             style: const TextStyle(
               fontFamily: 'KhmerMool1',
-              fontSize: 30,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
               color: TitleColor,
               letterSpacing: 1,
