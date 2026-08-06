@@ -129,7 +129,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       createdAt: widget.createdAt,
     );
     _loadKhqr();
-    _checkTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _checkTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted && !_isCancelled && !_isPaid && !_isChecking && !_isExpired) {
         _checkPayment(silent: true);
       }
@@ -390,6 +390,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       _isLoading = true;
       _errorMessage = null;
       _notifiedExpired = false;
+      _paymentStatus = 'pending';
       _expiresAt = null;
       _timeRemaining = Duration.zero;
     });
@@ -430,7 +431,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
       }
 
       _paymentStatus =
-          (payload['payment_status'] ?? payload['status_value'] ?? 'pending').toString();
+          (payload['payment_status'] ?? payload['status_value'] ?? payload['status'] ?? 'pending').toString();
       _paymentId = int.tryParse((payload['payment_id'] ?? payload['id'] ?? '').toString());
       _orderId = int.tryParse((payload['order_id'] ?? '').toString());
 
@@ -499,6 +500,11 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
               (data['payment_status'] ?? data['status_value'] ?? _paymentStatus).toString();
           if (_isCancelled) return; // double-check before mutating state
           setState(() => _paymentStatus = nextStatus);
+          if (data['rate_limit_exceeded'] == true) {
+            Fluttertoast.showToast(
+              msg: 'Bakong API limit reached (100 req/day). Please try again later.',
+            );
+          }
           if (_isPaid) {
             _expiryTimer?.cancel();
             _checkTimer?.cancel();
