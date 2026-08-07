@@ -54,6 +54,21 @@ class NotificationService {
 
     await _localNotificationsPlugin.initialize(settings: initSettings);
 
+
+    // last add 
+    
+    // Create High Importance Android Notification Channel for background heads-up alerts
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
+      description: 'This channel is used for important push notifications.',
+      importance: Importance.max,
+    );
+
+    await _localNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
     // 5. Subscribe to "news_alerts" topic for broadcast news notifications
     await _messaging.subscribeToTopic('news_alerts');
 
