@@ -93,6 +93,149 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isMarkingRead = false);
   }
 
+  Future<void> _markSingleAsRead(int notificationId, int index) async {
+    if (notificationId <= 0) return;
+    if ((_notifications[index]['is_read'] ?? 0) == 1 || (_notifications[index]['is_read']?.toString() == '1')) return;
+
+    setState(() {
+      _notifications[index]['is_read'] = 1;
+    });
+
+    try {
+      final url = Uri.parse('$_baseUrl/mark_notifications_read.php')
+          .replace(queryParameters: {'notification_id': notificationId.toString()});
+      await http.post(url);
+    } catch (e) {
+      debugPrint('Failed to mark single notification as read: $e');
+    }
+  }
+
+  void _showNotificationDetailModal(Map<String, dynamic> item, int index) {
+    final notificationId = int.tryParse(item['id']?.toString() ?? '') ?? 0;
+    if (notificationId > 0) {
+      _markSingleAsRead(notificationId, index);
+    }
+
+    final title = item['title']?.toString() ?? '';
+    final body = item['body']?.toString() ?? '';
+    final type = item['type']?.toString() ?? 'info';
+    final createdAt = item['created_at']?.toString() ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _getColorForType(type).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _getIconForType(type),
+                      color: _getColorForType(type),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: TitleColor,
+                            fontFamily: getFontFamily(context),
+                          ),
+                        ),
+                        if (createdAt.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            createdAt,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: TextSoftColor,
+                              fontFamily: getFontFamily(context),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Divider(height: 1, color: StrokeCardColor),
+              ),
+              Text(
+                body,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: TextColor,
+                  fontFamily: getFontFamily(context),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ButtonColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: getFontFamily(context),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   IconData _getIconForType(String type) {
     switch (type.toLowerCase()) {
       case 'new_product':
@@ -201,94 +344,97 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           final createdAt = item['created_at']?.toString() ?? '';
                           final isUnread = (item['is_read'] ?? 0) == 0 || (item['is_read']?.toString() == '0');
 
-                          return Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: isUnread
-                                  ? Colors.white.withValues(alpha: 0.95)
-                                  : Colors.white.withValues(alpha: 0.70),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isUnread ? ButtonColor.withValues(alpha: 0.5) : StrokeCardColor,
-                                width: isUnread ? 2 : 1.5,
+                          return GestureDetector(
+                            onTap: () => _showNotificationDetailModal(Map<String, dynamic>.from(item), index),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isUnread
+                                    ? Colors.white.withValues(alpha: 0.95)
+                                    : Colors.white.withValues(alpha: 0.70),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isUnread ? ButtonColor.withValues(alpha: 0.5) : StrokeCardColor,
+                                  width: isUnread ? 2 : 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: _getColorForType(type).withValues(alpha: 0.12),
-                                    shape: BoxShape.circle,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: _getColorForType(type).withValues(alpha: 0.12),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _getIconForType(type),
+                                      color: _getColorForType(type),
+                                      size: 22,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    _getIconForType(type),
-                                    color: _getColorForType(type),
-                                    size: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              title,
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
-                                                color: TitleColor,
-                                                fontFamily: getFontFamily(context),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                title,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                                                  color: TitleColor,
+                                                  fontFamily: getFontFamily(context),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          if (isUnread)
-                                            Container(
-                                              margin: const EdgeInsets.only(left: 6),
-                                              width: 8,
-                                              height: 8,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.blue,
-                                                shape: BoxShape.circle,
+                                            if (isUnread)
+                                              Container(
+                                                margin: const EdgeInsets.only(left: 6),
+                                                width: 8,
+                                                height: 8,
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.blue,
+                                                  shape: BoxShape.circle,
+                                                ),
                                               ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        body,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: TextColor,
-                                          fontFamily: getFontFamily(context),
+                                          ],
                                         ),
-                                      ),
-                                      if (createdAt.isNotEmpty) ...[
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: 4),
                                         Text(
-                                          createdAt,
+                                          body,
                                           style: TextStyle(
-                                            fontSize: 11,
-                                            color: TextSoftColor,
+                                            fontSize: 13,
+                                            color: TextColor,
                                             fontFamily: getFontFamily(context),
                                           ),
                                         ),
+                                        if (createdAt.isNotEmpty) ...[
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            createdAt,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: TextSoftColor,
+                                              fontFamily: getFontFamily(context),
+                                            ),
+                                          ),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           );
                         },
