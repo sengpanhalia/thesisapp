@@ -10,6 +10,7 @@ import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/model/user.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/notification_service.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/view/main_screen.dart';
@@ -61,6 +62,9 @@ class _SigninScreenState extends State<SigninScreen> {
         return;
       }
 
+      // Fetch FCM Token for push notifications
+      final fcmToken = await NotificationService.getFcmToken();
+
       // Call the local PHP API which handles USEA login + DB sync
       var response = await http
           .post(
@@ -69,6 +73,7 @@ class _SigninScreenState extends State<SigninScreen> {
             body: jsonEncode({
               "student_id": studentId,
               "pwd": password,
+              "fcm_token": fcmToken ?? "",
             }),
           )
           .timeout(const Duration(seconds: 30));

@@ -12,6 +12,9 @@ class Product {
   final String language;
   final String year;
   final int stockQuantity;
+  final int student_year;
+  final int student_semester;
+  final int student_major;
 
   Product({
     required this.id,
@@ -19,6 +22,9 @@ class Product {
     required this.description,
     required this.price,
     required this.image,
+    required this.student_year,
+    required this.student_semester,
+    required this.student_major,
     this.author = '',
     this.category = '',
     this.categoryKh = '',
@@ -67,6 +73,9 @@ class Product {
       language: json['language']?.toString() ?? '',
       year: json['year']?.toString() ?? '',
       stockQuantity: stockQuantity,
+      student_year: int.tryParse(json['student_year']?.toString() ?? '0') ?? 0,
+      student_semester: int.tryParse(json['student_semester']?.toString() ?? '0') ?? 0,
+      student_major: int.tryParse(json['student_major']?.toString() ?? '0') ?? 0,
     );
   }
 }

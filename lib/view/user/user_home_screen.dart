@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -16,7 +15,7 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/util/api_config.dart';
-import 'package:thesisapp/view/user/personal_information.dart';
+import 'package:thesisapp/view/user/notification_screen.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
@@ -37,19 +36,20 @@ class HomePageState extends State<HomePage> {
   /// All products from the API, grouped by DB category (lowercase key).
   Map<String, List<Product>> _productsByCategory = {};
   List<Product> _randomProducts = [];
+  List<Product> _studentProducts = [];
   UserDetail? _userDetail;
   bool _isLoadingProducts = true;
-  bool _isLoadingUser = true;
+  int _unreadNotificationCount = 0;
 
   Future<void> refresh() async {
     if (!mounted) return;
     setState(() {
       _isLoadingProducts = true;
-      _isLoadingUser = true;
     });
     await Future.wait([
       _fetchProducts(),
       _fetchUserData(),
+      _fetchUnreadNotificationCount(),
     ]);
   }
 
@@ -76,6 +76,30 @@ class HomePageState extends State<HomePage> {
     super.initState();
     _fetchProducts();
     _fetchUserData();
+    _fetchUnreadNotificationCount();
+  }
+
+  Future<void> _fetchUnreadNotificationCount() async {
+    final userId = _userDetail != null ? int.tryParse(_userDetail!.student_id) : null;
+    final queryParams = <String, String>{};
+    if (userId != null && userId > 0) queryParams['user_id'] = userId.toString();
+
+    final url = Uri.parse('$_baseUrl/get_notifications.php').replace(queryParameters: queryParams);
+
+    try {
+      final response = await http.get(url);
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['status'] == 'success') {
+          final List list = (data['notifications'] as List?) ?? [];
+          final unread = list.where((item) => (item['is_read'] ?? 0) == 0).length;
+          setState(() {
+            _unreadNotificationCount = unread;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   /// Fetch all products in one request then group by category.
@@ -121,11 +145,15 @@ class HomePageState extends State<HomePage> {
     setState(() => _isLoadingProducts = false);
   }
 
+  int _parseNumber(String input) {
+    final match = RegExp(r'\d+').firstMatch(input);
+    return match != null ? (int.tryParse(match.group(0)!) ?? 0) : 0;
+  }
+
   Future<void> _fetchUserData() async {
     final authUser = context.read<AuthProvider>().user;
     if (authUser == null) {
       if (!mounted) return;
-      setState(() => _isLoadingUser = false);
       return;
     }
 
@@ -147,10 +175,26 @@ class HomePageState extends State<HomePage> {
               .map(UserDetail.fromJson)
               .toList();
 
+          final detail = details.isNotEmpty ? details.first : null;
+          List<Product> studentProducts = [];
+          if (detail != null) {
+            final studentYear = _parseNumber(detail.year_name);
+            final studentSemester = _parseNumber(detail.semester_name);
+            String majorName = detail.major_name.trim();
+            if (majorName == 'ព័ត៌មានវិទ្យា') {
+              majorName = 'Information Technology';
+            }
+            studentProducts = await _fetchProductsCurrentStudent(
+              studentYear: studentYear,
+              studentSemester: studentSemester,
+              studentMajor: majorName,
+            );
+          }
+
           if (!mounted) return;
           setState(() {
-            _userDetail = details.isNotEmpty ? details.first : null;
-            _isLoadingUser = false;
+            _userDetail = detail;
+            _studentProducts = studentProducts;
           });
           return;
         }
@@ -160,9 +204,43 @@ class HomePageState extends State<HomePage> {
     }
 
     if (!mounted) return;
-    setState(() => _isLoadingUser = false);
   }
 
+  // Fetch products for current student: year, semester, major
+  Future<List<Product>> _fetchProductsCurrentStudent({
+    required int studentYear,
+    required int studentSemester,
+    required String studentMajor,
+  }) async {
+    final queryParams = <String, String>{};
+    if (studentYear > 0) queryParams['student_year'] = studentYear.toString();
+    if (studentSemester > 0) queryParams['student_semester'] = studentSemester.toString();
+    if (studentMajor.isNotEmpty) queryParams['student_major'] = studentMajor;
+
+    final url = queryParams.isNotEmpty
+        ? Uri.parse('$_baseUrl/get_products.php').replace(queryParameters: queryParams)
+        : Uri.parse('$_baseUrl/get_products.php');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic> && data['status'] == 'success') {
+          final List productsJson = (data['products'] as List?) ?? const [];
+          return productsJson
+              .whereType<Map<String, dynamic>>()
+              .map(Product.fromJson)
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load products: $e');
+    }
+
+    return [];
+  }
+
+    
   // ------------------------------------------------------------------
   @override
   void dispose() {
@@ -173,7 +251,6 @@ class HomePageState extends State<HomePage> {
   // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final profileImageUrl = (_userDetail?.profile_pic ?? '').trim();
     final lang = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -215,31 +292,65 @@ class HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.only(right: MgPd20),
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => PersonalInformation()),
+                  MaterialPageRoute(
+                    builder: (_) => NotificationScreen(
+                      userId: _userDetail != null ? int.tryParse(_userDetail!.student_id) : null,
+                    ),
+                  ),
                 );
+                _fetchUnreadNotificationCount();
               },
-              child: CircleAvatar(
-                radius: 22,
-                backgroundColor: Colors.white,
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.white.withValues(alpha: 0.95),
-                  backgroundImage: profileImageUrl.isNotEmpty
-                      ? CachedNetworkImageProvider(profileImageUrl)
-                      : null,
-                  child: _isLoadingUser
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : profileImageUrl.isEmpty
-                      ? const Icon(Icons.person, color: Colors.black45)
-                      : null,
-                ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: StrokeSearchBar, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.notifications_rounded,
+                      color: TextColor,
+                      size: 22,
+                    ),
+                  ),
+                  if (_unreadNotificationCount > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        child: Text(
+                          _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -335,6 +446,47 @@ class HomePageState extends State<HomePage> {
     final sections = <Widget>[];
     final lang = AppLocalizations.of(context)!;
     final isEnglish = lang.locale.languageCode == 'en';
+
+    // ── Student recommended products (ABOVE products by categories) ──
+    if (_studentProducts.isNotEmpty) {
+      sections.add(CategorySectionWidget(
+        title: lang.translate('books_for_your_semester'),
+        products: _studentProducts,
+        baseUrl: _baseUrl,
+        onSeeAll: () {
+          final studentYear = _parseNumber(_userDetail?.year_name ?? '');
+          final studentSemester = _parseNumber(_userDetail?.semester_name ?? '');
+          String majorName = (_userDetail?.major_name ?? '').trim();
+          if (majorName == 'ព័ត៌មានវិទ្យា') {
+            majorName = 'Information Technology';
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductScreen(
+                categoryTitle: lang.translate('books_for_your_semester'),
+                studentYear: studentYear,
+                studentSemester: studentSemester,
+                studentMajor: majorName,
+                isStudentProducts: true,
+              ),
+            ),
+          );
+        },
+        onProductTap: (product) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(
+                product: product,
+                baseUrl: _baseUrl,
+              ),
+            ),
+          );
+        },
+      ));
+      sections.add(SizedBox(height: Height15));
+    }
 
     // Iterate over every category key that came back from the API
     for (final entry in _productsByCategory.entries) {

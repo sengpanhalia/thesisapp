@@ -14,12 +14,20 @@ class ProductScreen extends StatefulWidget {
   final int?    categoryId;    // FK: categories.id — preferred filter
   final String? categoryName;  // fallback filter by name
   final String? categoryTitle; // display title in AppBar
+  final int?    studentYear;
+  final int?    studentSemester;
+  final String? studentMajor;
+  final bool    isStudentProducts;
 
   const ProductScreen({
     super.key,
     this.categoryId,
     this.categoryName,
     this.categoryTitle,
+    this.studentYear,
+    this.studentSemester,
+    this.studentMajor,
+    this.isStudentProducts = false,
   });
 
   @override
@@ -33,19 +41,25 @@ class _ProductScreenState extends State<ProductScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
-
     super.initState();
     _fetchProducts();
   }
 
   Future<void> _fetchProducts() async {
-    // Prefer FK-based filter (category_id), fallback to name-based filter
     final catId   = widget.categoryId ?? 0;
     final catName = (widget.categoryName ?? '').trim();
 
     Uri uri;
-    if (catId > 0) {
+    if (widget.isStudentProducts || (widget.studentYear != null && widget.studentYear! > 0)) {
+      final queryParams = <String, String>{};
+      if ((widget.studentYear ?? 0) > 0) queryParams['student_year'] = widget.studentYear.toString();
+      if ((widget.studentSemester ?? 0) > 0) queryParams['student_semester'] = widget.studentSemester.toString();
+      if ((widget.studentMajor ?? '').isNotEmpty) queryParams['student_major'] = widget.studentMajor!;
+
+      uri = queryParams.isNotEmpty
+          ? Uri.parse('$_baseUrl/get_products.php').replace(queryParameters: queryParams)
+          : Uri.parse('$_baseUrl/get_products.php');
+    } else if (catId > 0) {
       uri = Uri.parse('$_baseUrl/get_products_by_category.php')
           .replace(queryParameters: {'category_id': catId.toString()});
     } else if (catName.isNotEmpty) {

@@ -101,5 +101,9 @@
   "month": "Month",
   "year_filter": "Year",
   "customer_information": "Customer Information",
-  "phone": "Phone"
+  "phone": "Phone",
+  "books_for_your_semester": "Book for your semester",
+  "notifications": "Notifications",
+  "no_notifications": "No notifications yet",
+  "mark_all_as_read": "Mark all as read"
 }

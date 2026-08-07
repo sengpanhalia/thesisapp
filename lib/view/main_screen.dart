@@ -149,7 +149,7 @@ class _MainScreenState extends State<MainScreen> {
                 ) {
                   if (states.contains(WidgetState.selected)) {
                     return TextStyle(
-                      color: IconOrangeColor, // selected label color
+                      color: Sapphire, // selected label color
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       fontFamily: getFontFamily(context),
@@ -219,7 +219,7 @@ class _SelectedMaterialNavIcon extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: IconOrangeColor,
+          color: Sapphire,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: Colors.white, size: 28),
@@ -264,7 +264,7 @@ class _SelectedNavIcon extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: IconOrangeColor,
+          color: Sapphire,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: ImageIcon(AssetImage(assetPath), color: Colors.white, size: 28),

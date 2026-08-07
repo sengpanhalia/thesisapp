@@ -101,5 +101,9 @@
   "month": "ខែ",
   "year_filter": "ឆ្នាំ",
   "customer_information": "ព័ត៌មានអតិថិជន",
-  "phone": "លេខទូរសព្ទ"
+  "phone": "លេខទូរសព្ទ",
+  "books_for_your_semester": "សៀវភៅសម្រាប់ឆមាសរបស់អ្នក",
+  "notifications": "ការជូនដំណឹង",
+  "no_notifications": "មិនទាន់មានការជូនដំណឹងនៅឡើយទេ",
+  "mark_all_as_read": "អានទាំងអស់"
 }

@@ -44,6 +44,11 @@ const GText2 = Color(0xFFA34E1B);
 const GText3 = Color(0xFF843F1C);
 final GText4 = Color(0xFF6C341A).withOpacity(0.7);
 
+const Sapphire2 = Color(0xFF002060);
+const Sapphire3 = Color.fromARGB(255, 10, 47, 122);
+const Sapphire4 = Color.fromARGB(255, 58, 106, 212);
+const Sapphire5 = Color.fromARGB(255, 20, 76, 187);
+
 const TextColor = Color(0xFF5E574F);
 const TitleColor = Color(0xFF2C2822);
 const TextSoftColor = Color(0xFFB8B2A8);

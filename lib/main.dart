@@ -11,7 +11,11 @@ import 'package:thesisapp/splash_screen.dart';
 import 'package:thesisapp/util/app_theme.dart';
 import 'package:thesisapp/theme_color.dart';
 
-void main() {
+import 'package:thesisapp/service/notification_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.initialize();
   runApp(const MyApp());
 }
 
