@@ -1117,7 +1117,7 @@ class _KhqrPaymentScreenState extends State<KhqrPaymentScreen> {
             ),
             child: ClipOval(
               child: Image.asset(
-                'assets/app_logo.png',
+                'assets/logo_app.png',
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
                     const Icon(Icons.store_rounded, color: Colors.black45),
