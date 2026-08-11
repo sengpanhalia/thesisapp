@@ -65,7 +65,10 @@ class _SigninScreenState extends State<SigninScreen> {
 
       final data = jsonDecode(response.body);
 
-      if (data == null || data['status'] != true) {
+      final isSuccess = data != null &&
+          (data['status'] == true || data['status'] == 'success');
+
+      if (!isSuccess) {
         final errorMsg = data?['message']?.toString() ?? 'Login failed';
         Fluttertoast.showToast(msg: errorMsg);
         return;

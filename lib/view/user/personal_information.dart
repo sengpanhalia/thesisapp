@@ -27,10 +27,24 @@ class _PersonalInformationState extends State<PersonalInformation> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse(APIStLoginKh),
-        body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
-      );
+      http.Response response;
+      try {
+        response = await http
+            .post(
+              Uri.parse(APILocalLoginUrl),
+              headers: {"Content-Type": "application/json"},
+              body: jsonEncode({
+                "student_id": authUser.student_id,
+                "pwd": authUser.pwd,
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
+      } catch (_) {
+        response = await http.post(
+          Uri.parse(APIStLoginKh),
+          body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
+        );
+      }
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
@@ -38,7 +52,7 @@ class _PersonalInformationState extends State<PersonalInformation> {
           final userData =
               (decoded['user_data'] as List?) ??
               (decoded['student_users'] as List?) ??
-              const [];
+              (decoded['user'] != null ? [decoded['user']] : const []);
           final details = userData
               .whereType<Map<String, dynamic>>()
               .map(UserDetail.fromJson)
