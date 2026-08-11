@@ -6,19 +6,17 @@ void main() {
     final user = User(name_kh: 'Student', student_id: '001', pwd: 'secret', name_en: 'Student');
 
     expect(user.role, 'user');
-    expect(user.isAdmin, isFalse);
   });
 
-  test('admin role is normalized', () {
+  test('role is normalized', () {
     final user = User(
-      name_kh: 'Admin',
-      student_id: 'admin',
-      pwd: 'admin123',
-      role: ' Admin ',
-      name_en: 'Admin',
+      name_kh: 'Test User',
+      student_id: 'test01',
+      pwd: '123',
+      role: ' User ',
+      name_en: 'Test User',
     );
 
-    expect(user.role, 'admin');
-    expect(user.isAdmin, isTrue);
+    expect(user.role, 'user');
   });
 }

@@ -8,39 +8,7 @@ import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
-
-// ---------------------------------------------------------------------------
-// Category model — fetched from categories table (related to products)
-// ---------------------------------------------------------------------------
-class CategoryModel {
-  final int    id;     // categories.id (FK referenced by products.category_id)
-  final String name;   // categories.name (English name e.g. "Book", "Shirt", "Materials")
-  final String nameKh; // categories.name_kh (Khmer name)
-
-  const CategoryModel({
-    required this.id,
-    required this.name,
-    this.nameKh = '',
-  });
-
-  factory CategoryModel.fromJson(Map<String, dynamic> json) {
-    return CategoryModel(
-      id:     int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      name:   json['name']?.toString() ?? '',
-      nameKh: json['name_kh']?.toString() ?? json['nameKh']?.toString() ?? '',
-    );
-  }
-
-  String getTitle(BuildContext context) {
-    final lang = AppLocalizations.of(context);
-    final isEnglish = lang?.locale.languageCode == 'en';
-    if (isEnglish) {
-      return name.isNotEmpty ? name : nameKh;
-    } else {
-      return nameKh.isNotEmpty ? nameKh : name;
-    }
-  }
-}
+import 'package:thesisapp/model/category_model.dart';
 
 // ---------------------------------------------------------------------------
 // Category screen — fetches categories from API

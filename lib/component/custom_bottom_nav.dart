@@ -5,32 +5,23 @@ import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 
 class CustomBottomNav extends StatelessWidget {
-  const CustomBottomNav({super.key, required this.isAdmin});
-
-  final bool isAdmin;
+  const CustomBottomNav({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Consumer2<NavigationProvider, CartProvider>(
       builder: (context, navProvider, cartProvider, child) {
-        final cartBadgeCount = isAdmin ? 0 : cartProvider.cartBadgeCount;
-        final items = isAdmin
-            ? [
-                _buildNavIcon(Icons.home_rounded),
-                _buildNavIcon(Icons.search_rounded),
-                _buildNavIcon(Icons.receipt_long_rounded),
-                _buildNavIcon(Icons.person_rounded),
-              ]
-            : [
-                _buildNavIcon(Icons.home_rounded),
-                _buildNavIcon(Icons.search_rounded),
-                _buildNavIcon(
-                  Icons.shopping_cart_rounded,
-                  badgeCount: cartBadgeCount,
-                ),
-                _buildNavIcon(Icons.receipt_long_rounded),
-                _buildNavIcon(Icons.person_rounded),
-              ];
+        final cartBadgeCount = cartProvider.cartBadgeCount;
+        final items = [
+          _buildNavIcon(Icons.home_rounded),
+          _buildNavIcon(Icons.search_rounded),
+          _buildNavIcon(
+            Icons.shopping_cart_rounded,
+            badgeCount: cartBadgeCount,
+          ),
+          _buildNavIcon(Icons.receipt_long_rounded),
+          _buildNavIcon(Icons.person_rounded),
+        ];
         final safeIndex = navProvider.currentIndex < items.length
             ? navProvider.currentIndex
             : items.length - 1;

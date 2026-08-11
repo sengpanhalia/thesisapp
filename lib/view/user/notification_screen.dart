@@ -8,7 +8,7 @@ import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
 
 class NotificationScreen extends StatefulWidget {
-  final int? userId;
+  final dynamic userId;
 
   const NotificationScreen({super.key, this.userId});
 
@@ -22,6 +22,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
   bool _isLoading = true;
   bool _isMarkingRead = false;
 
+  String? get _userIdString {
+    if (widget.userId == null) return null;
+    final str = widget.userId.toString().trim();
+    return str.isNotEmpty ? str : null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -31,8 +37,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _fetchNotifications() async {
     final queryParams = <String, String>{};
-    if ((widget.userId ?? 0) > 0) {
-      queryParams['user_id'] = widget.userId.toString();
+    final uid = _userIdString;
+    if (uid != null) {
+      queryParams['user_id'] = uid;
     }
 
     final url = Uri.parse('$_baseUrl/get_notifications.php').replace(queryParameters: queryParams);
@@ -65,8 +72,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     setState(() => _isMarkingRead = true);
 
     final queryParams = <String, String>{};
-    if ((widget.userId ?? 0) > 0) {
-      queryParams['user_id'] = widget.userId.toString();
+    final uid = _userIdString;
+    if (uid != null) {
+      queryParams['user_id'] = uid;
     }
 
     final url = Uri.parse('$_baseUrl/mark_notifications_read.php').replace(queryParameters: queryParams);
@@ -102,8 +110,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
     });
 
     try {
+      final queryParams = <String, String>{
+        'notification_id': notificationId.toString(),
+      };
+      final uid = _userIdString;
+      if (uid != null) {
+        queryParams['user_id'] = uid;
+      }
+
       final url = Uri.parse('$_baseUrl/mark_notifications_read.php')
-          .replace(queryParameters: {'notification_id': notificationId.toString()});
+          .replace(queryParameters: queryParams);
       await http.post(url);
     } catch (e) {
       debugPrint('Failed to mark single notification as read: $e');

@@ -14,7 +14,7 @@ import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/main_screen.dart';
-import 'package:thesisapp/view/user/pdf_receipt_helper.dart';
+import 'package:thesisapp/service/pdf_receipt_helper.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
   final int orderId;

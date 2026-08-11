@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
-import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/view/admin/home_screen.dart';
-import 'package:thesisapp/view/admin/profile_screen.dart';
 import 'package:thesisapp/view/cart_screen.dart';
 import 'package:thesisapp/view/user/order_screen.dart';
 import 'package:thesisapp/view/user/category_screen.dart';
@@ -21,10 +18,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final GlobalKey<HomePageState> _homePageKey = GlobalKey<HomePageState>();
-  final GlobalKey<AdminHomeScreenState> _adminHomePageKey =
-      GlobalKey<AdminHomeScreenState>();
   final Set<int> _builtIndexes = <int>{0};
-  bool? _lastIsAdmin;
 
   @override
   Widget build(BuildContext context) {
@@ -32,86 +26,57 @@ class _MainScreenState extends State<MainScreen> {
 
     return Consumer<NavigationProvider>(
       builder: (context, navigationProvider, child) {
-        final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
-
-        final screens = isAdmin
-            ? [AdminHomeScreen(key: _adminHomePageKey), const ProfileScreen()]
-            : [
-                HomePage(key: _homePageKey),
-                const CategoryScreen(),
-                const CartScreen(),
-                const OrderScreen(),
-                const UserProfile(),
-              ];
-        final destinations = isAdmin
-            ? const [
-                NavigationDestination(
-                  icon: _NavImageIcon(assetPath: 'assets/home.png'),
-                  selectedIcon: _SelectedNavIcon(
-                    assetPath: 'assets/home.png',
-                    borderRadius: 14,
-                  ),
-                  label: 'Home',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.account_circle_outlined),
-                  selectedIcon: _SelectedMaterialNavIcon(
-                    icon: Icons.account_circle,
-                  ),
-                  label: 'Profile',
-                ),
-              ]
-            : [
-                NavigationDestination(
-                  icon: const _NavImageIcon(assetPath: 'assets/home.png'),
-                  selectedIcon: const _SelectedNavIcon(
-                    assetPath: 'assets/home.png',
-                    borderRadius: 14,
-                  ),
-                  label: lang.translate('home'),
-                ),
-                NavigationDestination(
-                  icon: const _NavImageIcon(assetPath: 'assets/category.png'),
-                  selectedIcon: const _SelectedNavIcon(
-                    assetPath: 'assets/category.png',
-                  ),
-                  label: lang.translate('category'),
-                ),
-                NavigationDestination(
-                  icon: const _NavImageIcon(assetPath: 'assets/cart.png'),
-                  selectedIcon: const _SelectedNavIcon(
-                    assetPath: 'assets/cart.png',
-                  ),
-                  label: lang.translate('cart'),
-                ),
-                NavigationDestination(
-                  icon: const _NavImageIcon(assetPath: 'assets/order.png'),
-                  selectedIcon: const _SelectedNavIcon(
-                    assetPath: 'assets/order.png',
-                  ),
-                  label: lang.translate('order'),
-                ),
-                NavigationDestination(
-                  icon: const _NavImageIcon(assetPath: 'assets/setting.png'),
-                  selectedIcon: const _SelectedNavIcon(
-                    assetPath: 'assets/setting.png',
-                  ),
-                  label: lang.translate('setting'),
-                ),
-              ];
+        final screens = [
+          HomePage(key: _homePageKey),
+          const CategoryScreen(),
+          const CartScreen(),
+          const OrderScreen(),
+          const UserProfile(),
+        ];
+        final destinations = [
+          NavigationDestination(
+            icon: const _NavImageIcon(assetPath: 'assets/home.png'),
+            selectedIcon: const _SelectedNavIcon(
+              assetPath: 'assets/home.png',
+              borderRadius: 14,
+            ),
+            label: lang.translate('home'),
+          ),
+          NavigationDestination(
+            icon: const _NavImageIcon(assetPath: 'assets/category.png'),
+            selectedIcon: const _SelectedNavIcon(
+              assetPath: 'assets/category.png',
+            ),
+            label: lang.translate('category'),
+          ),
+          NavigationDestination(
+            icon: const _NavImageIcon(assetPath: 'assets/cart.png'),
+            selectedIcon: const _SelectedNavIcon(
+              assetPath: 'assets/cart.png',
+            ),
+            label: lang.translate('cart'),
+          ),
+          NavigationDestination(
+            icon: const _NavImageIcon(assetPath: 'assets/order.png'),
+            selectedIcon: const _SelectedNavIcon(
+              assetPath: 'assets/order.png',
+            ),
+            label: lang.translate('order'),
+          ),
+          NavigationDestination(
+            icon: const _NavImageIcon(assetPath: 'assets/setting.png'),
+            selectedIcon: const _SelectedNavIcon(
+              assetPath: 'assets/setting.png',
+            ),
+            label: lang.translate('setting'),
+          ),
+        ];
         final currentIndex = navigationProvider.currentIndex;
         final safeIndex = currentIndex >= 0 && currentIndex < screens.length
             ? currentIndex
             : 0;
 
-        if (_lastIsAdmin != isAdmin) {
-          _lastIsAdmin = isAdmin;
-          _builtIndexes
-            ..clear()
-            ..add(safeIndex);
-        } else {
-          _builtIndexes.add(safeIndex);
-        }
+        _builtIndexes.add(safeIndex);
 
         return Scaffold(
           extendBody: true,
@@ -180,11 +145,7 @@ class _MainScreenState extends State<MainScreen> {
 
                 onDestinationSelected: (index) {
                   if (index == 0) {
-                    if (isAdmin) {
-                      _adminHomePageKey.currentState?.refresh();
-                    } else {
-                      _homePageKey.currentState?.refresh();
-                    }
+                    _homePageKey.currentState?.refresh();
                   }
                   navigationProvider.setIndex(index);
                 },
@@ -199,34 +160,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-class _SelectedMaterialNavIcon extends StatelessWidget {
-  const _SelectedMaterialNavIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.88, end: 1),
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutBack,
-      builder: (context, scale, child) {
-        return Opacity(
-          opacity: scale.clamp(0.0, 1.0),
-          child: Transform.scale(scale: scale, child: child),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Sapphire,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: Colors.white, size: 28),
-      ),
-    );
-  }
-}
 
 class _NavImageIcon extends StatelessWidget {
   const _NavImageIcon({required this.assetPath});

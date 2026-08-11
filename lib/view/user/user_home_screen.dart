@@ -80,9 +80,15 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchUnreadNotificationCount() async {
-    final userId = _userDetail != null ? int.tryParse(_userDetail!.student_id) : null;
+    final authUser = context.read<AuthProvider>().user;
+    final studentId = (authUser?.student_id.isNotEmpty == true)
+        ? authUser!.student_id
+        : _userDetail?.student_id;
+
     final queryParams = <String, String>{};
-    if (userId != null && userId > 0) queryParams['user_id'] = userId.toString();
+    if (studentId != null && studentId.trim().isNotEmpty) {
+      queryParams['user_id'] = studentId.trim();
+    }
 
     final url = Uri.parse('$_baseUrl/get_notifications.php').replace(queryParameters: queryParams);
 
@@ -93,7 +99,7 @@ class HomePageState extends State<HomePage> {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['status'] == 'success') {
           final List list = (data['notifications'] as List?) ?? [];
-          final unread = list.where((item) => (item['is_read'] ?? 0) == 0).length;
+          final unread = list.where((item) => (item['is_read'] ?? 0) == 0 || (item['is_read']?.toString() == '0')).length;
           setState(() {
             _unreadNotificationCount = unread;
           });
@@ -293,11 +299,16 @@ class HomePageState extends State<HomePage> {
             padding: const EdgeInsets.only(right: MgPd20),
             child: GestureDetector(
               onTap: () async {
+                final authUser = context.read<AuthProvider>().user;
+                final studentId = (authUser?.student_id.isNotEmpty == true)
+                    ? authUser!.student_id
+                    : _userDetail?.student_id;
+
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => NotificationScreen(
-                      userId: _userDetail != null ? int.tryParse(_userDetail!.student_id) : null,
+                      userId: studentId,
                     ),
                   ),
                 );

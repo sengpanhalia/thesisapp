@@ -23,8 +23,6 @@ class SigninScreen extends StatefulWidget {
 }
 
 class _SigninScreenState extends State<SigninScreen> {
-  static const String _localAdminId = 'admin';
-  static const String _localAdminPassword = 'admin123';
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -40,27 +38,6 @@ class _SigninScreenState extends State<SigninScreen> {
     }
 
     try {
-      if (_isLocalAdminId(studentId)) {
-        if (!_isLocalAdminLogin(studentId, password)) {
-          Fluttertoast.showToast(msg: "Invalid admin password");
-          return;
-        }
-
-        final admin = User(
-          name_kh: 'admin',
-          name_en: 'admin',
-          student_id: studentId,
-          pwd: password,
-          role: 'admin',
-        );
-
-        if (!mounted) return;
-        await context.read<AuthProvider>().login(admin);
-
-        if (!mounted) return;
-        _openHome();
-        return;
-      }
 
       // Fetch FCM Token for push notifications
       final fcmToken = await NotificationService.getFcmToken();
@@ -126,13 +103,6 @@ class _SigninScreenState extends State<SigninScreen> {
     }
   }
 
-  bool _isLocalAdminId(String studentId) {
-    return studentId.toLowerCase() == _localAdminId;
-  }
-
-  bool _isLocalAdminLogin(String studentId, String password) {
-    return _isLocalAdminId(studentId) && password == _localAdminPassword;
-  }
 
   void _openHome() {
     context.read<NavigationProvider>().setIndex(0);

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_description.dart';
 import 'package:thesisapp/component/cart_provider.dart';
@@ -8,7 +7,6 @@ import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/util/api_config.dart';
-import 'package:thesisapp/view/khqr_payment_screen.dart';
 import 'package:thesisapp/view/user/checkout_payment.dart';
 
 class CartScreen extends StatefulWidget {
@@ -28,29 +26,7 @@ class _CartScreenState extends State<CartScreen> {
     setState(() {});
   }
 
-  Future<void> _openKhqrPaymentScreen() async {
-    if (!KhqrPaymentWatcher.hasPayload) {
-      return;
-    }
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => KhqrPaymentScreen(
-          // address: KhqrPaymentWatcher.address!,
-          items: KhqrPaymentWatcher.items,
-          total: KhqrPaymentWatcher.total!,
-          cartIds: KhqrPaymentWatcher.cartIds,
-          paymentId: KhqrPaymentWatcher.paymentId,
-          orderId: KhqrPaymentWatcher.orderId,
-          createdAt: KhqrPaymentWatcher.createdAt,
-        ),
-      ),
-    );
-
-    if (!mounted) return;
-    await _refreshCartScreen();
-  }
 
   Future<void> _openCheckoutPaymentScreen() async {
     await Navigator.push(
@@ -140,9 +116,7 @@ class _CartScreenState extends State<CartScreen> {
                     );
                   }
             
-                  final isPaymentLocked = KhqrPaymentWatcher.isActive;
-                  final canContinue =
-                      isPaymentLocked || cartProvider.selectedItemIds.isNotEmpty;
+                  final canContinue = cartProvider.selectedItemIds.isNotEmpty;
             
                   // Cart with items
                   return Column(
@@ -181,11 +155,6 @@ class _CartScreenState extends State<CartScreen> {
                               onTap: !canContinue
                                   ? null
                                   : () async {
-                                      if (KhqrPaymentWatcher.isActive &&
-                                          KhqrPaymentWatcher.hasPayload) {
-                                        await _openKhqrPaymentScreen();
-                                        return;
-                                      }
                                       await _openCheckoutPaymentScreen();
                                     },
                               child: Container(
@@ -201,10 +170,8 @@ class _CartScreenState extends State<CartScreen> {
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
-                                  KhqrPaymentWatcher.isActive
-                                      ? lang.translate("continue")
-                                      : lang.translate("checkout"),
-                                  style: TextStyle(
+                                  lang.translate("checkout"),
+                                  style: const TextStyle(
                                     color: Color(0xFFFFFFFF),
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -215,43 +182,6 @@ class _CartScreenState extends State<CartScreen> {
                           ],
                         ),
                       ),
-                      if (isPaymentLocked)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.92),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: StrokeCardColor,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.lock_clock_rounded,
-                                  color: IconColor,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    lang.translate('KHQR payment is in progress. Cart changes are locked until you complete or cancel payment.'),
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: TextColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
             
                       // Cart Summary Card
                       Builder(
@@ -302,15 +232,13 @@ class _CartScreenState extends State<CartScreen> {
                                   child: Row(
                                     children: [
                                       GestureDetector(
-                                        onTap: isPaymentLocked
-                                            ? null
-                                            : () {
-                                                final allSelected =
-                                                    cartProvider.allSelected;
-                                                cartProvider.toggleSelectAll(
-                                                  !allSelected,
-                                                );
-                                              },
+                                        onTap: () {
+                                          final allSelected =
+                                              cartProvider.allSelected;
+                                          cartProvider.toggleSelectAll(
+                                            !allSelected,
+                                          );
+                                        },
                                         child: Container(
                                           width: 22,
                                           height: 22,
@@ -383,13 +311,9 @@ class _CartScreenState extends State<CartScreen> {
             
                                       return Dismissible(
                                         key: Key(cartId.toString()),
-                                        direction: isPaymentLocked
-                                            ? DismissDirection.none
-                                            : DismissDirection.endToStart,
-                                        onDismissed: isPaymentLocked
-                                            ? null
-                                            : (_) =>
-                                                  cartProvider.removeItem(cartId),
+                                        direction: DismissDirection.endToStart,
+                                        onDismissed: (_) =>
+                                            cartProvider.removeItem(cartId),
                                         background: Container(
                                           alignment: Alignment.centerRight,
                                           padding: const EdgeInsets.only(
@@ -417,9 +341,7 @@ class _CartScreenState extends State<CartScreen> {
                                             children: [
                                               // Yellow checkbox
                                               GestureDetector(
-                                                onTap:
-                                                    isPaymentLocked ||
-                                                        !isPurchasable
+                                                onTap: !isPurchasable
                                                     ? null
                                                     : () =>
                                                           cartProvider.toggleItem(
@@ -615,10 +537,7 @@ class _CartScreenState extends State<CartScreen> {
                                                           Row(
                                                             children: [
                                                               GestureDetector(
-                                                                onTap:
-                                                                    isPaymentLocked
-                                                                    ? null
-                                                                    : stockQuantity <=
+                                                                onTap: stockQuantity <=
                                                                           0
                                                                     ? null
                                                                     : quantity > 1
@@ -669,10 +588,7 @@ class _CartScreenState extends State<CartScreen> {
                                                               //   width: 20,
                                                               // ),
                                                               GestureDetector(
-                                                                onTap:
-                                                                    isPaymentLocked
-                                                                    ? null
-                                                                    : stockQuantity <=
+                                                                onTap: stockQuantity <=
                                                                           0
                                                                     ? null
                                                                     : quantity >=
