@@ -105,5 +105,10 @@
   "books_for_your_semester": "Book for your semester",
   "notifications": "Notifications",
   "no_notifications": "No notifications yet",
-  "mark_all_as_read": "Mark all as read"
+  "mark_all_as_read": "Mark all as read",
+  "self-pickup": "Self pickup",
+  "USD": "Dollar",
+  "order items": "Order items",
+  "total amount": "Total Amount",
+  "order details": "Order details"
 }

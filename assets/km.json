@@ -51,7 +51,7 @@
   "items": "មុខទំនិញ",
   "no items found": "មិនមានទំនិញ",
   "qty": "ចំនួន",
-  "grand total": "សរុបចុងក្រោយ",
+  "grand total": "តម្លៃសរុប",
   "save receipt": "ទាញយកវិក្កយបត្រ",
   "continue shopping": "បន្តទិញឥវ៉ាន់",
   "receipt": "វិក្កយបត្រ",
@@ -105,5 +105,10 @@
   "books_for_your_semester": "សៀវភៅសម្រាប់ឆមាសរបស់អ្នក",
   "notifications": "ការជូនដំណឹង",
   "no_notifications": "មិនទាន់មានការជូនដំណឹងនៅឡើយទេ",
-  "mark_all_as_read": "អានទាំងអស់"
+  "mark_all_as_read": "អានទាំងអស់",
+  "self-pickup": "ទទួលឥវ៉ាន់ផ្ទាល់",
+  "USD": "ដុល្លារ",
+  "order items": "ទំនិញដែលបានកម្មង់",
+  "total amount": "សរុបទឹកប្រាក់",
+  "order details": "ការកម្មង់"
 }

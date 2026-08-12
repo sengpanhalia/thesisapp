@@ -55,7 +55,8 @@ const TextSoftColor = Color(0xFFB8B2A8);
 const GreyColor = Color(0xFFD9D9D9);
 
 const ButtonColor = Color(0xFFD97F2E);
-const CardColor = Color(0xFFFAF0E4);
+const CardColor = Color(0xFFFDF8F2);
+
 
 const StrokeCardColor = Color(0xFFFDF6EE);
 
@@ -71,6 +72,12 @@ final checkboxColor = Color(0xFFE39A4F).withOpacity(0.7);
 const double ZeroPixel = 0.0;
 
 const double LineHegiht = 1.5;
+
+const double fontText = 12;
+const double fontTitle = 16;
+const double fontSubtitle = 14;
+const double fontHeadTitle = 18;
+const double fontAppBar = 20;
 
 // Margin and Padding
 const double MgPd5 = 5;
@@ -107,3 +114,4 @@ const double Width35 = 35;
 const double Width40 = 40;
 const double Width45 = 45;
 const double Width50 = 50;
+
