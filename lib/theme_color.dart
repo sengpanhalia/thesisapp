@@ -21,6 +21,25 @@ String getFontFamilyMool1(BuildContext context) {
   }
 }
 
+String buildProductImageUrl(String baseUrl, String? rawPath) {
+  if (rawPath == null || rawPath.trim().isEmpty) return '';
+  final path = rawPath.trim();
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+  if (path.startsWith('uploads/products/')) {
+    return '$cleanBase/$path';
+  }
+  if (path.startsWith('/uploads/products/')) {
+    return '$cleanBase$path';
+  }
+  if (path.startsWith('/')) {
+    return '$cleanBase/uploads/products$path';
+  }
+  return '$cleanBase/uploads/products/$path';
+}
+
 const WhiteColor = Color(0xFFFFFFFF);
 const RedColor = Color(0xFFEE0000);
 const GreenColor = Color(0xFF2CB037);

@@ -366,7 +366,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             title,
             style: TextStyle(
               fontFamily: getFontFamily(context),
-              fontSize: 16,
+              fontSize: fontTitle,
               fontWeight: FontWeight.w700,
               color: TitleColor,
             ),
@@ -419,7 +419,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                     : lang.translate('order placed successfully'),
                 style: TextStyle(
                   fontFamily: getFontFamily(context),
-                  fontSize: 18,
+                  fontSize: fontHeadTitle,
                   fontWeight: FontWeight.w700,
                   color: TitleColor,
                 ),
@@ -556,7 +556,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                               '${lang.translate('qty')}: $qty - ${PdfReceiptHelper.money(originalUnitPrice)}',
                               style: TextStyle(
                                 color: Colors.grey[600],
-                                fontSize: 13,
+                                fontSize: fontText,
                               ),
                             ),
                             // if (hasDiscount)
@@ -697,7 +697,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                               : lang.translate('save receipt'),
                           style: TextStyle(
                             fontFamily: getFontFamily(context),
-                            fontSize: 14,
+                            fontSize: fontSubtitle,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFFFFFFFF),
                           ),
@@ -732,7 +732,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                           lang.translate('continue shopping'),
                           style: TextStyle(
                             fontFamily: getFontFamily(context),
-                            fontSize: 14,
+                            fontSize: fontSubtitle,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).primaryColor,
                           ),

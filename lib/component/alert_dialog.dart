@@ -34,7 +34,7 @@ Widget customizeAlertDialog({
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: fontAppBar,
               fontWeight: FontWeight.bold,
               fontFamily: getFontFamily(context),
               color: BlackColor,
@@ -48,7 +48,7 @@ Widget customizeAlertDialog({
             content,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: fontTitle,
               height: 1.5,
               fontFamily: getFontFamily(context),
               color: TextColor,
@@ -71,7 +71,7 @@ Widget customizeAlertDialog({
                       choice_1,
                       style: TextStyle(
                         color: Sapphire,
-                        fontSize: 14,
+                        fontSize: fontSubtitle,
                         fontFamily: getFontFamily(context),
                         fontWeight: FontWeight.bold,
                       ),
@@ -94,7 +94,7 @@ Widget customizeAlertDialog({
                       choice_2,
                       style: TextStyle(
                         color: Colors.red,
-                        fontSize: 14,
+                        fontSize: fontSubtitle,
                         fontFamily: getFontFamily(context),
                         fontWeight: FontWeight.bold,
                       ),

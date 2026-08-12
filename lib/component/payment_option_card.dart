@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:thesisapp/theme_color.dart';
 
 class PaymentOptionCard extends StatelessWidget {
   final String title;
@@ -62,7 +63,7 @@ class PaymentOptionCard extends StatelessWidget {
                     title,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       color: Colors.black87,
                     ),
                   ),
@@ -70,7 +71,7 @@ class PaymentOptionCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
+                      fontSize: fontText,
                       color: Colors.grey[600],
                     ),
                   ),

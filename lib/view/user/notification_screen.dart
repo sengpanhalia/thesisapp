@@ -185,7 +185,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         Text(
                           title,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: fontHeadTitle,
                             fontWeight: FontWeight.bold,
                             color: TitleColor,
                             fontFamily: getFontFamily(context),
@@ -196,7 +196,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           Text(
                             createdAt,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: fontText,
                               color: TextSoftColor,
                               fontFamily: getFontFamily(context),
                             ),
@@ -214,7 +214,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               Text(
                 body,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: fontSubtitle,
                   height: 1.5,
                   color: TextColor,
                   fontFamily: getFontFamily(context),
@@ -237,7 +237,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   child: Text(
                     'Close',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.bold,
                       fontFamily: getFontFamily(context),
                     ),
@@ -297,7 +297,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         centerTitle: true,
         title: Text(
           lang.translate('notifications'),
-          style: const TextStyle(fontFamily: 'KhmerMool1', fontSize: 22, color: TitleColor),
+          style: const TextStyle(fontFamily: 'KhmerMool1', fontSize: fontAppBar, color: TitleColor),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: IconColor),
@@ -340,7 +340,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       child: Text(
                         lang.translate('no_notifications'),
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: fontSubtitle,
                           color: TextSoftColor,
                           fontFamily: getFontFamily(context),
                         ),
@@ -349,51 +349,44 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   : RefreshIndicator(
                       onRefresh: _fetchNotifications,
                       child: ListView.separated(
-                        padding: const EdgeInsets.all(MgPd20),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                         itemCount: _notifications.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final item = _notifications[index];
                           final title = item['title']?.toString() ?? '';
                           final body = item['body']?.toString() ?? '';
-                          final type = item['type']?.toString() ?? 'info';
                           final createdAt = item['created_at']?.toString() ?? '';
                           final isUnread = (item['is_read'] ?? 0) == 0 || (item['is_read']?.toString() == '0');
 
-                          return GestureDetector(
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(16),
                             onTap: () => _showNotificationDetailModal(Map<String, dynamic>.from(item), index),
                             child: Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: isUnread
-                                    ? Colors.white.withValues(alpha: 0.95)
-                                    : Colors.white.withValues(alpha: 0.70),
+                                color: isUnread ? Colors.white : Colors.white.withOpacity(0.85),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: isUnread ? ButtonColor.withValues(alpha: 0.5) : StrokeCardColor,
-                                  width: isUnread ? 2 : 1.5,
+                                  color: isUnread ? GText1.withOpacity(0.4) : StrokeCardColor,
+                                  width: isUnread ? 1.4 : 1.0,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(10),
+                                    height: 40,
+                                    width: 40,
                                     decoration: BoxDecoration(
-                                      color: _getColorForType(type).withValues(alpha: 0.12),
+                                      color: (isUnread ? Colors.orange : Colors.blue).withOpacity(0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
-                                      _getIconForType(type),
-                                      color: _getColorForType(type),
-                                      size: 22,
+                                      isUnread ? Icons.mark_email_unread_rounded : Icons.notifications_rounded,
+                                      color: isUnread ? Colors.orange : Colors.blue,
+                                      size: 20,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -407,30 +400,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                               child: Text(
                                                 title,
                                                 style: TextStyle(
-                                                  fontSize: 15,
+                                                  fontSize: fontSubtitle,
                                                   fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
                                                   color: TitleColor,
                                                   fontFamily: getFontFamily(context),
                                                 ),
                                               ),
                                             ),
-                                            if (isUnread)
-                                              Container(
-                                                margin: const EdgeInsets.only(left: 6),
-                                                width: 8,
-                                                height: 8,
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.blue,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           body,
                                           style: TextStyle(
-                                            fontSize: 13,
+                                            fontSize: fontText,
                                             color: TextColor,
                                             fontFamily: getFontFamily(context),
                                           ),
@@ -440,7 +423,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           Text(
                                             createdAt,
                                             style: TextStyle(
-                                              fontSize: 11,
+                                              fontSize: fontText,
                                               color: TextSoftColor,
                                               fontFamily: getFontFamily(context),
                                             ),

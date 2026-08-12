@@ -235,7 +235,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 fillColor: Colors.transparent,
                 hintText: lang.translate('search'),
                 hintStyle: TextStyle(
-                  fontSize: 13,
+                  fontSize: fontText,
                   color: TextSoftColor,
                   // fontWeight: FontWeight.w500,
                   fontFamily: getFontFamily(context),
@@ -245,15 +245,6 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Container(
-          //   height: 36,
-          //   width: 36,
-          //   decoration: BoxDecoration(
-          //     color: _accent.withOpacity(0.12),
-          //     borderRadius: BorderRadius.circular(12),
-          //   ),
-          //   child: const Icon(Icons.tune_rounded, color: _accent, size: 20),
-          // ),
         ],
       ),
     );
@@ -267,7 +258,7 @@ class _SearchScreenState extends State<SearchScreen> {
         Text(
           lang.translate('history'),
           style: TextStyle(
-            fontSize: 14,
+            fontSize: fontSubtitle,
             fontWeight: FontWeight.w700,
             fontFamily: getFontFamily(context),
           ),
@@ -384,7 +375,7 @@ class _SearchScreenState extends State<SearchScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final product = results[index];
-        final imageUrl = '${widget.baseUrl}/uploads/products/${product.image}';
+        final imageUrl = buildProductImageUrl(widget.baseUrl, product.image);
         final price = double.tryParse(product.price) ?? 0.0;
 
         return InkWell(
@@ -487,7 +478,7 @@ class _SearchScreenState extends State<SearchScreen> {
         shadowColor: Colors.transparent,
         title: Text(
           lang.translate('search'),
-          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),
+          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: fontAppBar),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),

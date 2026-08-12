@@ -52,24 +52,6 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       return;
     }
 
-    for (final item in widget.items) {
-      final stockQuantity = _parseInt(item['stock_quantity']);
-      final quantity = _parseInt(item['quantity']);
-      if (stockQuantity <= 0) {
-        Fluttertoast.showToast(
-          msg: '${item['name'] ?? 'A product'} is out of stock',
-        );
-        return;
-      }
-      if (quantity > stockQuantity) {
-        Fluttertoast.showToast(
-          msg:
-              'Only $stockQuantity item(s) left for ${item['name'] ?? 'this product'}',
-        );
-        return;
-      }
-    }
-
     try {
       final cartIds = widget.items
           .map((item) => _parseInt(item['cart_id']))
@@ -154,7 +136,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         title: Text(
           lang.translate('order_summary'),
           style: TextStyle(
-            fontSize: 20,
+            fontSize: fontAppBar,
             color: Colors.black87,
             fontFamily: getFontFamilyMool1(context),
           ),
@@ -184,7 +166,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 Text(
                   lang.translate('review your order details'),
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: fontSubtitle,
                     color: TextColor,
                     fontFamily: getFontFamily(context),
                   ),
@@ -196,7 +178,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       ? Text(
                           'No items found',
                           style: GoogleFonts.poppins(
-                            fontSize: 12,
+                            fontSize: fontText,
                             color: Colors.grey[600],
                           ),
                         )
@@ -218,8 +200,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                               name: item['name'] ?? '',
                               qty: qty,
                               originalPrice: originalLineTotal,
-                              imageUrl:
-                                  '${ApiConfig.productsUploadsUrl}/${item['image']}',
+                              imageUrl: buildProductImageUrl(
+                                ApiConfig.baseUrl,
+                                item['image']?.toString(),
+                              ),
                             );
                           },
                         ),
@@ -261,7 +245,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                         : Text(
                             'Confirm Order',
                             style: GoogleFonts.poppins(
-                              fontSize: 16,
+                              fontSize: fontTitle,
                               fontWeight: FontWeight.w600,
                             ),
                           ),

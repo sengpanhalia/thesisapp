@@ -123,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen>
                           "សាកលវិទ្យាល័យ សៅស៍អ៊ីសថ៍អេយសៀ",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontFamily: 'KhmerMool1',
                             color: TextColor,
                             height: 1.5,
@@ -136,8 +136,8 @@ class _SplashScreenState extends State<SplashScreen>
                           "University of South-East Asia",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 20,
-                            letterSpacing: 1.2,
+                            fontSize: 18,
+                            letterSpacing: 1.8,
                             fontFamily: UEFontFamily,
                             fontWeight: FontWeight.w600,
                             color: TextColor,

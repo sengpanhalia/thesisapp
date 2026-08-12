@@ -32,7 +32,7 @@ class CategorySectionWidget extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: fontTitle,
                 color: TextColor,
                 fontWeight: FontWeight.w700,
                 fontFamily: getFontFamily(context),
@@ -43,7 +43,7 @@ class CategorySectionWidget extends StatelessWidget {
               child: Text(
                 lang.translate("see all"),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: fontText,
                   color: GText1,
                   fontWeight: FontWeight.w500,
                   fontFamily: getFontFamily(context),
@@ -64,9 +64,7 @@ class CategorySectionWidget extends StatelessWidget {
             itemBuilder: (context, index) {
               final product = products[index];
               final productImage = (product.image ?? '').trim();
-              final imageUrl = productImage.startsWith('http')
-                  ? productImage
-                  : '$baseUrl/uploads/products/$productImage';
+              final imageUrl = buildProductImageUrl(baseUrl, productImage);
 
               return SizedBox(
                 width: 165,

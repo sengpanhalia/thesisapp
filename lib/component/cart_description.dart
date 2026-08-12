@@ -32,7 +32,7 @@ class CartSummaryCard extends StatelessWidget {
               "Description",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: fontTitle,
                 fontWeight: FontWeight.w600,
               ),
             ),

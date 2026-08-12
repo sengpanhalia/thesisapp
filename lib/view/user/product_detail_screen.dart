@@ -132,10 +132,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       Fluttertoast.showToast(msg: 'Please log in first');
       return false;
     }
-    if (widget.product.isOutOfStock) {
-      Fluttertoast.showToast(msg: 'This product is out of stock');
-      return false;
-    }
 
     final url = Uri.parse('${widget.baseUrl}/add_to_cart.php');
     try {
@@ -186,10 +182,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     required int maxQuantity,
   }) {
     final lang = AppLocalizations.of(context)!;
-    if (maxQuantity <= 0) {
-      Fluttertoast.showToast(msg: 'This product is out of stock');
-      return Future.value(null);
-    }
 
     int quantity = 1;
     return showDialog<int>(
@@ -205,7 +197,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 lang.translate('select quantity'),
                 style: TextStyle(
                   fontFamily: getFontFamily(context),
-                  fontSize: 18,
+                  fontSize: fontHeadTitle,
                   fontWeight: FontWeight.w600,
                   color: TitleColor,
                 ),
@@ -218,27 +210,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     lang.translate('how many would you like to add'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.w600,
                       color: TextColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${lang.translate('available stock')}: $maxQuantity',
-                    style: TextStyle(
-                      fontFamily: getFontFamily(context),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: GreenColor,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  // const SizedBox(height: 8),
+                  // Text(
+                  //   '${lang.translate('available stock')}: ${maxQuantity < 0 ? 0 : maxQuantity}',
+                  //   style: TextStyle(
+                  //     fontFamily: getFontFamily(context),
+                  //     fontSize: fontSubtitle,
+                  //     fontWeight: FontWeight.w500,
+                  //     color: GreenColor,
+                  //   ),
+                  //   textAlign: TextAlign.center,
+                  // ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: 10,
                     children: [
                       IconButton(
                         onPressed: quantity > 1
@@ -248,30 +239,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         color: TextColor,
                       ),
                       Container(
-                        width: 64,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: CardColor,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.brown[200] ?? Colors.brown,
-                          ),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           quantity.toString(),
                           style: TextStyle(
                             fontFamily: getFontFamilyMool1(context),
-                            fontSize: 18,
+                            fontSize: fontHeadTitle,
                             fontWeight: FontWeight.w700,
                             color: TitleColor,
                           ),
                         ),
                       ),
                       IconButton(
-                        onPressed: quantity < maxQuantity
-                            ? () => setState(() => quantity += 1)
-                            : null,
+                        onPressed: (maxQuantity > 0 && quantity >= maxQuantity)
+                            ? null
+                            : () => setState(() => quantity += 1),
                         icon: const Icon(Icons.add_rounded),
                         color: TextColor,
                       ),
@@ -286,7 +276,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     lang.translate('cancel'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.w600,
                       color: TitleColor,
                     ),
@@ -305,7 +295,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     lang.translate('confirm'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.w600,
                       color: GBackground1,
                     ),
@@ -334,13 +324,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final String language = widget.product.language.trim();
     final String year = widget.product.year.trim();
     final int stockQuantity = widget.product.stockQuantity;
-    final bool isOutOfStock = widget.product.isOutOfStock;
-    final Color stockColor = isOutOfStock
-        ? Colors.redAccent
-        : const Color(0xFF2E7D32);
-    final String? imageUrl = widget.product.image!.startsWith('http')
-        ? widget.product.image
-        : '${widget.baseUrl}/uploads/products/${widget.product.image}';
+    final String imageUrl = buildProductImageUrl(widget.baseUrl, widget.product.image);
     final lang = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -348,8 +332,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         title: Text(
           lang.translate('product details'),
           style: TextStyle(
-            fontFamily: getFontFamilyMool1(context),
-            fontSize: 24,
+            fontFamily: getFontFamily(context),
+            fontSize: fontAppBar,
             color: TitleColor,
           ),
         ),
@@ -387,7 +371,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         AspectRatio(
                           aspectRatio: 4 / 3,
                           child: CachedNetworkImage(
-                            imageUrl: imageUrl!,
+                            imageUrl: imageUrl,
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
                               color: GBackground1,
@@ -423,7 +407,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       lang.translate('view image'),
                                       style: TextStyle(
                                         fontFamily: getFontFamily(context),
-                                        fontSize: 12,
+                                        fontSize: fontText,
                                         color: TextColor,
                                       ),
                                     ),
@@ -441,7 +425,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     widget.product.name,
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 24,
+                      fontSize: fontTitle,
                       fontWeight: FontWeight.bold,
                       color: TitleColor,
                       overflow: TextOverflow.ellipsis,
@@ -453,40 +437,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     '${lang.translate('author')}: $author',
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       color: TextColor,
                     ),
                   ),
                   SizedBox(height: Height10),
                   Text(
-                    '៛ ${basePrice.toStringAsFixed(2)}',
+                    '\$ ${basePrice.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 24,
+                      fontSize: fontAppBar,
                       color: GText1,
                     ),
                   ),
-                  SizedBox(height: Height15),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: stockColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      isOutOfStock
-                          ? lang.translate('out of stock')
-                          : '${lang.translate('in stock')}: $stockQuantity',
-                      style: TextStyle(
-                        fontFamily: getFontFamily(context),
-                        fontSize: 12,
-                        color: stockColor,
-                      ),
-                    ),
-                  ),
+                  // SizedBox(height: Height15),
+                  // Container(
+                  //   padding: const EdgeInsets.symmetric(
+                  //     horizontal: 10,
+                  //     vertical: 6,
+                  //   ),
+                  //   decoration: BoxDecoration(
+                  //     color: stockColor.withValues(alpha: 0.12),
+                  //     borderRadius: BorderRadius.circular(999),
+                  //   ),
+                  //   child: Text(
+                  //     isOutOfStock
+                  //         ? lang.translate('out of stock')
+                  //         : '${lang.translate('in stock')}: $stockQuantity',
+                  //     style: TextStyle(
+                  //       fontFamily: getFontFamily(context),
+                  //       fontSize: fontText,
+                  //       color: stockColor,
+                  //     ),
+                  //   ),
+                  // ),
                   SizedBox(height: Height15),
 
                   // Spec item row (pages, language, year)
@@ -504,7 +488,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     lang.translate('product details'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 16,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.bold,
                       color: GText1,
                     ),
@@ -516,7 +500,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     widget.product.description,
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 14,
+                      fontSize: fontText,
                       color: TextColor,
                       height: LineHegiht,
                       letterSpacing: 0.7,
@@ -530,7 +514,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     lang.translate('related books'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 16,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.bold,
                       color: GText1,
                     ),
@@ -549,7 +533,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           lang.translate('no related books'),
                           style: TextStyle(
                             fontFamily: getFontFamily(context),
-                            fontSize: 14,
+                            fontSize: fontSubtitle,
                             color: TextSoftColor,
                           ),
                         ),
@@ -564,9 +548,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         itemBuilder: (context, index) {
                           final product = relatedProducts[index];
                           final productImage = (product.image ?? '').trim();
-                          final imageUrl = productImage.startsWith('http')
-                              ? productImage
-                              : '$baseUrl/uploads/products/$productImage';
+                          final imageUrl = buildProductImageUrl(baseUrl, productImage);
 
                           return SizedBox(
                             width: 180,
@@ -643,21 +625,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: isOutOfStock
-                      ? null
-                      : () async {
-                          final quantity = await _showQuantityDialog(
-                            context,
-                            maxQuantity: stockQuantity,
-                          );
-                          if (quantity == null) return;
-                          await _addToCart(context, quantity: quantity);
-                        },
+                  onPressed: () async {
+                    final quantity = await _showQuantityDialog(
+                      context,
+                      maxQuantity: stockQuantity,
+                    );
+                    if (quantity == null) return;
+                    await _addToCart(context, quantity: quantity);
+                  },
                   child: Text(
                     lang.translate('add to cart'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 16,
+                      fontSize: fontSubtitle,
                       fontWeight: FontWeight.w600,
                       color: TitleColor,
                     ),
@@ -667,21 +647,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: isOutOfStock
-                      ? null
-                      : () async {
-                          final quantity = await _showQuantityDialog(
-                            context,
-                            maxQuantity: stockQuantity,
-                          );
-                          if (quantity == null) return;
-                          await _buyNow(quantity: quantity);
-                        },
+                  onPressed: () async {
+                    final quantity = await _showQuantityDialog(
+                      context,
+                      maxQuantity: stockQuantity,
+                    );
+                    if (quantity == null) return;
+                    await _buyNow(quantity: quantity);
+                  },
                   child: Text(
                     lang.translate('buy now'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 16,
+                      fontSize: fontTitle,
                       fontWeight: FontWeight.w600,
                       color: GBackground3,
                     ),

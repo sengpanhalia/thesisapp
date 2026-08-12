@@ -53,7 +53,7 @@ class AppButton extends StatelessWidget {
               title,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
+                fontSize: fontHeadTitle,
                 fontWeight: FontWeight.bold,
                 fontFamily: getFontFamily(context),
               ),

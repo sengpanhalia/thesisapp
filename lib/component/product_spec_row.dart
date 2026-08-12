@@ -16,7 +16,7 @@ class SpecItem extends StatelessWidget {
             value,
             style: TextStyle(
               fontFamily: getFontFamily(context),
-              fontSize: 14,
+              fontSize: fontSubtitle,
               fontWeight: FontWeight.bold,
               color: TitleColor,
             ),
@@ -26,7 +26,7 @@ class SpecItem extends StatelessWidget {
             label,
             style: TextStyle(
               fontFamily: getFontFamily(context),
-              fontSize: 11,
+              fontSize: fontText,
               color: Colors.brown[400],
             ),
           ),

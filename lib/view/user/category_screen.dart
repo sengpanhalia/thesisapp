@@ -111,7 +111,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                             fillColor: Colors.transparent,
                             hintText: '${lang.translate('search')}...',
                             hintStyle: TextStyle(
-                              fontSize: 13,
+                              fontSize: fontText,
                               color: TextSoftColor,
                               fontFamily: getFontFamily(context),
                             ),
@@ -129,7 +129,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 Text(
                   lang.translate('category'),
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: fontHeadTitle,
                     fontWeight: FontWeight.bold,
                     fontFamily: getFontFamily(context),
                   ),
@@ -152,7 +152,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       child: Text(
                         'មិនមានប្រភេទទំនិញទេ',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: fontSubtitle,
                           color: TextSoftColor,
                           fontFamily: getFontFamily(context),
                         ),
@@ -229,7 +229,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: fontText,
               fontWeight: FontWeight.w500,
               fontFamily: getFontFamily(context),
             ),

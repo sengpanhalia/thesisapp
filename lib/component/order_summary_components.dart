@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:thesisapp/theme_color.dart';
 
 class InfoCard extends StatelessWidget {
   final String title;
@@ -29,7 +30,7 @@ class InfoCard extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: fontSubtitle,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
@@ -62,11 +63,11 @@ class InfoRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: muted)),
+        Text(label, style: GoogleFonts.poppins(fontSize: fontText, color: muted)),
         Text(
           value,
           style: GoogleFonts.poppins(
-            fontSize: 16,
+            fontSize: fontTitle,
             fontWeight: valueWeight ?? FontWeight.w600,
             color: valueColor ?? Colors.black87,
           ),
@@ -124,7 +125,7 @@ class OrderItemRow extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
-                        fontSize: 13,
+                        fontSize: fontText,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
@@ -133,7 +134,7 @@ class OrderItemRow extends StatelessWidget {
                     Text(
                       'Qty: $qty',
                       style: GoogleFonts.poppins(
-                        fontSize: 12,
+                        fontSize: fontText,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -144,7 +145,7 @@ class OrderItemRow extends StatelessWidget {
                 Text(
                   '\$${originalPrice!.toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: fontText,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),

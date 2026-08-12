@@ -113,7 +113,7 @@ class _ProductScreenState extends State<ProductScreen> {
         shadowColor: Colors.transparent,
         title: Text(
           screenTitle,
-          style: const TextStyle(fontFamily: 'KhmerMool1', fontSize: 24),
+          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: fontAppBar),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -160,7 +160,7 @@ class _ProductScreenState extends State<ProductScreen> {
                     Text(
                       'មិនមានសៀវភៅទេ',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: fontSubtitle,
                         color: TextSoftColor,
                         fontFamily: getFontFamily(context),
                       ),
@@ -180,9 +180,7 @@ class _ProductScreenState extends State<ProductScreen> {
                       itemBuilder: (context, index) {
                         final products = product[index];
                         final productImage = (products.image ?? '').trim();
-                        final imageUrl = productImage.startsWith('http')
-                            ? productImage
-                            : '$_baseUrl/uploads/products/$productImage';
+                        final imageUrl = buildProductImageUrl(_baseUrl, productImage);
 
                         return BuildCardProduct(
                           onTap: () {

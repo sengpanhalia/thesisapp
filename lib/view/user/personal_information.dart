@@ -197,9 +197,9 @@ class _PersonalInformationState extends State<PersonalInformation> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'ព័ត៌មានផ្ទាល់ខ្លួន',
-          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: 22),
+          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: fontAppBar),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -301,7 +301,7 @@ Widget ListInfo({required BuildContext context, required String title, required 
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: fontTitle,
                   fontFamily: getFontFamily(context),
                   color: TextColor,
                 ),
@@ -313,7 +313,7 @@ Widget ListInfo({required BuildContext context, required String title, required 
               child: Text(
                 subTitle,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: fontTitle,
                   fontFamily: getFontFamily(context),
                   color: TextColor,
                 ),
@@ -389,7 +389,7 @@ Widget _CardYearItem({required BuildContext context, required String title, requ
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: 16,
+          fontSize: fontTitle,
           fontFamily: getFontFamily(context),
           color: TextColor,
         ),
@@ -402,7 +402,7 @@ Widget _CardYearItem({required BuildContext context, required String title, requ
           textAlign: TextAlign.center,
           maxLines: 1,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: fontTitle,
             fontFamily: getFontFamily(context),
             color: TextColor,
           ),

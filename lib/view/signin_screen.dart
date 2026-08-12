@@ -148,7 +148,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   Text(
                     'សាកលវិទ្យាល័យ សៅស៍អុីសថ៍អេយសៀ',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: fontAppBar,
                       fontFamily: 'KhmerMool1',
                       color: TextColor,
                     ),
@@ -157,7 +157,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   Text(
                     'University of South-East Asia',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: fontAppBar,
                       letterSpacing: 1.5,
                       color: TextColor,
                       fontFamily: UEFontFamily,
@@ -167,7 +167,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   Text(
                     'សូមស្វាគមន៍',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: fontAppBar,
                       fontFamily: 'KhmerMool1',
                       color: TextColor,
                     ),
@@ -176,7 +176,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   Text(
                     '3',
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: fontAppBar,
                       fontFamily: 'tacteng',
                       fontWeight: FontWeight.w500,
                       color: TextColor,
@@ -204,7 +204,7 @@ class _SigninScreenState extends State<SigninScreen> {
                           Text(
                             "អត្តលេខនិស្សិត",
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: fontTitle,
                               color: TextColor,
                               fontFamily: getFontFamily(context),
                             ),
@@ -243,7 +243,7 @@ class _SigninScreenState extends State<SigninScreen> {
                           Text(
                             "លេខកូដសម្ងាត់",
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: fontTitle,
                               color: TextColor,
                               fontFamily: getFontFamily(context),
                             ),

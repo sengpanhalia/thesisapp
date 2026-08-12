@@ -88,7 +88,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             textGradient(
                               page.title,
                               TextStyle(
-                                fontSize: 24,
+                                fontSize: fontAppBar,
                                 color: Colors.white,
                                 fontFamily: getFontFamily(context),
                               ),
@@ -97,7 +97,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             textGradient(
                               page.subtitle,
                               TextStyle(
-                                fontSize: 24,
+                                fontSize: fontAppBar,
                                 color: Colors.white,
                                 fontFamily: getFontFamily(context),
                               ),
@@ -111,7 +111,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             page.description,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: fontTitle,
                               color: TextColor,
                               fontFamily: getFontFamily(context),
                             ),
@@ -157,7 +157,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         "រំលង",
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: fontSubtitle,
                           color: BlackColor,
                           fontFamily: getFontFamily(context),
                         ),
@@ -191,7 +191,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ? "បន្ទាប់"
                             : "ចាប់ផ្តើម",
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: fontSubtitle,
                           color: Colors.white,
                           fontFamily: getFontFamily(context),
                         ),

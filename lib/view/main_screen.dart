@@ -115,7 +115,7 @@ class _MainScreenState extends State<MainScreen> {
                   if (states.contains(WidgetState.selected)) {
                     return TextStyle(
                       color: Sapphire, // selected label color
-                      fontSize: 12,
+                      fontSize: fontText,
                       fontWeight: FontWeight.bold,
                       fontFamily: getFontFamily(context),
                     );
@@ -123,7 +123,7 @@ class _MainScreenState extends State<MainScreen> {
 
                   return TextStyle(
                     color: BlackColor, // unselected label color
-                    fontSize: 12,
+                    fontSize: fontText,
                     fontFamily: getFontFamily(context),
                   );
                 }),

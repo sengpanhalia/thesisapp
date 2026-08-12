@@ -78,7 +78,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
         title: Text(
           lang.translate('payment'),
           style: TextStyle(
-            fontSize: 20,
+            fontSize: fontAppBar,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
             fontFamily: getFontFamilyMool1(context),
@@ -113,7 +113,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                   Text(
                     lang.translate('select Payment Method'),
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: fontTitle,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                       fontFamily: getFontFamily(context),
@@ -123,7 +123,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                   Text(
                     lang.translate('review and choose payment method'),
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: fontText,
                       fontWeight: FontWeight.w500,
                       color: TextColor,
                       fontFamily: getFontFamily(context),
@@ -155,7 +155,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                       child: Text(
                         'Place Order',
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
+                          fontSize: fontTitle,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

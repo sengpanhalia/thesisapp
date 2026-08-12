@@ -97,17 +97,17 @@ class _CartScreenState extends State<CartScreen> {
                           Text(
                             lang.translate('your cart is empty'),
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: fontTitle,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey,
+                              color: TextColor,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             lang.translate('looks like you haven\'t added anything yet'),
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                              fontSize: fontSubtitle,
+                              color: TextColor,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -137,7 +137,7 @@ class _CartScreenState extends State<CartScreen> {
                                   lang.translate("total"),
                                   style: TextStyle(
                                     color: TextColor,
-                                    fontSize: 16,
+                                    fontSize: fontTitle,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -145,7 +145,7 @@ class _CartScreenState extends State<CartScreen> {
                                   "\$${cartProvider.total.toStringAsFixed(2)}",
                                   style: const TextStyle(
                                     color: TextColor,
-                                    fontSize: 26,
+                                    fontSize: fontAppBar,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -173,7 +173,7 @@ class _CartScreenState extends State<CartScreen> {
                                   lang.translate("checkout"),
                                   style: const TextStyle(
                                     color: Color(0xFFFFFFFF),
-                                    fontSize: 16,
+                                    fontSize: fontTitle,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -302,10 +302,6 @@ class _CartScreenState extends State<CartScreen> {
                                           0.0;
                                       final originalPrice = price;
                                       final quantity = item['quantity'] ?? 1;
-                                      final stockQuantity = cartProvider
-                                          .itemStockQuantity(item);
-                                      final stockIssue = cartProvider
-                                          .stockIssueForItem(item);
                                       final isPurchasable = cartProvider
                                           .isItemPurchasable(item);
             
@@ -456,30 +452,30 @@ class _CartScreenState extends State<CartScreen> {
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
-                                                                    fontSize: 16,
+                                                                    fontSize: fontText,
                                                                   ),
                                                                 ),
                                                                 const SizedBox(
                                                                   height: 4,
                                                                 ),
-                                                                if (stockIssue !=
-                                                                    null) ...[
-                                                                  Text(
-                                                                    stockIssue,
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .redAccent,
-                                                                      fontSize:
-                                                                          11,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                    ),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    height: 4,
-                                                                  ),
-                                                                ],
+                                                                // if (stockIssue !=
+                                                                //     null) ...[
+                                                                //   Text(
+                                                                //     stockIssue,
+                                                                //     style: const TextStyle(
+                                                                //       color: Colors
+                                                                //           .redAccent,
+                                                                //       fontSize:
+                                                                //           11,
+                                                                //       fontWeight:
+                                                                //           FontWeight
+                                                                //               .w600,
+                                                                //     ),
+                                                                //   ),
+                                                                //   const SizedBox(
+                                                                //     height: 4,
+                                                                //   ),
+                                                                // ],
                                                                 // else
                                                                 //   Text(
                                                                 //     'Stock: $stockQuantity',
@@ -537,10 +533,7 @@ class _CartScreenState extends State<CartScreen> {
                                                           Row(
                                                             children: [
                                                               GestureDetector(
-                                                                onTap: stockQuantity <=
-                                                                          0
-                                                                    ? null
-                                                                    : quantity > 1
+                                                                onTap: quantity > 1
                                                                     ? () => cartProvider
                                                                           .updateQuantity(
                                                                             cartId,
@@ -580,7 +573,7 @@ class _CartScreenState extends State<CartScreen> {
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
-                                                                    fontSize: 16,
+                                                                    fontSize: fontTitle,
                                                                   ),
                                                                 ),
                                                               ),
@@ -588,17 +581,11 @@ class _CartScreenState extends State<CartScreen> {
                                                               //   width: 20,
                                                               // ),
                                                               GestureDetector(
-                                                                onTap: stockQuantity <=
-                                                                          0
-                                                                    ? null
-                                                                    : quantity >=
-                                                                          stockQuantity
-                                                                    ? null
-                                                                    : () => cartProvider
-                                                                          .updateQuantity(
-                                                                            cartId,
-                                                                            1,
-                                                                          ),
+                                                                onTap: () => cartProvider
+                                                                      .updateQuantity(
+                                                                        cartId,
+                                                                        1,
+                                                                      ),
                                                                 child: Container(
                                                                   width: 28,
                                                                   height: 28,

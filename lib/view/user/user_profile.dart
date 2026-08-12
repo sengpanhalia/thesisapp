@@ -159,7 +159,7 @@ class _UserProfileState extends State<UserProfile> {
                             style: TextStyle(
                               fontFamily: 'SiemReap',
                               color: TextColor,
-                              fontSize: 16,
+                              fontSize: fontTitle,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -169,7 +169,7 @@ class _UserProfileState extends State<UserProfile> {
                             style: TextStyle(
                               fontFamily: getFontFamily(context),
                               color: TextColor,
-                              fontSize: 16,
+                              fontSize: fontTitle,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -182,7 +182,7 @@ class _UserProfileState extends State<UserProfile> {
                     lang.translate('privacy'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 20,
+                      fontSize: fontAppBar,
                       color: TextColor,
                       fontWeight: FontWeight.bold,
                     ),
@@ -227,7 +227,7 @@ class _UserProfileState extends State<UserProfile> {
                     lang.translate('privacy'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
-                      fontSize: 20,
+                      fontSize: fontAppBar,
                       color: TextColor,
                       fontWeight: FontWeight.bold,
                     ),

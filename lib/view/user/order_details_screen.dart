@@ -255,7 +255,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget build(BuildContext context) {
     final orderId = widget.order['id'] ?? widget.order['order_id'] ?? 0;
     // final displayOrderNumber = widget.order['display_order_number'];
-    // final status = widget.order['status'] ?? 'pending';
+    final status = widget.order['status'] ?? 'pending';
     // final normalizedStatus = status.toString().toLowerCase();
     final total =
         double.tryParse(widget.order['total_amount']?.toString() ?? '0') ?? 0.0;
@@ -389,15 +389,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     Text(_formatDate(orderDate.toString()), style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: Height25),
-                  child: Row(
-                    children: [
-                      Image.asset('assets/box-tick.png', height: Height20,),
-                      const SizedBox(width: Width10,),
-                      Text('self-pickup', style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    Image.asset('assets/box-tick.png', height: Height20,),
+                    const SizedBox(width: Width10,),
+                    Text('self-pickup', style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
+                  ],
                 ),
               ],
             ),
@@ -416,7 +413,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               children: [
                 Image.asset('assets/status_icon.png', height: Height20,),
                 const SizedBox(width: Width10,),
-                Text(trackingNumber, style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
+                Text(status, style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
               ],
             ),
               ],

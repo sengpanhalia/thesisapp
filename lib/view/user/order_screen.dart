@@ -202,16 +202,7 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'success':
-        return GreenColor;
-      case 'pending':
-        return processColor;
-      case 'cancelled':
-        return RedColor;
-      default:
-        return TextColor;
-    }
+    return Sapphire2;
   }
 
   @override
@@ -224,8 +215,8 @@ class _OrderScreenState extends State<OrderScreen> {
         title: Text(
           lang.translate('order history'),
           style: TextStyle(
-              fontFamily: getFontFamilyMool1(context),
-              fontSize: 24,
+              fontFamily: getFontFamily(context),
+              fontSize: fontAppBar,
               color: TitleColor,
             ),
         ),
@@ -292,7 +283,7 @@ class _OrderScreenState extends State<OrderScreen> {
         
                               final displayIndex = index - 1;
                               final order = displayOrders[displayIndex];
-                              final orderId = order['id'] ?? order['order_id'];
+                              // final orderId = order['id'] ?? order['order_id'];
                               final orderNumber =
                                   _getDisplayOrderNumber(sortedAll, order) ??
                                   (displayIndex + 1);
@@ -387,11 +378,10 @@ class _OrderScreenState extends State<OrderScreen> {
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        trackingNumber != null
-                                                            ? "Order #$trackingNumber"
-                                                            : "Order #${orderId ?? '-'}",
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
+                                                        
+                                                            "Order #$trackingNumber",
+                                                        style: TextStyle(
+                                                          fontSize: fontSubtitle,
                                                           fontWeight:
                                                               FontWeight.bold,
                                                         ),
@@ -402,25 +392,25 @@ class _OrderScreenState extends State<OrderScreen> {
                                                               horizontal: 14,
                                                               vertical: 6,
                                                             ),
-                                                        decoration: BoxDecoration(
-                                                          color: statusColor
-                                                              .withOpacity(0.12),
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                30,
-                                                              ),
-                                                        ),
-                                                        child: Text(
-                                                          status
-                                                              .toString()
-                                                              .toUpperCase(),
-                                                          style: TextStyle(
-                                                            color: statusColor,
-                                                            fontSize: 11,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                        ),
+                                                        // decoration: BoxDecoration(
+                                                        //   color: statusColor
+                                                        //       .withOpacity(0.12),
+                                                        //   borderRadius:
+                                                        //       BorderRadius.circular(
+                                                        //         30,
+                                                        //       ),
+                                                        // ),
+                                                        // child: Text(
+                                                        //   status
+                                                        //       .toString()
+                                                        //       .toUpperCase(),
+                                                        //   style: TextStyle(
+                                                        //     color: statusColor,
+                                                        //     fontSize: fontText,
+                                                        //     fontWeight:
+                                                        //         FontWeight.w600,
+                                                        //   ),
+                                                        // ),
                                                       ),
                                                     ],
                                                   ),
@@ -455,14 +445,14 @@ class _OrderScreenState extends State<OrderScreen> {
                                                       const Text(
                                                         "Total Amount",
                                                         style: TextStyle(
-                                                          fontSize: 14,
+                                                          fontSize: fontSubtitle,
                                                           color: Colors.grey,
                                                         ),
                                                       ),
                                                       Text(
                                                         "\$${total.toStringAsFixed(2)}",
                                                         style: TextStyle(
-                                                          fontSize: 22,
+                                                          fontSize: fontSubtitle,
                                                           fontWeight:
                                                               FontWeight.bold,
                                                           color: statusColor,
@@ -497,7 +487,7 @@ class _OrderScreenState extends State<OrderScreen> {
       children: [
         Icon(icon, size: 18, color: IconColor),
         const SizedBox(width: 10),
-        Text(text, style: TextStyle(color: TextColor, fontSize: 14)),
+        Text(text, style: TextStyle(color: TextColor, fontSize: fontText)),
       ],
     );
   }
@@ -522,12 +512,12 @@ class _OrderScreenState extends State<OrderScreen> {
           const SizedBox(height: 20),
           const Text(
             "No Orders Found",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: fontHeadTitle, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
             "Your placed orders will appear here",
-            style: TextStyle(fontSize: 14, color: TextColor),
+            style: TextStyle(fontSize: fontSubtitle, color: TextColor),
           ),
         ],
       ),
@@ -619,7 +609,7 @@ class _OrderScreenState extends State<OrderScreen> {
             Text(
               "No orders for the selected period",
               style: TextStyle(
-                fontSize: 15,
+                fontSize: fontSubtitle,
                 fontWeight: FontWeight.w600,
                 color: TextColor,
               ),

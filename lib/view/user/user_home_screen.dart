@@ -289,7 +289,7 @@ class HomePageState extends State<HomePage> {
                   Text(
                     getGreeting(),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       color: TextColor,
                       fontFamily: getFontFamily(context),
                     ),
@@ -298,7 +298,7 @@ class HomePageState extends State<HomePage> {
                   textGradient(
                     'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
                     TextStyle(
-                      fontSize: 15,
+                      fontSize: fontSubtitle,
                       color: Colors.white,
                       fontFamily: 'KhmerMool1',
                     ),
@@ -419,7 +419,7 @@ class HomePageState extends State<HomePage> {
                               fillColor: Colors.transparent,
                               hintText: '${lang.translate('search')}...',
                               hintStyle: TextStyle(
-                                fontSize: 13,
+                                fontSize: fontText,
                                 color: TextSoftColor,
                                 fontFamily: getFontFamily(context),
                               ),
@@ -568,7 +568,7 @@ class HomePageState extends State<HomePage> {
             child: Text(
               lang.translate('no items found'),
               style: TextStyle(
-                fontSize: 14,
+                fontSize: fontSubtitle,
                 color: TextSoftColor,
                 fontFamily: getFontFamily(context),
               ),

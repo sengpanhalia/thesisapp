@@ -69,7 +69,7 @@ class BuildCardProduct extends StatelessWidget {
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: fontTitle,
                       color: TextColor,
                       fontWeight: FontWeight.w500,
                       fontFamily: getFontFamily(context),
@@ -82,7 +82,7 @@ class BuildCardProduct extends StatelessWidget {
                     author,
                     style: TextStyle(
                       overflow: TextOverflow.ellipsis,
-                      fontSize: 12,
+                      fontSize: fontText,
                       color: TextColor,
                       fontFamily: getFontFamily(context),
                     ),
@@ -93,7 +93,7 @@ class BuildCardProduct extends StatelessWidget {
                   Text(
                     '\$$productPrice',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: fontSubtitle,
                       color: GText1,
                       fontWeight: FontWeight.w600,
                       fontFamily: getFontFamily(context),

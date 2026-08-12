@@ -72,20 +72,11 @@ class CartProvider extends ChangeNotifier {
   }
 
   bool isItemPurchasable(Map<String, dynamic> item) {
-    final stock = itemStockQuantity(item);
     final quantity = itemQuantity(item);
-    return stock > 0 && quantity > 0 && quantity <= stock;
+    return quantity > 0;
   }
 
   String? stockIssueForItem(Map<String, dynamic> item) {
-    final stock = itemStockQuantity(item);
-    final quantity = itemQuantity(item);
-    if (stock <= 0) {
-      return 'Out of stock';
-    }
-    if (quantity > stock) {
-      return 'Only $stock left in stock';
-    }
     return null;
   }
 
@@ -212,18 +203,7 @@ class CartProvider extends ChangeNotifier {
     );
     if (itemIndex != -1) {
       final currentQuantity = itemQuantity(_cartItems[itemIndex]);
-      final stockQuantity = itemStockQuantity(_cartItems[itemIndex]);
       final newQuantity = currentQuantity + change;
-      if (change > 0 && stockQuantity <= 0) {
-        Fluttertoast.showToast(msg: 'This product is out of stock');
-        return;
-      }
-      if (change > 0 && stockQuantity > 0 && newQuantity > stockQuantity) {
-        Fluttertoast.showToast(
-          msg: 'Only $stockQuantity item(s) available in stock',
-        );
-        return;
-      }
       if (newQuantity > 0) {
         _cartItems[itemIndex]['quantity'] = newQuantity;
         if (!isItemPurchasable(_cartItems[itemIndex])) {
