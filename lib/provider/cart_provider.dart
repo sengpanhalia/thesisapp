@@ -13,7 +13,7 @@ class CartProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
   Set<int> _selectedItemIds = {};
-  int? _loadedUserId;
+  String? _loadedUserId;
   bool _selectionInitialized = false;
 
   List<Map<String, dynamic>> get cartItems => _cartItems;
@@ -48,7 +48,7 @@ class CartProvider extends ChangeNotifier {
     }
 
     if (previousUserId != nextUserId) {
-      _loadedUserId = nextUserId as int?;
+      _loadedUserId = nextUserId;
       _selectionInitialized = false;
       fetchCart();
     }
@@ -108,7 +108,7 @@ class CartProvider extends ChangeNotifier {
         previousSelectedIds.length == previousSelectableIds.length &&
         previousSelectedIds.containsAll(previousSelectableIds);
 
-    _loadedUserId = int.parse(user.student_id);
+    _loadedUserId = user.student_id;
     _isLoading = true;
     notifyListeners();
     try {

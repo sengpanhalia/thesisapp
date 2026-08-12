@@ -18,6 +18,7 @@ class ProductScreen extends StatefulWidget {
   final int?    studentSemester;
   final String? studentMajor;
   final bool    isStudentProducts;
+  final List<Product>? initialProducts;
 
   const ProductScreen({
     super.key,
@@ -28,6 +29,7 @@ class ProductScreen extends StatefulWidget {
     this.studentSemester,
     this.studentMajor,
     this.isStudentProducts = false,
+    this.initialProducts,
   });
 
   @override
@@ -42,7 +44,12 @@ class _ProductScreenState extends State<ProductScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+    if (widget.initialProducts != null && widget.initialProducts!.isNotEmpty) {
+      product = List<Product>.from(widget.initialProducts!);
+      _isLoadingProduct = false;
+    } else {
+      _fetchProducts();
+    }
   }
 
   Future<void> _fetchProducts() async {
@@ -51,10 +58,22 @@ class _ProductScreenState extends State<ProductScreen> {
 
     Uri uri;
     if (widget.isStudentProducts || (widget.studentYear != null && widget.studentYear! > 0)) {
+      int year = widget.studentYear ?? 0;
+      int semester = widget.studentSemester ?? 0;
+      String major = (widget.studentMajor ?? '').trim();
+
+      if (widget.isStudentProducts) {
+        if (year == 0) year = 3;
+        if (semester == 0) semester = 2;
+        if (major.isEmpty || major == 'ព័ត៌មានវិទ្យា') {
+          major = 'Information Technology';
+        }
+      }
+
       final queryParams = <String, String>{};
-      if ((widget.studentYear ?? 0) > 0) queryParams['student_year'] = widget.studentYear.toString();
-      if ((widget.studentSemester ?? 0) > 0) queryParams['student_semester'] = widget.studentSemester.toString();
-      if ((widget.studentMajor ?? '').isNotEmpty) queryParams['student_major'] = widget.studentMajor!;
+      if (year > 0) queryParams['student_year'] = year.toString();
+      if (semester > 0) queryParams['student_semester'] = semester.toString();
+      if (major.isNotEmpty) queryParams['student_major'] = major;
 
       uri = queryParams.isNotEmpty
           ? Uri.parse('$_baseUrl/get_products.php').replace(queryParameters: queryParams)

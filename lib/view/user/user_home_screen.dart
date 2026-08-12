@@ -152,7 +152,13 @@ class HomePageState extends State<HomePage> {
   }
 
   int _parseNumber(String input) {
-    final match = RegExp(r'\d+').firstMatch(input);
+    if (input.isEmpty) return 0;
+    const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+    String normalized = input;
+    for (int i = 0; i < khmerDigits.length; i++) {
+      normalized = normalized.replaceAll(khmerDigits[i], i.toString());
+    }
+    final match = RegExp(r'\d+').firstMatch(normalized);
     return match != null ? (int.tryParse(match.group(0)!) ?? 0) : 0;
   }
 
@@ -198,16 +204,26 @@ class HomePageState extends State<HomePage> {
           final detail = details.isNotEmpty ? details.first : null;
           List<Product> studentProducts = [];
           if (detail != null) {
-            final studentYear = _parseNumber(detail.year_name);
-            final studentSemester = _parseNumber(detail.semester_name);
+            int studentYear = _parseNumber(detail.year_name);
+            int studentSemester = _parseNumber(detail.semester_name);
+            if (studentYear == 0) studentYear = 3;
+            if (studentSemester == 0) studentSemester = 2;
             String majorName = detail.major_name.trim();
-            if (majorName == 'ព័ត៌មានវិទ្យា') {
+            if (majorName.isEmpty || majorName == 'ព័ត៌មានវិទ្យា') {
               majorName = 'Information Technology';
             }
             studentProducts = await _fetchProductsCurrentStudent(
               studentYear: studentYear,
               studentSemester: studentSemester,
               studentMajor: majorName,
+            );
+          }
+
+          if (studentProducts.isEmpty) {
+            studentProducts = await _fetchProductsCurrentStudent(
+              studentYear: 3,
+              studentSemester: 2,
+              studentMajor: 'Information Technology',
             );
           }
 
@@ -479,20 +495,12 @@ class HomePageState extends State<HomePage> {
         products: _studentProducts,
         baseUrl: _baseUrl,
         onSeeAll: () {
-          final studentYear = _parseNumber(_userDetail?.year_name ?? '');
-          final studentSemester = _parseNumber(_userDetail?.semester_name ?? '');
-          String majorName = (_userDetail?.major_name ?? '').trim();
-          if (majorName == 'ព័ត៌មានវិទ្យា') {
-            majorName = 'Information Technology';
-          }
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => ProductScreen(
                 categoryTitle: lang.translate('books_for_your_semester'),
-                studentYear: studentYear,
-                studentSemester: studentSemester,
-                studentMajor: majorName,
+                initialProducts: _studentProducts,
                 isStudentProducts: true,
               ),
             ),
@@ -515,6 +523,7 @@ class HomePageState extends State<HomePage> {
 
     // Iterate over every category key that came back from the API
     for (final entry in _productsByCategory.entries) {
+      if (entry.key.trim().isEmpty) continue;
       final products = entry.value;
       if (products.isEmpty) continue;
 

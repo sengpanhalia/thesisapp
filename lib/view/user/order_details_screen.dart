@@ -20,7 +20,6 @@ class OrderDetailsScreen extends StatefulWidget {
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   List<dynamic> _orderItems = [];
   bool _isLoadingItems = true;
-  bool _isCancelling = false;
 
   double _parseDouble(dynamic value) {
     if (value is double) return value;
