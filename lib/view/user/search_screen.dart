@@ -215,7 +215,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final lang = AppLocalizations.of(context)!;
     return Container(
       height: 54,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.only(left: 14),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.72),
         borderRadius: BorderRadius.circular(18),
@@ -244,7 +244,17 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          if (_queryController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear_rounded, color: GText1, size: 20),
+              onPressed: () {
+                _queryController.clear();
+              },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              splashRadius: 20,
+            ),
+          // const SizedBox(width: 8),
         ],
       ),
     );
@@ -467,7 +477,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _queryController.text.trim();
-  final lang = AppLocalizations.of(context)!;
+    final lang = AppLocalizations.of(context)!;
 
     final results = _results();
 
