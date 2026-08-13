@@ -90,7 +90,9 @@ class _SplashScreenState extends State<SplashScreen>
         child: SafeArea(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: MediaQuery.of(context).size.width < 600
+                  ? const EdgeInsets.symmetric(horizontal: 24)
+                  : const EdgeInsets.symmetric(horizontal: 12),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

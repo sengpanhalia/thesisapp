@@ -36,7 +36,6 @@ class HomePageState extends State<HomePage> {
   /// All products from the API, grouped by DB category (lowercase key).
   Map<String, List<Product>> _productsByCategory = {};
   List<Product> _randomProducts = [];
-  List<Product> _studentProducts = [];
   UserDetail? _userDetail;
   bool _isLoadingProducts = true;
   int _unreadNotificationCount = 0;
@@ -151,17 +150,6 @@ class HomePageState extends State<HomePage> {
     setState(() => _isLoadingProducts = false);
   }
 
-  int _parseNumber(String input) {
-    if (input.isEmpty) return 0;
-    const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
-    String normalized = input;
-    for (int i = 0; i < khmerDigits.length; i++) {
-      normalized = normalized.replaceAll(khmerDigits[i], i.toString());
-    }
-    final match = RegExp(r'\d+').firstMatch(normalized);
-    return match != null ? (int.tryParse(match.group(0)!) ?? 0) : 0;
-  }
-
   Future<void> _fetchUserData() async {
     final authUser = context.read<AuthProvider>().user;
     if (authUser == null) {
@@ -202,35 +190,9 @@ class HomePageState extends State<HomePage> {
               .toList();
 
           final detail = details.isNotEmpty ? details.first : null;
-          List<Product> studentProducts = [];
-          if (detail != null) {
-            int studentYear = _parseNumber(detail.year_name);
-            int studentSemester = _parseNumber(detail.semester_name);
-            if (studentYear == 0) studentYear = 3;
-            if (studentSemester == 0) studentSemester = 2;
-            String majorName = detail.major_name.trim();
-            if (majorName.isEmpty || majorName == 'ព័ត៌មានវិទ្យា') {
-              majorName = 'Information Technology';
-            }
-            studentProducts = await _fetchProductsCurrentStudent(
-              studentYear: studentYear,
-              studentSemester: studentSemester,
-              studentMajor: majorName,
-            );
-          }
-
-          if (studentProducts.isEmpty) {
-            studentProducts = await _fetchProductsCurrentStudent(
-              studentYear: 3,
-              studentSemester: 2,
-              studentMajor: 'Information Technology',
-            );
-          }
-
           if (!mounted) return;
           setState(() {
             _userDetail = detail;
-            _studentProducts = studentProducts;
           });
           return;
         }
@@ -242,41 +204,6 @@ class HomePageState extends State<HomePage> {
     if (!mounted) return;
   }
 
-  // Fetch products for current student: year, semester, major
-  Future<List<Product>> _fetchProductsCurrentStudent({
-    required int studentYear,
-    required int studentSemester,
-    required String studentMajor,
-  }) async {
-    final queryParams = <String, String>{};
-    if (studentYear > 0) queryParams['student_year'] = studentYear.toString();
-    if (studentSemester > 0) queryParams['student_semester'] = studentSemester.toString();
-    if (studentMajor.isNotEmpty) queryParams['student_major'] = studentMajor;
-
-    final url = queryParams.isNotEmpty
-        ? Uri.parse('$_baseUrl/get_products.php').replace(queryParameters: queryParams)
-        : Uri.parse('$_baseUrl/get_products.php');
-
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['status'] == 'success') {
-          final List productsJson = (data['products'] as List?) ?? const [];
-          return productsJson
-              .whereType<Map<String, dynamic>>()
-              .map(Product.fromJson)
-              .toList();
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load products: $e');
-    }
-
-    return [];
-  }
-
-    
   // ------------------------------------------------------------------
   @override
   void dispose() {
@@ -487,39 +414,6 @@ class HomePageState extends State<HomePage> {
     final sections = <Widget>[];
     final lang = AppLocalizations.of(context)!;
     final isEnglish = lang.locale.languageCode == 'en';
-
-    // ── Student recommended products (ABOVE products by categories) ──
-    if (_studentProducts.isNotEmpty) {
-      sections.add(CategorySectionWidget(
-        title: lang.translate('books_for_your_semester'),
-        products: _studentProducts,
-        baseUrl: _baseUrl,
-        onSeeAll: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductScreen(
-                categoryTitle: lang.translate('books_for_your_semester'),
-                initialProducts: _studentProducts,
-                isStudentProducts: true,
-              ),
-            ),
-          );
-        },
-        onProductTap: (product) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(
-                product: product,
-                baseUrl: _baseUrl,
-              ),
-            ),
-          );
-        },
-      ));
-      sections.add(SizedBox(height: Height15));
-    }
 
     // Iterate over every category key that came back from the API
     for (final entry in _productsByCategory.entries) {

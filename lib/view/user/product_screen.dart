@@ -14,10 +14,6 @@ class ProductScreen extends StatefulWidget {
   final int?    categoryId;    // FK: categories.id — preferred filter
   final String? categoryName;  // fallback filter by name
   final String? categoryTitle; // display title in AppBar
-  final int?    studentYear;
-  final int?    studentSemester;
-  final String? studentMajor;
-  final bool    isStudentProducts;
   final List<Product>? initialProducts;
 
   const ProductScreen({
@@ -25,10 +21,6 @@ class ProductScreen extends StatefulWidget {
     this.categoryId,
     this.categoryName,
     this.categoryTitle,
-    this.studentYear,
-    this.studentSemester,
-    this.studentMajor,
-    this.isStudentProducts = false,
     this.initialProducts,
   });
 
@@ -38,71 +30,124 @@ class ProductScreen extends StatefulWidget {
 
 class _ProductScreenState extends State<ProductScreen> {
   static const String _baseUrl = ApiConfig.baseUrl;
+  static const int _limit = 10;
+
   List<Product> product = [];
   bool _isLoadingProduct = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  bool _isFetching = false; // Synchronous guard against duplicate calls
+  int _offset = 0;
+
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+
     if (widget.initialProducts != null && widget.initialProducts!.isNotEmpty) {
       product = List<Product>.from(widget.initialProducts!);
       _isLoadingProduct = false;
+      _offset = product.length;
+      _hasMore = product.length >= _limit;
     } else {
-      _fetchProducts();
+      _fetchProducts(isInitial: true);
     }
   }
 
-  Future<void> _fetchProducts() async {
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isFetching || !_hasMore || _isLoadingProduct || _isLoadingMore) {
+      return;
+    }
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    if (currentScroll >= maxScroll - 200) {
+      _fetchProducts(isInitial: false);
+    }
+  }
+
+  Future<void> _fetchProducts({required bool isInitial}) async {
+    if (_isFetching) return;
+    _isFetching = true;
+
+    if (isInitial) {
+      setState(() {
+        _isLoadingProduct = true;
+        _offset = 0;
+        _hasMore = true;
+      });
+    } else {
+      setState(() {
+        _isLoadingMore = true;
+      });
+    }
+
     final catId   = widget.categoryId ?? 0;
     final catName = (widget.categoryName ?? '').trim();
 
-    Uri uri;
-    if (widget.isStudentProducts || (widget.studentYear != null && widget.studentYear! > 0)) {
-      int year = widget.studentYear ?? 0;
-      int semester = widget.studentSemester ?? 0;
-      String major = (widget.studentMajor ?? '').trim();
+    final queryParams = <String, String>{
+      'limit': _limit.toString(),
+      'offset': _offset.toString(),
+    };
 
-      if (widget.isStudentProducts) {
-        if (year == 0) year = 3;
-        if (semester == 0) semester = 2;
-        if (major.isEmpty || major == 'ព័ត៌មានវិទ្យា') {
-          major = 'Information Technology';
-        }
-      }
-
-      final queryParams = <String, String>{};
-      if (year > 0) queryParams['student_year'] = year.toString();
-      if (semester > 0) queryParams['student_semester'] = semester.toString();
-      if (major.isNotEmpty) queryParams['student_major'] = major;
-
-      uri = queryParams.isNotEmpty
-          ? Uri.parse('$_baseUrl/get_products.php').replace(queryParameters: queryParams)
-          : Uri.parse('$_baseUrl/get_products.php');
-    } else if (catId > 0) {
-      uri = Uri.parse('$_baseUrl/get_products_by_category.php')
-          .replace(queryParameters: {'category_id': catId.toString()});
+    if (catId > 0) {
+      queryParams['category_id'] = catId.toString();
     } else if (catName.isNotEmpty) {
-      uri = Uri.parse('$_baseUrl/get_products_by_category.php')
-          .replace(queryParameters: {'category': catName});
-    } else {
-      uri = Uri.parse('$_baseUrl/get_products_by_category.php');
+      queryParams['category'] = catName;
     }
+
+    final uri = (catId > 0 || catName.isNotEmpty)
+        ? Uri.parse('$_baseUrl/get_products_by_category.php').replace(queryParameters: queryParams)
+        : Uri.parse('$_baseUrl/get_products.php').replace(queryParameters: queryParams);
 
     try {
       final response = await http.get(uri);
-      if (!mounted) return;
+      if (!mounted) {
+        _isFetching = false;
+        return;
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic> && data['status'] == 'success') {
           final List productsJson = (data['products'] as List?) ?? const [];
+          final newProducts = productsJson
+              .whereType<Map<String, dynamic>>()
+              .map(Product.fromJson)
+              .toList();
+
+          if (!mounted) {
+            _isFetching = false;
+            return;
+          }
+
           setState(() {
-            product = productsJson
-                .whereType<Map<String, dynamic>>()
-                .map(Product.fromJson)
-                .toList();
+            if (isInitial) {
+              product = newProducts;
+            } else {
+              // Deduplicate: only add products that are not already in the list
+              final existingIds = product.map((p) => p.id).toSet();
+              final uniqueNew = newProducts.where((p) => !existingIds.contains(p.id)).toList();
+              product.addAll(uniqueNew);
+            }
+
+            _offset += newProducts.length;
+            _hasMore = newProducts.length >= _limit;
             _isLoadingProduct = false;
+            _isLoadingMore = false;
           });
+
+          _isFetching = false;
           return;
         }
       }
@@ -110,8 +155,17 @@ class _ProductScreenState extends State<ProductScreen> {
       debugPrint('Failed to load products: $e');
     }
 
-    if (!mounted) return;
-    setState(() => _isLoadingProduct = false);
+    if (!mounted) {
+      _isFetching = false;
+      return;
+    }
+
+    setState(() {
+      _isLoadingProduct = false;
+      _isLoadingMore = false;
+      _hasMore = false;
+    });
+    _isFetching = false;
   }
 
   @override
@@ -141,22 +195,10 @@ class _ProductScreenState extends State<ProductScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      // body: GridView.builder(
-      //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      //     crossAxisCount: 2,
-      //                       mainAxisSpacing: 12,
-      //                       crossAxisSpacing: 12,
-      //                       childAspectRatio: 0.65,
-      //   ),
-      //   itemBuilder: (context, index){
-      //     return
-      //   },
-      // ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          // Matching the warm gradient from your design
           gradient: gradientColor(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -169,32 +211,40 @@ class _ProductScreenState extends State<ProductScreen> {
               vertical: MgPd10,
             ),
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 children: [
-                  if (!canShowProducts)
-                    Center(
-                      child: CircularProgressIndicator(color: Colors.white),
+                  if (_isLoadingProduct)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
                     ),
                   if (canShowProducts && product.isEmpty)
-                    Text(
-                      'មិនមានសៀវភៅទេ',
-                      style: TextStyle(
-                        fontSize: fontSubtitle,
-                        color: TextSoftColor,
-                        fontFamily: getFontFamily(context),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Text(
+                          'មិនមានសៀវភៅទេ',
+                          style: TextStyle(
+                            fontSize: fontSubtitle,
+                            color: TextSoftColor,
+                            fontFamily: getFontFamily(context),
+                          ),
+                        ),
                       ),
                     ),
                   if (canShowProducts && product.isNotEmpty)
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 0.65,
-                          ),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.65,
+                      ),
                       itemCount: product.length,
                       itemBuilder: (context, index) {
                         final products = product[index];
@@ -220,6 +270,20 @@ class _ProductScreenState extends State<ProductScreen> {
                           author: products.author,
                         );
                       },
+                    ),
+                  if (_isLoadingMore)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                 ],
               ),
