@@ -1,28 +1,28 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/model/reservation.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/component/order_summary_components.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
   final double total;
   final List<Map<String, dynamic>> items;
-  final String paymentMethod;
+  final PaymentMethod paymentMethod;
 
   const OrderSummaryScreen({
     super.key,
     required this.total,
     required this.items,
-    this.paymentMethod = 'cash_on_delivery',
+    this.paymentMethod = PaymentMethod.cash,
   });
 
   @override
@@ -30,6 +30,7 @@ class OrderSummaryScreen extends StatefulWidget {
 }
 
 class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
+  final InventoryApi _api = InventoryApi();
   bool _isLoading = false;
 
   int _parseInt(dynamic value) {
@@ -37,89 +38,97 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  double _parseDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  double? _parsePrice(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
+  /// Sends one reservation per basket line, because the API holds one title
+  /// per order. Each is decided on its own: if the third book has just sold
+  /// out, the first two stay reserved and the student is told which one
+  /// failed and why, rather than losing the lot.
   Future<void> _placeOrder() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    final user = authProvider.user;
+    final lang = AppLocalizations.of(context)!;
+    final cartProvider = context.read<CartProvider>();
+    final user = context.read<AuthProvider>().user;
+
     if (user == null) {
-      Fluttertoast.showToast(msg: 'Please login first');
+      Fluttertoast.showToast(msg: lang.translate('please_log_in_first'));
       return;
     }
 
-    try {
-      final cartIds = widget.items
-          .map((item) => _parseInt(item['cart_id']))
-          .where((id) => id > 0)
-          .toList();
+    final lines = widget.items
+        .where((item) => _parseInt(item['item_id']) > 0)
+        .toList();
 
-      if (cartIds.isEmpty) {
-        Fluttertoast.showToast(msg: 'No valid cart items selected');
-        return;
-      }
-
-      setState(() => _isLoading = true);
-
-      debugPrint(
-        'Sending order - user_id: ${user.student_id}',
-      );
-
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/place_order.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': user.student_id,
-          'payment_method': widget.paymentMethod,
-          'cart_ids': cartIds,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        debugPrint('Order response: $data');
-        if (data['status'] == 'success') {
-          final orderId = data['order_id'];
-          final rawTrackingNumber =
-              (data['tracking_number'] ?? data['trackingNumber'] ?? '')
-                  .toString()
-                  .trim();
-          cartProvider.removeCheckedOutItems(cartIds);
-          Fluttertoast.showToast(msg: 'Order placed successfully!');
-          if (!mounted) return;
-          final parsedOrderId = int.tryParse(orderId.toString()) ?? 0;
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OrderSuccessScreen(
-                orderId: parsedOrderId,
-                items: widget.items,
-                total: widget.total,
-                paymentMethod: widget.paymentMethod,
-                trackingNumber: rawTrackingNumber.isEmpty
-                    ? null
-                    : rawTrackingNumber,
-              ),
-            ),
-            (route) => false,
-          );
-        } else {
-          Fluttertoast.showToast(
-            msg: data['message'] ?? 'Failed to place order',
-          );
-        }
-      } else {
-        Fluttertoast.showToast(msg: 'Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      Fluttertoast.showToast(msg: 'Network error: $e');
-    } finally {
-      setState(() => _isLoading = false);
+    if (lines.isEmpty) {
+      Fluttertoast.showToast(msg: lang.translate('your cart is empty'));
+      return;
     }
+
+    setState(() => _isLoading = true);
+
+    final placed = <Reservation>[];
+    final reservedCartIds = <int>[];
+    final failures = <String>[];
+
+    for (final line in lines) {
+      try {
+        final reservation = await _api.reserve(
+          itemId: _parseInt(line['item_id']),
+          quantity: _parseInt(line['quantity']),
+          studentId: user.student_id,
+          paymentMethod: widget.paymentMethod,
+        );
+
+        placed.add(reservation);
+        reservedCartIds.add(_parseInt(line['cart_id']));
+      } on ApiException catch (error) {
+        final title = (line['name'] ?? '').toString();
+        failures.add('$title: ${error.message(lang)}');
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (reservedCartIds.isNotEmpty) {
+      cartProvider.removeCheckedOutItems(reservedCartIds);
+    }
+
+    for (final failure in failures) {
+      Fluttertoast.showToast(msg: failure, toastLength: Toast.LENGTH_LONG);
+    }
+
+    if (placed.isEmpty) return;
+
+    final total = placed.fold<double>(
+      0.0,
+      (sum, reservation) => sum + (reservation.totalPrice ?? 0),
+    );
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderSuccessScreen(
+          orderId: placed.first.id,
+          items: [
+            for (final reservation in placed)
+              {
+                'name': reservation.title,
+                'quantity': reservation.quantity,
+                'price': reservation.unitPrice,
+                'image': null,
+              },
+          ],
+          total: total,
+          paymentMethod: widget.paymentMethod.wireName,
+          trackingNumber: placed.map((r) => r.code).join(', '),
+        ),
+      ),
+      (route) => false,
+    );
   }
 
   @override
@@ -189,19 +198,18 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                           separatorBuilder: (_, __) => const Divider(height: 20),
                           itemBuilder: (ctx, i) {
                             final item = widget.items[i];
-                            final qty =
-                                int.tryParse(
-                                  item['quantity']?.toString() ?? '0',
-                                ) ??
-                                0;
-                            final unitPrice = _parseDouble(item['price']);
-                            final originalLineTotal = unitPrice * qty;
+                            final qty = _parseInt(item['quantity']);
+                            final unitPrice = _parsePrice(item['price']);
+
                             return OrderItemRow(
                               name: item['name'] ?? '',
                               qty: qty,
-                              originalPrice: originalLineTotal,
+                              // Null price stays null all the way to the row,
+                              // which shows a dash rather than $0.00.
+                              originalPrice: unitPrice == null
+                                  ? null
+                                  : unitPrice * qty,
                               imageUrl: buildProductImageUrl(
-                                ApiConfig.baseUrl,
                                 item['image']?.toString(),
                               ),
                             );

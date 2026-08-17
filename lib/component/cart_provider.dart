@@ -1,14 +1,32 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thesisapp/model/book.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
-import 'package:thesisapp/util/api_config.dart';
 
+/// The basket, kept on the phone.
+///
+/// The inventory API has no cart: `/api/v1` reserves one title at a time and
+/// holds nothing between requests. So the basket is the student's own scratch
+/// list, saved on the device under their student number, and checkout turns it
+/// into one reservation per line. Nothing here claims stock — a book is only
+/// held once `POST /orders.php` has said so.
+///
+/// Lines keep the shape the cart screens already read: `cart_id`, `name`,
+/// `price`, `quantity`, `image`. `cart_id` is the book's own id, which is
+/// unique within a basket and stable across restarts.
 class CartProvider extends ChangeNotifier {
-  AuthProvider _authProvider;
+  CartProvider(this._authProvider) {
+    _loadedUserId = _authProvider.user?.student_id;
+    fetchCart();
+  }
 
-  CartProvider(this._authProvider);
+  CartProvider.initialize(this._authProvider) {
+    fetchCart();
+  }
+
+  AuthProvider _authProvider;
 
   List<Map<String, dynamic>> _cartItems = [];
   bool _isLoading = false;
@@ -22,15 +40,9 @@ class CartProvider extends ChangeNotifier {
   int get cartBadgeCount =>
       _cartItems.fold<int>(0, (sum, item) => sum + itemQuantity(item));
 
-  CartProvider.initialize(this._authProvider) {
-    fetchCart();
-  }
-
   AuthProvider get authProvider => _authProvider;
 
-  Map<String, dynamic> _studentPayload(String studentId) {
-    return {'user_id': studentId, 'student_id': studentId};
-  }
+  static String _storageKey(String studentId) => 'cart_$studentId';
 
   void bindAuth(AuthProvider authProvider) {
     final previousUserId = _loadedUserId;
@@ -58,26 +70,57 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
+  // ------------------------------------------------------------- reading --
+
   int _parseInt(dynamic value) {
     if (value is int) return value;
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  int itemStockQuantity(Map<String, dynamic> item) {
-    return _parseInt(item['stock_quantity']);
+  /// How many copies the catalogue said were free when this line was added.
+  /// Null means the catalogue did not say — which is not the same as none.
+  int? availableQuantity(Map<String, dynamic> item) {
+    final raw = item['available_qty'];
+    if (raw == null) return null;
+    if (raw is int) return raw;
+
+    return int.tryParse(raw.toString());
   }
 
-  int itemQuantity(Map<String, dynamic> item) {
-    return _parseInt(item['quantity']);
+  /// Kept for the cart screen, which shows a line as unavailable when this
+  /// reaches zero. A line whose availability is unknown is not treated as sold
+  /// out; the server decides that when the reservation is sent.
+  int itemStockQuantity(Map<String, dynamic> item) =>
+      availableQuantity(item) ?? itemQuantity(item);
+
+  int itemQuantity(Map<String, dynamic> item) => _parseInt(item['quantity']);
+
+  double? itemPrice(Map<String, dynamic> item) {
+    final raw = item['price'];
+    if (raw == null) return null;
+    if (raw is num) return raw.toDouble();
+
+    return double.tryParse(raw.toString());
   }
 
   bool isItemPurchasable(Map<String, dynamic> item) {
     final quantity = itemQuantity(item);
-    return quantity > 0;
+    if (quantity <= 0) return false;
+
+    final available = availableQuantity(item);
+
+    return available == null || available >= quantity;
   }
 
+  /// A translation key naming what is wrong with the line, or null when it is
+  /// fine. The final word is the server's: this only catches what the app
+  /// already knows from the last catalogue read.
   String? stockIssueForItem(Map<String, dynamic> item) {
-    return null;
+    final available = availableQuantity(item);
+    if (available == null) return null;
+    if (available <= 0) return 'out_of_stock';
+
+    return available < itemQuantity(item) ? 'not_enough_stock' : null;
   }
 
   Set<int> _selectableItemIds() {
@@ -88,8 +131,11 @@ class CartProvider extends ChangeNotifier {
         .toSet();
   }
 
+  /// Reloads the basket from the device. Named for the screens that call it
+  /// on pull-to-refresh; there is no server round trip behind it.
   Future<void> fetchCart() async {
     final user = authProvider.user;
+
     if (user == null) {
       if (_cartItems.isNotEmpty ||
           _selectedItemIds.isNotEmpty ||
@@ -115,50 +161,144 @@ class CartProvider extends ChangeNotifier {
     _loadedUserId = user.student_id;
     _isLoading = true;
     notifyListeners();
+
     try {
-      final response = await http.get(
-        Uri.parse(
-          '${ApiConfig.baseUrl}/get_cart.php?user_id=${Uri.encodeQueryComponent(user.student_id)}&student_id=${Uri.encodeQueryComponent(user.student_id)}',
-        ),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          _cartItems = List<Map<String, dynamic>>.from(data['items']);
-          final selectableIds = _selectableItemIds();
-          if (!_selectionInitialized || hadSelectAll) {
-            _selectedItemIds = selectableIds;
-          } else {
-            _selectedItemIds = previousSelectedIds.intersection(selectableIds);
-          }
-          _selectionInitialized = true;
-        }
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_storageKey(user.student_id));
+
+      _cartItems = _decode(raw);
+
+      final selectableIds = _selectableItemIds();
+      if (!_selectionInitialized || hadSelectAll) {
+        _selectedItemIds = selectableIds;
+      } else {
+        _selectedItemIds = previousSelectedIds.intersection(selectableIds);
       }
+      _selectionInitialized = true;
     } catch (e) {
-      debugPrint('Error fetching cart: $e');
+      debugPrint('Error reading the saved cart: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  double get total {
-    double t = 0.0;
-    for (var item in _cartItems) {
-      if (_selectedItemIds.contains(_parseInt(item['cart_id']))) {
-        final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-        // final discount = int.tryParse(item['discount']?.toString() ?? '0') ?? 0;
-        // final discountedPrice = discount > 0
-        //     ? price * (1 - discount / 100)
-        //     : price;
-        t += price * (item['quantity'] ?? 1);
-      }
+  List<Map<String, dynamic>> _decode(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return [];
+
+    try {
+      final decoded = jsonDecode(raw);
+
+      if (decoded is! List) return [];
+
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(Map<String, dynamic>.from)
+          .toList();
+    } catch (_) {
+      return [];
     }
-    return t;
+  }
+
+  Future<void> _persist() async {
+    final user = authProvider.user;
+    if (user == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageKey(user.student_id),
+      jsonEncode(_cartItems),
+    );
+  }
+
+  // ------------------------------------------------------------- writing --
+
+  /// Adds copies of a book, or raises the count if it is already in the
+  /// basket. Never puts in more than the catalogue says are free.
+  Future<bool> addBook(Book book, {int quantity = 1}) async {
+    if (quantity <= 0) return false;
+
+    final user = authProvider.user;
+    if (user == null) return false;
+
+    final index = _cartItems.indexWhere(
+      (item) => _parseInt(item['cart_id']) == book.id,
+    );
+
+    final available = book.availableQty;
+
+    if (index == -1) {
+      final wanted = available == null
+          ? quantity
+          : quantity.clamp(0, available).toInt();
+
+      if (wanted <= 0) return false;
+
+      _cartItems.add({
+        'cart_id': book.id,
+        'item_id': book.id,
+        'code': book.code,
+        'name': book.title,
+        'name_kh': book.titleKh,
+        'author': book.author,
+        'unit': book.unit,
+        'image': book.imageUrl,
+        'price': book.price,
+        'available_qty': book.availableQty,
+        'quantity': wanted,
+      });
+    } else {
+      final current = itemQuantity(_cartItems[index]);
+      final wanted = available == null
+          ? current + quantity
+          : (current + quantity).clamp(0, available).toInt();
+
+      if (wanted == current) return false;
+
+      _cartItems[index]['quantity'] = wanted;
+      // The catalogue may have moved since the line was added.
+      _cartItems[index]['price'] = book.price;
+      _cartItems[index]['available_qty'] = book.availableQty;
+    }
+
+    _selectedItemIds.add(book.id);
+    _selectionInitialized = true;
+    notifyListeners();
+    await _persist();
+
+    return true;
+  }
+
+  double get total {
+    double sum = 0.0;
+
+    for (final item in _cartItems) {
+      if (!_selectedItemIds.contains(_parseInt(item['cart_id']))) continue;
+
+      final price = itemPrice(item);
+      // A line the catalogue holds no price for is left out of the sum rather
+      // than counted as free; [selectionHasUnknownPrice] tells the screen so.
+      if (price == null) continue;
+
+      sum += price * itemQuantity(item);
+    }
+
+    return sum;
+  }
+
+  /// True when something in the selection has no price, so the total on screen
+  /// is less than the whole basket.
+  bool get selectionHasUnknownPrice {
+    return _cartItems.any(
+      (item) =>
+          _selectedItemIds.contains(_parseInt(item['cart_id'])) &&
+          itemPrice(item) == null,
+    );
   }
 
   bool get allSelected {
     final selectable = _selectableItemIds();
+
     return selectable.isNotEmpty &&
         _selectedItemIds.length == selectable.length;
   }
@@ -175,102 +315,58 @@ class CartProvider extends ChangeNotifier {
 
   void toggleItem(int cartId, bool selected) {
     Map<String, dynamic>? item;
+
     for (final entry in _cartItems) {
       if (_parseInt(entry['cart_id']) == cartId) {
         item = entry;
         break;
       }
     }
-    if (item == null || !isItemPurchasable(item)) {
-      return;
-    }
+
+    if (item == null || !isItemPurchasable(item)) return;
+
     if (selected) {
       _selectedItemIds.add(cartId);
     } else {
       _selectedItemIds.remove(cartId);
     }
+
     _selectionInitialized = true;
     notifyListeners();
   }
 
   Future<void> updateQuantity(int cartId, int change) async {
-    final user = authProvider.user;
-    if (user == null) return;
-
-    // Update locally first for better UX
-    final itemIndex = _cartItems.indexWhere(
+    final index = _cartItems.indexWhere(
       (item) => _parseInt(item['cart_id']) == cartId,
     );
-    if (itemIndex != -1) {
-      final currentQuantity = itemQuantity(_cartItems[itemIndex]);
-      final newQuantity = currentQuantity + change;
-      if (newQuantity > 0) {
-        _cartItems[itemIndex]['quantity'] = newQuantity;
-        if (!isItemPurchasable(_cartItems[itemIndex])) {
-          _selectedItemIds.remove(cartId);
-        }
-        _selectionInitialized = true;
-        notifyListeners();
-      }
+
+    if (index == -1) return;
+
+    final available = availableQuantity(_cartItems[index]);
+    final current = itemQuantity(_cartItems[index]);
+    var next = current + change;
+
+    if (next <= 0) return;
+    if (available != null && next > available) next = available;
+    if (next == current) return;
+
+    _cartItems[index]['quantity'] = next;
+
+    if (!isItemPurchasable(_cartItems[index])) {
+      _selectedItemIds.remove(cartId);
     }
 
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/update_cart_quantity.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          ..._studentPayload(user.student_id),
-          'cart_id': cartId,
-          'change': change,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] != 'success') {
-          Fluttertoast.showToast(msg: data['message'] ?? 'Update failed');
-          // Revert on error
-          fetchCart();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error updating quantity: $e');
-      Fluttertoast.showToast(msg: 'Failed to update quantity');
-      // Revert on error
-      fetchCart();
-    }
+    _selectionInitialized = true;
+    notifyListeners();
+    await _persist();
   }
 
   Future<void> removeItem(int cartId) async {
-    final user = authProvider.user;
-    if (user == null) return;
-
-    // Remove locally first for better UX
-    _cartItems.removeWhere((item) => item['cart_id'] == cartId);
+    _cartItems.removeWhere((item) => _parseInt(item['cart_id']) == cartId);
     _selectedItemIds.remove(cartId);
     _selectionInitialized = true;
     notifyListeners();
-
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/remove_from_cart.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          ..._studentPayload(user.student_id),
-          'cart_id': cartId,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] != 'success') {
-          // Revert on error
-          fetchCart();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error removing item: $e');
-      // Revert on error
-      fetchCart();
-    }
+    await _persist();
   }
 
   List<Map<String, dynamic>> get selectedItems {
@@ -287,28 +383,14 @@ class CartProvider extends ChangeNotifier {
     _selectedItemIds.removeWhere((id) => ids.contains(id));
     _selectionInitialized = true;
     notifyListeners();
+    _persist();
   }
 
   Future<void> clearCart() async {
-    final user = authProvider.user;
-    if (user == null) return;
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/clear_cart.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(_studentPayload(user.student_id)),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          _cartItems = [];
-          _selectedItemIds.clear();
-          _selectionInitialized = false;
-          notifyListeners();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error clearing cart: $e');
-    }
+    _cartItems = [];
+    _selectedItemIds.clear();
+    _selectionInitialized = false;
+    notifyListeners();
+    await _persist();
   }
 }

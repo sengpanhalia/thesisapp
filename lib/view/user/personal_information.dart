@@ -1,14 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/student_directory.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/user_api.dart';
 
 class PersonalInformation extends StatefulWidget {
   const PersonalInformation({super.key});
@@ -22,52 +19,13 @@ class _PersonalInformationState extends State<PersonalInformation> {
 
   Future<void> _fetchUserData() async {
     final authUser = context.read<AuthProvider>().user;
-    if (authUser == null) {
-      return;
-    }
+    if (authUser == null) return;
 
-    try {
-      http.Response response;
-      try {
-        response = await http
-            .post(
-              Uri.parse(APILocalLoginUrl),
-              headers: {"Content-Type": "application/json"},
-              body: jsonEncode({
-                "student_id": authUser.student_id,
-                "pwd": authUser.pwd,
-              }),
-            )
-            .timeout(const Duration(seconds: 10));
-      } catch (_) {
-        response = await http.post(
-          Uri.parse(APIStLoginKh),
-          body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
-        );
-      }
+    final detail = await StudentDirectory.fetch();
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
-          final userData =
-              (decoded['user_data'] as List?) ??
-              (decoded['student_users'] as List?) ??
-              (decoded['user'] != null ? [decoded['user']] : const []);
-          final details = userData
-              .whereType<Map<String, dynamic>>()
-              .map(UserDetail.fromJson)
-              .toList();
+    if (!mounted || detail == null) return;
 
-          if (!mounted) return;
-          setState(() {
-            _userDetail = details.isNotEmpty ? details.first : null;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load user detail: $e');
-    }
+    setState(() => _userDetail = detail);
   }
 
   String getNameUser(BuildContext context) {

@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import 'package:thesisapp/component/card_product.dart';
@@ -15,105 +13,98 @@ import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/component/product_spec_row.dart';
 import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
-import 'package:thesisapp/model/product.dart';
+import 'package:thesisapp/model/book.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
-  final Product product;
-  final String baseUrl;
-  const ProductDetailScreen({
-    super.key,
-    required this.product,
-    required this.baseUrl,
-  });
+  final Book book;
+
+  const ProductDetailScreen({super.key, required this.book});
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  static const String baseUrl = ApiConfig.baseUrl;
-  List<Product> relatedProducts = [];
-  List<Product> recommendedProducts = [];
+  final InventoryApi _api = InventoryApi();
+
+  /// The book as last read from the server. Availability moves while the
+  /// student is reading the page, so the screen re-reads it rather than
+  /// trusting the copy the list screen handed over.
+  late Book _book = widget.book;
+
+  List<Book> relatedProducts = [];
+  List<Book> recommendedProducts = [];
   bool _isLoadingRelatedProducts = true;
   bool _isLoadingRecommendedProducts = true;
 
   @override
   void initState() {
     super.initState();
+    _refreshBook();
     _fetchProductsData();
   }
 
-  Future<void> _fetchProductsData() async {
-    final url = Uri.parse('$baseUrl/get_products.php');
-
+  Future<void> _refreshBook() async {
     try {
-      final response = await http.get(url);
+      final fresh = await _api.refreshBook(widget.book);
+      if (!mounted || fresh == null) return;
+
+      setState(() => _book = fresh);
+    } on ApiException catch (error) {
+      debugPrint('Could not refresh the book: $error');
+    }
+  }
+
+  Future<void> _fetchProductsData() async {
+    try {
+      final books = await _api.books();
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['status'] == 'success') {
-          final List productsJson = (data['products'] as List?) ?? const [];
-          final allOtherProducts = productsJson
-              .whereType<Map<String, dynamic>>()
-              .map(Product.fromJson)
-              .where((product) => product.id != widget.product.id)
-              .toList();
+      final others = books.where((b) => b.id != widget.book.id).toList();
 
-          final currentCategory = widget.product.category.trim().toLowerCase();
-          final currentAuthor = widget.product.author.trim().toLowerCase();
+      // The API gives a book a year level and an author; it has no categories,
+      // so "related" means the same year level first, then the same author.
+      final currentYear = widget.book.yearLevel.trim().toLowerCase();
+      final currentAuthor = widget.book.author.trim().toLowerCase();
 
-          final sameCategory = currentCategory.isEmpty
-              ? <Product>[]
-              : allOtherProducts
-                  .where(
-                    (product) =>
-                        product.category.trim().toLowerCase() ==
-                        currentCategory,
-                  )
-                  .toList();
+      final sameYear = currentYear.isEmpty
+          ? <Book>[]
+          : others
+                .where((b) => b.yearLevel.trim().toLowerCase() == currentYear)
+                .toList();
 
-          final sameAuthor = currentAuthor.isEmpty
-              ? <Product>[]
-              : allOtherProducts
-                  .where(
-                    (product) =>
-                        product.author.trim().toLowerCase() == currentAuthor,
-                  )
-                  .toList();
+      final sameAuthor = currentAuthor.isEmpty
+          ? <Book>[]
+          : others
+                .where((b) => b.author.trim().toLowerCase() == currentAuthor)
+                .toList();
 
-          final related = [
-            ...sameCategory,
-            ...sameAuthor.where(
-              (product) => !sameCategory.any((item) => item.id == product.id),
-            ),
-            ...allOtherProducts.where(
-              (product) =>
-                  !sameCategory.any((item) => item.id == product.id) &&
-                  !sameAuthor.any((item) => item.id == product.id),
-            ),
-          ].take(10).toList();
+      final related = [
+        ...sameYear,
+        ...sameAuthor.where((b) => !sameYear.any((item) => item.id == b.id)),
+        ...others.where(
+          (b) =>
+              !sameYear.any((item) => item.id == b.id) &&
+              !sameAuthor.any((item) => item.id == b.id),
+        ),
+      ].take(10).toList();
 
-          // Prepare recommended products (random 10 from all other products)
-          final recommended = List<Product>.from(allOtherProducts)
-            ..shuffle(Random());
-          final randomTen = recommended.take(10).toList();
+      final recommended = List<Book>.from(others)..shuffle(Random());
 
-          setState(() {
-            relatedProducts = related;
-            recommendedProducts = randomTen;
-            _isLoadingRelatedProducts = false;
-            _isLoadingRecommendedProducts = false;
-          });
-          return;
-        }
-      }
-    } catch (_) {
-      // Ignore error and fall back to empty states
+      setState(() {
+        relatedProducts = related;
+        recommendedProducts = recommended.take(10).toList();
+        _isLoadingRelatedProducts = false;
+        _isLoadingRecommendedProducts = false;
+      });
+      return;
+    } on ApiException catch (error) {
+      debugPrint('Could not load related books: $error');
     }
 
     if (!mounted) return;
@@ -125,48 +116,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
+  /// Puts the book in the basket kept on this phone. Nothing is held at the
+  /// counter until checkout sends the reservation.
   Future<bool> _addToCart(BuildContext context, {int quantity = 1}) async {
-    final authProvider = context.read<AuthProvider>();
-    final user = authProvider.user;
+    final user = context.read<AuthProvider>().user;
+    final lang = AppLocalizations.of(context)!;
+
     if (user == null) {
-      Fluttertoast.showToast(msg: 'Please log in first');
+      Fluttertoast.showToast(msg: lang.translate('please_log_in_first'));
       return false;
     }
 
-    final url = Uri.parse('${widget.baseUrl}/add_to_cart.php');
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': user.student_id,
-          'student_id': user.student_id,
-          'product_id': widget.product.id,
-          'quantity': quantity,
-        }),
+    final added = await context.read<CartProvider>().addBook(
+      _book,
+      quantity: quantity,
+    );
+
+    if (!context.mounted) return false;
+
+    if (!added) {
+      Fluttertoast.showToast(
+        msg: lang.translate('not_enough_stock'),
+        backgroundColor: Colors.redAccent,
       );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          if (!context.mounted) return false;
-          final cartProvider = context.read<CartProvider>();
-          await cartProvider.fetchCart();
-          final lang = AppLocalizations.of(context)!;
-          Fluttertoast.showToast(
-            msg: '${lang.translate('added to cart')} (x$quantity)',
-            backgroundColor: Colors.green,
-          );
-          return true;
-        } else {
-          Fluttertoast.showToast(msg: data['message'] ?? 'Failed');
-        }
-      } else {
-        Fluttertoast.showToast(msg: 'Failed to add to cart');
-      }
-    } catch (e) {
-      debugPrint('Add to cart error: $e');
+      return false;
     }
-    return false;
+
+    Fluttertoast.showToast(
+      msg: '${lang.translate('added to cart')} (x$quantity)',
+      backgroundColor: Colors.green,
+    );
+
+    return true;
   }
 
   Future<void> _buyNow({int quantity = 1}) async {
@@ -318,14 +299,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double basePrice = double.tryParse(widget.product.price) ?? 0.0;
-    final String author = widget.product.author.trim();
-    final String pages = widget.product.pages.trim();
-    final String language = widget.product.language.trim();
-    final String year = widget.product.year.trim();
-    final int stockQuantity = widget.product.stockQuantity;
-    final String imageUrl = buildProductImageUrl(widget.baseUrl, widget.product.image);
     final lang = AppLocalizations.of(context)!;
+    final isKhmer = lang.locale.languageCode == 'km';
+
+    final String author = _book.author.trim();
+    final String? imageUrl = buildProductImageUrl(_book.imageUrl);
+
+    // Null means the catalogue does not say how many are free — not that none
+    // are. The quantity picker is then unbounded and the server decides.
+    final int? availableQty = _book.availableQty;
 
     return Scaffold(
       appBar: AppBar(
@@ -370,20 +352,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         AspectRatio(
                           aspectRatio: 4 / 3,
-                          child: CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: GBackground1,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => const Center(
-                              child: Icon(Icons.broken_image_rounded, size: 48),
-                            ),
-                          ),
+                          child: imageUrl == null
+                              ? Container(
+                                  color: GBackground1,
+                                  child: bookPlaceholder(),
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: GBackground1,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      Container(
+                                        color: GBackground1,
+                                        child: bookPlaceholder(),
+                                      ),
+                                ),
                         ),
+                        if (imageUrl != null)
                         Positioned(
                           right: 14,
                           bottom: 14,
@@ -422,7 +412,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   SizedBox(height: Height10),
                   Text(
-                    widget.product.name,
+                    _book.titleFor(khmer: isKhmer),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
                       fontSize: fontTitle,
@@ -443,11 +433,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   SizedBox(height: Height10),
                   Text(
-                    '\$ ${basePrice.toStringAsFixed(2)}',
+                    formatMoney(_book.price),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
                       fontSize: fontAppBar,
                       color: GText1,
+                    ),
+                  ),
+                  SizedBox(height: Height5),
+                  Text(
+                    availableQty == null
+                        ? lang.translate('availability_unknown')
+                        : availableQty <= 0
+                        ? lang.translate('out of stock')
+                        : '${lang.translate('in stock')}: $availableQty ${_book.unit}',
+                    style: TextStyle(
+                      fontFamily: getFontFamily(context),
+                      fontSize: fontText,
+                      color: (availableQty ?? 1) <= 0 ? RedColor : GreenColor,
                     ),
                   ),
                   // SizedBox(height: Height15),
@@ -473,14 +476,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // ),
                   SizedBox(height: Height15),
 
-                  // Spec item row (pages, language, year)
+                  // What the catalogue holds: code, publisher, ISBN.
                   ProductSpecRow(
-                    pages: pages,
-                    language: language,
-                    year: year,
-                    pagesLabel: lang.translate('pages'),
-                    languageLabel: lang.translate('language'),
-                    yearLabel: lang.translate('year'),
+                    code: _book.code,
+                    publisher: _book.publisher,
+                    isbn: _book.isbn,
+                    codeLabel: lang.translate('book_code'),
+                    publisherLabel: lang.translate('publisher'),
+                    isbnLabel: lang.translate('isbn'),
                   ),
 
                   SizedBox(height: Height20),
@@ -496,8 +499,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   SizedBox(height: Height10),
                   Container(width: 90, height: 2, color: GText1),
                   SizedBox(height: Height15),
+                  // The catalogue keeps no description for a book, so the two
+                  // spellings of the title and the year level it is set for
+                  // are what there is to say about it.
                   Text(
-                    widget.product.description,
+                    [
+                      _book.titleFor(khmer: !isKhmer),
+                      if (_book.yearLevel.isNotEmpty) _book.yearLevel,
+                    ].join('\n'),
                     style: TextStyle(
                       fontFamily: getFontFamily(context),
                       fontSize: fontText,
@@ -546,9 +555,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         scrollDirection: Axis.horizontal,
                         itemCount: relatedProducts.length,
                         itemBuilder: (context, index) {
-                          final product = relatedProducts[index];
-                          final productImage = (product.image ?? '').trim();
-                          final imageUrl = buildProductImageUrl(baseUrl, productImage);
+                          final related = relatedProducts[index];
 
                           return SizedBox(
                             width: 180,
@@ -559,18 +566,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ProductDetailScreen(
-                                        product: product,
-                                        baseUrl: widget.baseUrl,
-                                      ),
+                                      builder: (context) =>
+                                          ProductDetailScreen(book: related),
                                     ),
                                   );
                                 },
-                                productName: product.name,
-                                productPrice: product.price,
-                                imageUrl: imageUrl,
-                                productImage: productImage,
-                                author: product.author,
+                                productName: related.titleFor(khmer: isKhmer),
+                                priceLabel: formatMoney(related.price),
+                                imageUrl: buildProductImageUrl(
+                                  related.imageUrl,
+                                ),
+                                author: related.author,
                               ),
                             ),
                           );
@@ -583,8 +589,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     const SizedBox(height: Height20),
                     RecommendedProductsSection(
                       title: lang.translate('recommended products'),
-                      products: recommendedProducts,
-                      baseUrl: widget.baseUrl,
+                      books: recommendedProducts,
                       onSeeAll: () {
                         Navigator.push(
                           context,
@@ -593,14 +598,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         );
                       },
-                      onProductTap: (product) {
+                      onBookTap: (book) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(
-                              product: product,
-                              baseUrl: widget.baseUrl,
-                            ),
+                            builder: (_) => ProductDetailScreen(book: book),
                           ),
                         );
                       },
@@ -628,7 +630,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: () async {
                     final quantity = await _showQuantityDialog(
                       context,
-                      maxQuantity: stockQuantity,
+                      maxQuantity: availableQty ?? 0,
                     );
                     if (quantity == null) return;
                     await _addToCart(context, quantity: quantity);
@@ -650,7 +652,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: () async {
                     final quantity = await _showQuantityDialog(
                       context,
-                      maxQuantity: stockQuantity,
+                      maxQuantity: availableQty ?? 0,
                     );
                     if (quantity == null) return;
                     await _buyNow(quantity: quantity);

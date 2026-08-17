@@ -1,22 +1,20 @@
-import 'dart:convert';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thesisapp/component/card_product.dart' show bookPlaceholder;
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
-import 'package:thesisapp/model/product.dart';
+import 'package:thesisapp/model/book.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  final String baseUrl;
-
-  const SearchScreen({super.key, required this.baseUrl});
+  const SearchScreen({super.key});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -28,10 +26,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
   final TextEditingController _queryController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final InventoryApi _api = InventoryApi();
   NavigationProvider? _navigationProvider;
 
   List<String> _history = [];
-  List<Product> _products = [];
+  List<Book> _books = [];
 
   bool _isLoadingHistory = true;
   bool _isLoadingProducts = true;
@@ -44,7 +43,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {});
     });
     _loadHistory();
-    _fetchProducts();
+    _fetchBooks();
   }
 
   @override
@@ -129,66 +128,48 @@ class _SearchScreenState extends State<SearchScreen> {
     await _saveHistory([]);
   }
 
-  Future<void> _fetchProducts() async {
+  /// The sellable catalogue comes back in one response, so it is read once and
+  /// filtered on the device as the student types. `books.php?q=` searches the
+  /// same three fields on the server; doing it here spares a request per
+  /// keystroke and a throttle nobody would understand.
+  Future<void> _fetchBooks() async {
     setState(() => _isLoadingProducts = true);
-    final url = Uri.parse('${widget.baseUrl}/get_products.php');
+
     try {
-      final response = await http.get(url);
+      final books = await _api.books();
       if (!mounted) return;
 
-      if (response.statusCode != 200) {
-        Fluttertoast.showToast(msg: 'Server error: ${response.statusCode}');
-        setState(() => _isLoadingProducts = false);
-        return;
-      }
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic> && decoded['status'] == 'success') {
-        final list = (decoded['products'] as List?) ?? const [];
-        setState(() {
-          _products = list
-              .whereType<Map<String, dynamic>>()
-              .map(Product.fromJson)
-              .toList();
-          _isLoadingProducts = false;
-        });
-        return;
-      }
-
-      Fluttertoast.showToast(msg: 'Failed to load products');
-    } catch (e) {
+      setState(() {
+        _books = books;
+        _isLoadingProducts = false;
+      });
+      return;
+    } on ApiException catch (error) {
       if (!mounted) return;
-      Fluttertoast.showToast(msg: 'Network error: $e');
-    } finally {
-      if (!mounted) return;
-      setState(() => _isLoadingProducts = false);
+      Fluttertoast.showToast(msg: error.message(AppLocalizations.of(context)));
     }
+
+    if (!mounted) return;
+    setState(() => _isLoadingProducts = false);
   }
 
-  List<Product> _results() {
+  List<Book> _results() {
     final q = _queryController.text.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
-    return _products.where((p) {
-      final name = p.name.toLowerCase();
-      final desc = p.description.toLowerCase();
-      final author = p.author.toLowerCase();
-      final category = p.category.toLowerCase();
-      return name.contains(q) ||
-          desc.contains(q) ||
-          author.contains(q) ||
-          category.contains(q);
+    return _books.where((book) {
+      return book.title.toLowerCase().contains(q) ||
+          book.titleKh.toLowerCase().contains(q) ||
+          book.author.toLowerCase().contains(q) ||
+          book.code.toLowerCase().contains(q);
     }).toList();
   }
 
-  void _openProduct(Product product) {
+  void _openProduct(Book book) {
     _addToHistory(_queryController.text);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            ProductDetailScreen(product: product, baseUrl: widget.baseUrl),
-      ),
+      MaterialPageRoute(builder: (_) => ProductDetailScreen(book: book)),
     );
   }
 
@@ -366,16 +347,23 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _resultsList(List<Product> results) {
+  Widget _resultsList(List<Book> results) {
+    final lang = AppLocalizations.of(context)!;
+    final isKhmer = lang.locale.languageCode == 'km';
+
     if (_isLoadingProducts) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (results.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No results',
-          style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600),
+          lang.translate('no_data_found'),
+          style: TextStyle(
+            color: Colors.black54,
+            fontWeight: FontWeight.w600,
+            fontFamily: getFontFamily(context),
+          ),
         ),
       );
     }
@@ -384,13 +372,12 @@ class _SearchScreenState extends State<SearchScreen> {
       itemCount: results.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final product = results[index];
-        final imageUrl = buildProductImageUrl(widget.baseUrl, product.image);
-        final price = double.tryParse(product.price) ?? 0.0;
+        final book = results[index];
+        final imageUrl = buildProductImageUrl(book.imageUrl);
 
         return InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => _openProduct(product),
+          onTap: () => _openProduct(book),
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -402,29 +389,29 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
+                  child: SizedBox(
                     height: 48,
                     width: 48,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 48,
-                      width: 48,
-                      color: const Color(0xFFF3F0EA),
-                      child: const Center(
-                        child: SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 48,
-                      width: 48,
-                      color: const Color(0xFFF3F0EA),
-                      child: const Icon(Icons.broken_image_rounded, size: 22),
-                    ),
+                    child: imageUrl == null
+                        ? bookPlaceholder()
+                        : CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFFF3F0EA),
+                              child: const Center(
+                                child: SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) =>
+                                bookPlaceholder(),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -433,7 +420,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product.name,
+                        book.titleFor(khmer: isKhmer),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -443,11 +430,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        product.author.trim().isEmpty
-                            ? (product.category.trim().isEmpty
-                                  ? 'Book'
-                                  : product.category.trim())
-                            : product.author,
+                        book.author.trim().isEmpty
+                            ? book.code
+                            : book.author,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -460,7 +445,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  "\$${price.toStringAsFixed(2)}",
+                  formatMoney(book.price),
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     color: _accent,

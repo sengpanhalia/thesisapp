@@ -1,8 +1,12 @@
+import 'dart:io' show Platform;
+
 import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:thesisapp/service/inventory_api.dart';
+import 'package:thesisapp/service/student_session_store.dart';
 import '../firebase_options.dart';
 
 @pragma('vm:entry-point')
@@ -71,6 +75,23 @@ class NotificationService {
 
     // 5. Subscribe to "news_alerts" topic for broadcast news notifications
     await _messaging.subscribeToTopic('news_alerts');
+
+    /*
+     * 5b. Keep the server's delivery address up to date.
+     *
+     * Firebase rotates a registration token while the app is running, and the
+     * old one stops working the moment it does. Registering only at sign-in
+     * would therefore leave a student quietly unreachable until they next
+     * signed out and in, which students do about once a semester.
+     *
+     * Registering is skipped when there is no student session — nobody is
+     * signed in, so there is nobody to register the handset to, and
+     * `devices.php` would answer 401. `registerWithServer()` is called again
+     * by the sign-in screen once there is one.
+     */
+    _messaging.onTokenRefresh.listen((token) {
+      registerWithServer(token: token);
+    });
 
     // 6. Listen for incoming messages while app is in Foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -152,5 +173,71 @@ class NotificationService {
       }
       return null;
     }
+  }
+
+  /// Tells the server where to deliver this student's notifications.
+  ///
+  /// -------------------------------------------------------------------------
+  ///  Why this is the piece that was missing
+  /// -------------------------------------------------------------------------
+  ///
+  /// Everything else here already worked. Firebase was initialised, the channel
+  /// was created, a foreground banner was shown and the badge was counted — and
+  /// [getFcmToken] had no callers anywhere in the app. So the receiving half was
+  /// complete, the server had no endpoint to be told an address, and nothing
+  /// could ever arrive. This is the call that closes it.
+  ///
+  /// Called after signing in, and again from [initialize] whenever Firebase
+  /// rotates the token.
+  ///
+  /// Never throws. A student who has just signed in must not be shown an error
+  /// about push registration, and must certainly not be stopped from getting
+  /// into the app by one: the worst case is that they read their messages in
+  /// the app instead of being nudged by the phone, which is where they were
+  /// before any of this existed.
+  static Future<void> registerWithServer({String? token, InventoryApi? api}) async {
+    try {
+      // No session means nobody is signed in, so there is nobody to register
+      // this handset to and the endpoint would answer 401.
+      if ((await StudentSessionStore.read()).trim().isEmpty) return;
+
+      final address = (token ?? await getFcmToken() ?? '').trim();
+
+      if (address.isEmpty) return;
+
+      await (api ?? InventoryApi()).registerDevice(
+        token: address,
+        platform: _platform,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('Could not register for notifications: $e');
+    }
+  }
+
+  /// Stops notifications reaching this handset, on sign-out.
+  ///
+  /// Must run **before** the student session is cleared, because the endpoint
+  /// is guarded by that session. Phones get shared and sold, and what must not
+  /// happen is the next "your books are ready" landing on somebody else's lock
+  /// screen naming this student's order.
+  static Future<void> forgetWithServer({InventoryApi? api}) async {
+    try {
+      if ((await StudentSessionStore.read()).trim().isEmpty) return;
+
+      final address = (await getFcmToken() ?? '').trim();
+
+      if (address.isEmpty) return;
+
+      await (api ?? InventoryApi()).forgetDevice(address);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Could not unregister notifications: $e');
+    }
+  }
+
+  /// What the server records the handset as, for reading the logs by.
+  static String get _platform {
+    if (kIsWeb) return 'web';
+
+    return Platform.isIOS ? 'ios' : 'android';
   }
 }

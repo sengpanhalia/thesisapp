@@ -80,8 +80,13 @@ class InfoRow extends StatelessWidget {
 class OrderItemRow extends StatelessWidget {
   final String name;
   final int qty;
+
+  /// Null when the catalogue holds no price, which shows as a dash. It is not
+  /// rendered as zero — an unpriced book is not a free one.
   final double? originalPrice;
-  final String imageUrl;
+
+  /// Null when there is no picture for this book.
+  final String? imageUrl;
 
   const OrderItemRow({
     super.key,
@@ -98,18 +103,28 @@ class OrderItemRow extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.network(
-            imageUrl,
-            width: 54,
-            height: 54,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              width: 54,
-              height: 54,
-              color: Colors.grey[200],
-              child: const Icon(Icons.image_rounded, color: Colors.grey),
-            ),
-          ),
+          child: imageUrl == null
+              ? Container(
+                  width: 54,
+                  height: 54,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.menu_book_rounded, color: Colors.grey),
+                )
+              : Image.network(
+                  imageUrl!,
+                  width: 54,
+                  height: 54,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 54,
+                    height: 54,
+                    color: Colors.grey[200],
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -141,15 +156,16 @@ class OrderItemRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (originalPrice != null)
-                Text(
-                  '\$${originalPrice!.toStringAsFixed(2)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: fontText,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+              Text(
+                originalPrice == null
+                    ? '—'
+                    : '\$${originalPrice!.toStringAsFixed(2)}',
+                style: GoogleFonts.poppins(
+                  fontSize: fontText,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
+              ),
             ],
           ),
         ),

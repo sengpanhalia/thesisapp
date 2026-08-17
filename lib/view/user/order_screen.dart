@@ -1,12 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/model/reservation.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/order_details_screen.dart';
 
 class OrderScreen extends StatefulWidget {
@@ -19,9 +19,15 @@ class OrderScreen extends StatefulWidget {
 enum OrderHistoryFilter { all, week, month, year }
 
 class _OrderScreenState extends State<OrderScreen> {
-  List<dynamic> _orders = [];
+  final InventoryApi _api = InventoryApi();
+
+  List<Reservation> _orders = [];
   bool _isLoading = true;
+  String? _loadError;
   OrderHistoryFilter _selectedFilter = OrderHistoryFilter.all;
+
+  /// True while a read is in flight, so a second is not started on top of it.
+  bool _isFetching = false;
 
   @override
   void initState() {
@@ -29,113 +35,75 @@ class _OrderScreenState extends State<OrderScreen> {
     _fetchOrders();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Refresh orders when screen regains focus (after build completes)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _fetchOrders();
-    });
-  }
+  /*
+   * didChangeDependencies() used to re-read the list here as well, and that
+   * was two mistakes stacked on one another.
+   *
+   * It fires once on first mount, immediately after initState() has already
+   * fetched — so simply opening this screen made two identical requests. And
+   * build() below reads `context.watch<AuthProvider>()`, which subscribes this
+   * state to that provider: every notifyListeners() anywhere in the app called
+   * didChangeDependencies() again, and each one made another request. Signing
+   * in, editing a profile field and the provider's own start-up each cost a
+   * full read of the order list, for a list nobody had asked to refresh.
+   *
+   * The intent behind it was sound — the counter moves a reservation forward
+   * on the web screens, so a cached list goes stale — and it is already served
+   * by two things that were there and did not need help: the list is read in
+   * initState() each time the screen is opened, and the RefreshIndicator below
+   * gives the student a fresh answer whenever they pull for one. Neither of
+   * those fires because an unrelated provider changed.
+   */
 
   Future<void> _fetchOrders() async {
-    if (!mounted) return;
-    final authProvider = context.read<AuthProvider>();
-    final user = authProvider.user;
+    if (!mounted || _isFetching) return;
+
+    _isFetching = true;
+
+    final user = context.read<AuthProvider>().user;
+
     if (user == null) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      _isFetching = false;
+      setState(() => _isLoading = false);
       return;
     }
 
-    final url = Uri.parse(
-      '${ApiConfig.baseUrl}/get_orders.php?user_id=${user.student_id}',
-    );
-
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          if (mounted) {
-            setState(() {
-              _orders = data['orders'] ?? [];
-            });
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint("Error fetching orders: $e");
+      final orders = await _api.reservationsFor(user.student_id);
+      if (!mounted) return;
+
+      setState(() {
+        _orders = orders;
+        _loadError = null;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _loadError = error.message(AppLocalizations.of(context)));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      _isFetching = false;
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  String _formatDate(dynamic value) {
-    final dateStr = value?.toString() ?? '';
-    try {
-      final date = _parseDateString(dateStr);
-      if (date == null) return dateStr.isEmpty ? 'N/A' : dateStr;
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      return '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
-    } catch (e) {
-      return dateStr.isEmpty ? 'N/A' : dateStr;
-    }
-  }
+  String _formatDate(DateTime? date) {
+    if (date == null) return '\u2014';
 
-  DateTime? _parseDateString(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return null;
-    final numeric = int.tryParse(trimmed);
-    if (numeric != null) {
-      if (trimmed.length >= 13) {
-        return DateTime.fromMillisecondsSinceEpoch(numeric);
-      }
-      return DateTime.fromMillisecondsSinceEpoch(numeric * 1000);
-    }
-    final normalized = trimmed.contains(' ') && !trimmed.contains('T')
-        ? trimmed.replaceFirst(' ', 'T')
-        : trimmed;
-    return DateTime.tryParse(normalized);
-  }
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
 
-  DateTime? _getOrderDate(dynamic order) {
-    final raw =
-        order['created_at'] ?? order['order_date'] ?? order['date'] ?? '';
-    return _parseDateString(raw.toString());
-  }
-
-  int? _getOrderId(dynamic order) {
-    final raw = order['id'] ?? order['order_id'];
-    if (raw == null) return null;
-    return int.tryParse(raw.toString());
-  }
-
-  String? _trackingNumber(dynamic order) {
-    final raw = (order['tracking_number'] ?? order['trackingNumber'] ?? '')
-        .toString()
-        .trim();
-    if (raw.isEmpty || raw.toLowerCase() == 'null') {
-      return null;
-    }
-    return raw;
+    return '${months[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
   }
 
   bool _isWithinSelectedRange(DateTime? date) {
@@ -162,43 +130,10 @@ class _OrderScreenState extends State<OrderScreen> {
     return !date.isBefore(cutoff);
   }
 
-  List<dynamic> _getSortedOrders() {
-    final sorted = List<dynamic>.from(_orders);
-    sorted.sort((a, b) {
-      final aDate = _getOrderDate(a);
-      final bDate = _getOrderDate(b);
-      if (aDate != null && bDate != null) {
-        final dateCompare = bDate.compareTo(aDate);
-        if (dateCompare != 0) return dateCompare;
-      } else if (aDate == null && bDate != null) {
-        return 1;
-      } else if (aDate != null && bDate == null) {
-        return -1;
-      }
-
-      final aId = _getOrderId(a);
-      final bId = _getOrderId(b);
-      if (aId == null && bId == null) return 0;
-      if (aId == null) return 1;
-      if (bId == null) return -1;
-      return bId.compareTo(aId);
-    });
-    return sorted;
-  }
-
-  List<dynamic> _getDisplayOrders(List<dynamic> sortedAll) {
-    return sortedAll
-        .where((order) => _isWithinSelectedRange(_getOrderDate(order)))
+  List<Reservation> _getDisplayOrders() {
+    return _orders
+        .where((order) => _isWithinSelectedRange(order.createdAt))
         .toList();
-  }
-
-  int? _getDisplayOrderNumber(List<dynamic> sortedAll, dynamic order) {
-    final orderId = _getOrderId(order);
-    if (orderId == null) return null;
-
-    final index = sortedAll.indexWhere((o) => _getOrderId(o) == orderId);
-    if (index == -1) return null;
-    return index + 1;
   }
 
   Color _getStatusColor(String status) {
@@ -238,15 +173,14 @@ class _OrderScreenState extends State<OrderScreen> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : context.watch<AuthProvider>().user == null
-                  ? const Center(child: Text("Please log in to view orders"))
+                  ? Center(child: Text(lang.translate('please_log_in_first')))
                   : _orders.isEmpty
                   ? _buildEmptyState()
                   : RefreshIndicator(
                       onRefresh: _fetchOrders,
                       child: Builder(
                         builder: (context) {
-                          final sortedAll = _getSortedOrders();
-                          final displayOrders = _getDisplayOrders(sortedAll);
+                          final displayOrders = _getDisplayOrders();
                           final showEmptyFilter = displayOrders.isEmpty;
                           final itemCount = showEmptyFilter
                               ? 2
@@ -283,54 +217,23 @@ class _OrderScreenState extends State<OrderScreen> {
         
                               final displayIndex = index - 1;
                               final order = displayOrders[displayIndex];
-                              // final orderId = order['id'] ?? order['order_id'];
-                              final orderNumber =
-                                  _getDisplayOrderNumber(sortedAll, order) ??
-                                  (displayIndex + 1);
-                              final status = order['status'] ?? 'pending';
-                              final total =
-                                  double.tryParse(
-                                    order['total_amount']?.toString() ??
-                                        order['total']?.toString() ??
-                                        '0',
-                                  ) ??
-                                  0.0;
-                              final date =
-                                  order['created_at'] ??
-                                  order['order_date'] ??
-                                  'N/A';
-                              final orderItemCount = order['item_count'] ?? 0;
-                              final trackingNumber = _trackingNumber(order);
-                              final normalizedStatus = status
-                                  .toString()
-                                  .toLowerCase();
-                              final showTracking =
-                                  trackingNumber != null ||
-                                  normalizedStatus == 'shipped' ||
-                                  normalizedStatus == 'delivered';
-        
                               final statusColor = _getStatusColor(
-                                status.toString(),
+                                order.status.wireName,
                               );
-        
-                              final orderWithNumber = Map<String, dynamic>.from(
-                                order,
-                              );
-                              orderWithNumber['display_order_number'] =
-                                  orderNumber;
-        
+                              // One reservation covers one title, so the count
+                              // shown is the copies of that title.
+                              final orderItemCount = order.quantity;
                               return GestureDetector(
                                 onTap: () async {
                                   final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => OrderDetailsScreen(
-                                        order: orderWithNumber,
-                                      ),
+                                      builder: (_) =>
+                                          OrderDetailsScreen(order: order),
                                     ),
                                   );
                                   if (result == true) {
-                                    _fetchOrders(); // Refresh if order was cancelled
+                                    _fetchOrders(); // Refresh if it was cancelled
                                   }
                                 },
                                 child: Column(
@@ -353,7 +256,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                         children: [
                                           Container(
                                             width: 6,
-                                            height: showTracking ? 206 : 180,
+                                            height: 206,
                                             decoration: BoxDecoration(
                                               color: statusColor,
                                               borderRadius:
@@ -378,8 +281,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        
-                                                            "Order #$trackingNumber",
+                                                        order.code,
                                                         style: TextStyle(
                                                           fontSize: fontSubtitle,
                                                           fontWeight:
@@ -392,37 +294,45 @@ class _OrderScreenState extends State<OrderScreen> {
                                                               horizontal: 14,
                                                               vertical: 6,
                                                             ),
-                                                        // decoration: BoxDecoration(
-                                                        //   color: statusColor
-                                                        //       .withOpacity(0.12),
-                                                        //   borderRadius:
-                                                        //       BorderRadius.circular(
-                                                        //         30,
-                                                        //       ),
-                                                        // ),
-                                                        // child: Text(
-                                                        //   status
-                                                        //       .toString()
-                                                        //       .toUpperCase(),
-                                                        //   style: TextStyle(
-                                                        //     color: statusColor,
-                                                        //     fontSize: fontText,
-                                                        //     fontWeight:
-                                                        //         FontWeight.w600,
-                                                        //   ),
-                                                        // ),
+                                                        decoration: BoxDecoration(
+                                                          color: statusColor
+                                                              .withValues(
+                                                                alpha: 0.12,
+                                                              ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                30,
+                                                              ),
+                                                        ),
+                                                        child: Text(
+                                                          lang.translate(
+                                                            order
+                                                                .status
+                                                                .translationKey,
+                                                          ),
+                                                          style: TextStyle(
+                                                            color: statusColor,
+                                                            fontSize: fontText,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontFamily:
+                                                                getFontFamily(
+                                                                  context,
+                                                                ),
+                                                          ),
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
                                                   const SizedBox(height: 18),
                                                   _buildInfoRow(
                                                     Icons.schedule_rounded,
-                                                    _formatDate(date),
+                                                    _formatDate(order.createdAt),
                                                   ),
                                                   const SizedBox(height: 10),
                                                   _buildInfoRow(
-                                                    Icons.shopping_cart_rounded,
-                                                    "$orderItemCount Items",
+                                                    Icons.menu_book_rounded,
+                                                    '${order.title} × $orderItemCount',
                                                   ),
                                                   // if (showTracking) ...[
                                                   //   const SizedBox(height: 10),
@@ -442,15 +352,19 @@ class _OrderScreenState extends State<OrderScreen> {
                                                         MainAxisAlignment
                                                             .spaceBetween,
                                                     children: [
-                                                      const Text(
-                                                        "Total Amount",
+                                                      Text(
+                                                        lang.translate('total'),
                                                         style: TextStyle(
                                                           fontSize: fontSubtitle,
                                                           color: Colors.grey,
+                                                          fontFamily:
+                                                              getFontFamily(
+                                                                context,
+                                                              ),
                                                         ),
                                                       ),
                                                       Text(
-                                                        "\$${total.toStringAsFixed(2)}",
+                                                        order.totalLabel,
                                                         style: TextStyle(
                                                           fontSize: fontSubtitle,
                                                           fontWeight:
@@ -493,33 +407,43 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Widget _buildEmptyState() {
+    final lang = AppLocalizations.of(context)!;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: CardColor,
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: CardColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _loadError == null
+                    ? Icons.shopping_bag_rounded
+                    : Icons.cloud_off_rounded,
+                size: 60,
+                color: IconColor,
+              ),
             ),
-            child: const Icon(
-              Icons.shopping_bag_rounded,
-              size: 60,
-              color: IconColor,
+            const SizedBox(height: 20),
+            Text(
+              // A failed read and an empty list are different things, and a
+              // student who is offline should not be told they have no orders.
+              _loadError ?? lang.translate('no_orders_found'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSubtitle,
+                fontWeight: FontWeight.w600,
+                color: TextColor,
+                fontFamily: getFontFamily(context),
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "No Orders Found",
-            style: TextStyle(fontSize: fontHeadTitle, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Your placed orders will appear here",
-            style: TextStyle(fontSize: fontSubtitle, color: TextColor),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

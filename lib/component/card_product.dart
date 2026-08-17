@@ -5,16 +5,22 @@ class BuildCardProduct extends StatelessWidget {
   final VoidCallback? onTap;
   final String productName;
   final String author;
-  final String productPrice;
-  final String imageUrl;
-  final String productImage;
+
+  /// Already formatted — `$12.50`, or a dash when the catalogue holds no
+  /// price. Money is never formatted inside a card.
+  final String priceLabel;
+
+  /// Null when the catalogue has no picture for this book, which is most of
+  /// them; the card then shows its placeholder rather than a broken image.
+  final String? imageUrl;
+
   const BuildCardProduct({
     super.key,
     required this.onTap,
     required this.productName,
-    required this.productPrice,
+    required this.priceLabel,
     required this.imageUrl,
-    required this.productImage, required this.author,
+    required this.author,
   });
 
   @override
@@ -42,10 +48,10 @@ class BuildCardProduct extends StatelessWidget {
                 ),
                 child: SizedBox(
                   width: double.infinity,
-                  child: productImage.isEmpty
-                      ? imageLoading()
+                  child: imageUrl == null
+                      ? bookPlaceholder()
                       : Image.network(
-                          imageUrl,
+                          imageUrl!,
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) {
@@ -54,7 +60,7 @@ class BuildCardProduct extends StatelessWidget {
                             return imageLoading();
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            return imageLoading();
+                            return bookPlaceholder();
                           },
                         ),
                 ),
@@ -91,7 +97,7 @@ class BuildCardProduct extends StatelessWidget {
                   ),
                   SizedBox(height: Height5),
                   Text(
-                    '\$$productPrice',
+                    priceLabel,
                     style: TextStyle(
                       fontSize: fontSubtitle,
                       color: GText1,
@@ -119,5 +125,16 @@ Widget imageLoading() {
       height: 24,
       child: CircularProgressIndicator(color: GText1, strokeWidth: 2),
     ),
+  );
+}
+
+/// Shown where a book has no picture. The university's catalogue has none for
+/// any book today, so this is what most cards draw — a spinner there would
+/// promise an image that is never coming.
+Widget bookPlaceholder() {
+  return Container(
+    color: Colors.white.withValues(alpha: 0.45),
+    alignment: Alignment.center,
+    child: const Icon(Icons.menu_book_rounded, size: 40, color: GText1),
   );
 }

@@ -45,22 +45,29 @@ class SpecDivider extends StatelessWidget {
   }
 }
 
+/// The three facts the catalogue actually holds about a book.
+///
+/// It used to show pages, language and printing year — none of which the
+/// inventory API returns. What it does return for a book is its code, its
+/// publisher, its ISBN and the year level it is set for, so those are what is
+/// shown. A field the catalogue left blank shows a dash rather than an
+/// invented value.
 class ProductSpecRow extends StatelessWidget {
-  final String pages;
-  final String language;
-  final String year;
-  final String pagesLabel;
-  final String languageLabel;
-  final String yearLabel;
+  final String code;
+  final String publisher;
+  final String isbn;
+  final String codeLabel;
+  final String publisherLabel;
+  final String isbnLabel;
 
   const ProductSpecRow({
     super.key,
-    required this.pages,
-    required this.language,
-    required this.year,
-    required this.pagesLabel,
-    required this.languageLabel,
-    required this.yearLabel,
+    required this.code,
+    required this.publisher,
+    required this.isbn,
+    required this.codeLabel,
+    required this.publisherLabel,
+    required this.isbnLabel,
   });
 
   @override
@@ -73,20 +80,14 @@ class ProductSpecRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SpecItem(
-            label: pagesLabel,
-            value: pages.isNotEmpty ? pages : '—',
-          ),
+          SpecItem(label: codeLabel, value: code.isNotEmpty ? code : '—'),
           const SpecDivider(),
           SpecItem(
-            label: languageLabel,
-            value: language.isNotEmpty ? language : '—',
+            label: publisherLabel,
+            value: publisher.isNotEmpty ? publisher : '—',
           ),
           const SpecDivider(),
-          SpecItem(
-            label: yearLabel,
-            value: year.isNotEmpty ? year : '—',
-          ),
+          SpecItem(label: isbnLabel, value: isbn.isNotEmpty ? isbn : '—'),
         ],
       ),
     );

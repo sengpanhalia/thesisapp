@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -10,9 +8,8 @@ import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/student_directory.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/user_api.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/service/pdf_receipt_helper.dart';
 
@@ -52,9 +49,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   @override
   void initState() {
     super.initState();
+    // The reservation codes came back with the reservations themselves, so
+    // there is nothing further to look up.
     _resolvedTrackingNumber = _normalizeTrackingNumber(widget.trackingNumber);
-    _resolveDisplayOrderNumber();
-    _resolveTrackingNumber();
     _fetchUserData();
   }
 
@@ -62,48 +59,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     final authUser = context.read<AuthProvider>().user;
     if (authUser == null) return;
 
-    try {
-      http.Response response;
-      try {
-        response = await http
-            .post(
-              Uri.parse(APILocalLoginUrl),
-              headers: {"Content-Type": "application/json"},
-              body: jsonEncode({
-                "student_id": authUser.student_id,
-                "pwd": authUser.pwd,
-              }),
-            )
-            .timeout(const Duration(seconds: 10));
-      } catch (_) {
-        response = await http.post(
-          Uri.parse(APIStLoginKh),
-          body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
-        );
-      }
+    final detail = await StudentDirectory.fetch();
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
-          final userData =
-              (decoded['user_data'] as List?) ??
-              (decoded['student_users'] as List?) ??
-              (decoded['user'] != null ? [decoded['user']] : const []);
-          final details = userData
-              .whereType<Map<String, dynamic>>()
-              .map(UserDetail.fromJson)
-              .toList();
+    if (!mounted || detail == null) return;
 
-          if (mounted && details.isNotEmpty) {
-            setState(() {
-              _userDetail = details.first;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load user detail in order success: $e');
-    }
+    setState(() => _userDetail = detail);
   }
 
   PdfReceiptHelper _buildPdfHelper() {
@@ -162,138 +122,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   //   }
   //   return 'Order #${widget.orderId}';
   // }
-
-  DateTime? _parseOrderDate(Map<String, dynamic> order) {
-    final raw =
-        order['created_at'] ?? order['order_date'] ?? order['date'] ?? '';
-    final value = raw.toString().trim();
-    if (value.isEmpty) return null;
-    final numeric = int.tryParse(value);
-    if (numeric != null) {
-      if (value.length >= 13) {
-        return DateTime.fromMillisecondsSinceEpoch(numeric);
-      }
-      return DateTime.fromMillisecondsSinceEpoch(numeric * 1000);
-    }
-    final normalized = value.contains(' ') && !value.contains('T')
-        ? value.replaceFirst(' ', 'T')
-        : value;
-    return DateTime.tryParse(normalized);
-  }
-
-  int? _parseOrderId(Map<String, dynamic> order) {
-    final raw = order['id'] ?? order['order_id'];
-    if (raw == null) return null;
-    return int.tryParse(raw.toString());
-  }
-
-  Future<void> _resolveDisplayOrderNumber() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
-    if (user == null) return;
-
-    // setState(() => _isResolvingDisplayNumber = true);
-
-    try {
-      final url = Uri.parse(
-        '${ApiConfig.baseUrl}/get_orders.php?user_id=${user.student_id}',
-      );
-      final response = await http.get(url);
-      if (response.statusCode != 200) return;
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map) return;
-      final data = Map<String, dynamic>.from(decoded);
-      if (data['status'] != 'success') return;
-
-      final rawOrders = data['orders'];
-      if (rawOrders is! List) return;
-
-      final orders = rawOrders
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-
-      orders.sort((a, b) {
-        final aDate = _parseOrderDate(a);
-        final bDate = _parseOrderDate(b);
-        if (aDate != null && bDate != null) {
-          final dateCompare = bDate.compareTo(aDate);
-          if (dateCompare != 0) return dateCompare;
-        } else if (aDate == null && bDate != null) {
-          return 1;
-        } else if (aDate != null && bDate == null) {
-          return -1;
-        }
-
-        final aId = _parseOrderId(a);
-        final bId = _parseOrderId(b);
-        if (aId == null && bId == null) return 0;
-        if (aId == null) return 1;
-        if (bId == null) return -1;
-        return bId.compareTo(aId);
-      });
-
-      final index = orders.indexWhere(
-        (o) => _parseOrderId(o) == widget.orderId,
-      );
-      if (index == -1) return;
-
-      final trackingNumber = _normalizeTrackingNumber(
-        orders[index]['tracking_number'] ?? orders[index]['trackingNumber'],
-      );
-
-      if (mounted) {
-        setState(() {
-          _resolvedTrackingNumber ??= trackingNumber;
-        });
-      } else {
-        _resolvedTrackingNumber ??= trackingNumber;
-      }
-    } catch (_) {
-      // ignore network errors; fall back to orderId
-    } finally {
-      // if (mounted) {
-      //   setState(() => _isResolvingDisplayNumber = false);
-      // } else {
-      //   _isResolvingDisplayNumber = false;
-      // }
-    }
-  }
-
-  Future<void> _resolveTrackingNumber() async {
-    if (_resolvedTrackingNumber != null) return;
-
-    try {
-      final response = await http.get(
-        Uri.parse(
-          '${ApiConfig.baseUrl}/get_order_details.php?id=${widget.orderId}',
-        ),
-      );
-      if (response.statusCode != 200) return;
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map) return;
-
-      final data = Map<String, dynamic>.from(decoded);
-      if (data['status'] != 'success' || data['order'] is! Map) return;
-
-      final order = Map<String, dynamic>.from(data['order']);
-      final trackingNumber = _normalizeTrackingNumber(
-        order['tracking_number'] ?? order['trackingNumber'],
-      );
-      if (trackingNumber == null) return;
-
-      if (mounted) {
-        setState(() => _resolvedTrackingNumber = trackingNumber);
-      } else {
-        _resolvedTrackingNumber = trackingNumber;
-      }
-    } catch (_) {
-      // ignore network errors; the tracking number can still come from widget/get_orders.
-    }
-  }
-
 
   Future<void> _saveReceiptPdf() async {
     if (_isSavingPdf) return;
@@ -414,9 +242,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
               ),
               // const SizedBox(height: 10),
               Text(
-                widget.paymentMethod == 'card'
-                    ? lang.translate('payment successful')
-                    : lang.translate('order placed successfully'),
+                // Nothing has been paid and nothing has been sold: the copies
+                // are held until the student collects them at the counter.
+                lang.translate('reserved_successfully'),
                 style: TextStyle(
                   fontFamily: getFontFamily(context),
                   fontSize: fontHeadTitle,
@@ -463,6 +291,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             ),
             _infoRow(lang.translate('payment status'), paymentStatus),
             _infoRow(lang.translate('code number of order'), trackingNumber),
+            const SizedBox(height: 8),
+            Text(
+              lang.translate('collect_at_the_counter'),
+              style: TextStyle(color: Colors.grey[700]),
+            ),
             // if (_resolvedTrackingNumber != null)
             //   Align(
             //     alignment: Alignment.centerRight,

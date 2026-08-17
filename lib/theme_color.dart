@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:thesisapp/util/api_config.dart';
 
 const UKFontFamily = "SiemReap";
 const UKFontFamilyMool1 = "KhmerMool1";
@@ -21,24 +22,14 @@ String getFontFamilyMool1(BuildContext context) {
   }
 }
 
-String buildProductImageUrl(String baseUrl, String? rawPath) {
-  if (rawPath == null || rawPath.trim().isEmpty) return '';
-  final path = rawPath.trim();
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
-  }
-  final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-  if (path.startsWith('uploads/products/')) {
-    return '$cleanBase/$path';
-  }
-  if (path.startsWith('/uploads/products/')) {
-    return '$cleanBase$path';
-  }
-  if (path.startsWith('/')) {
-    return '$cleanBase/uploads/products$path';
-  }
-  return '$cleanBase/uploads/products/$path';
-}
+/// The catalogue's picture for a row, ready to fetch — or null when it has
+/// none, which is when the screen shows a placeholder instead.
+///
+/// The inventory API hands back a finished `image_url` rather than a bare
+/// filename, so there is no folder to guess at here: absolute values are used
+/// as they are, and a site-relative one is resolved against the API's own host.
+String? buildProductImageUrl(String? imageUrl) =>
+    ApiConfig.resolveImageUrl(imageUrl);
 
 const WhiteColor = Color(0xFFFFFFFF);
 const RedColor = Color(0xFFEE0000);

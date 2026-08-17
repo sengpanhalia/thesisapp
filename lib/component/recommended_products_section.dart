@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
-import 'package:thesisapp/model/product.dart';
+import 'package:thesisapp/model/book.dart';
 import 'package:thesisapp/theme_color.dart';
 
 class RecommendedProductsSection extends StatelessWidget {
   final String title;
-  final List<Product> products;
-  final String baseUrl;
+  final List<Book> books;
   final VoidCallback onSeeAll;
-  final void Function(Product) onProductTap;
+  final void Function(Book) onBookTap;
 
   const RecommendedProductsSection({
     super.key,
     required this.title,
-    required this.products,
-    required this.baseUrl,
+    required this.books,
     required this.onSeeAll,
-    required this.onProductTap,
+    required this.onBookTap,
   });
 
   @override
@@ -66,19 +64,18 @@ class RecommendedProductsSection extends StatelessWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 0.65,
           ),
-          itemCount: products.length,
+          itemCount: books.length,
           itemBuilder: (context, index) {
-            final product = products[index];
-            final productImage = (product.image ?? '').trim();
-            final imageUrl = buildProductImageUrl(baseUrl, productImage);
+            final book = books[index];
 
             return BuildCardProduct(
-              onTap: () => onProductTap(product),
-              productName: product.name,
-              productPrice: product.price,
-              imageUrl: imageUrl,
-              productImage: productImage,
-              author: product.author,
+              onTap: () => onBookTap(book),
+              productName: book.titleFor(
+                khmer: Localizations.localeOf(context).languageCode == 'km',
+              ),
+              priceLabel: formatMoney(book.price),
+              imageUrl: buildProductImageUrl(book.imageUrl),
+              author: book.author,
             );
           },
         ),

@@ -1,17 +1,21 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/model/book_category.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
-import 'package:thesisapp/model/category_model.dart';
 
 // ---------------------------------------------------------------------------
-// Category screen — fetches categories from API
+// Browse screen.
+//
+// The real book categories, from `GET /api/v1/categories.php` — original
+// copies, black-and-white photocopies, printed, colour — each with a count of
+// the books in it a student may actually buy. This used to group by the empty
+// `year_level` and show one heap; the catalogue's genuine categories now sit
+// behind the tiles, plus an "all books" tile at the front.
 // ---------------------------------------------------------------------------
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -20,47 +24,56 @@ class CategoryScreen extends StatefulWidget {
   State<CategoryScreen> createState() => _CategoryScreenState();
 }
 
+/// One tile: a real category, or the whole catalogue (`category == null`).
+class _BrowseGroup {
+  const _BrowseGroup({required this.category, required this.count});
+
+  final BookCategory? category;
+  final int count;
+
+  bool get isEverything => category == null;
+}
+
 class _CategoryScreenState extends State<CategoryScreen> {
-  static const String _baseUrl = ApiConfig.baseUrl;
-
   final TextEditingController searchController = TextEditingController();
+  final InventoryApi _api = InventoryApi();
 
-  List<CategoryModel> _categories = [];
+  List<_BrowseGroup> _groups = [];
   bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
+    _fetchGroups();
   }
 
-  Future<void> _fetchCategories() async {
+  Future<void> _fetchGroups() async {
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/get_categories.php'),
-      );
+      final categories = await _api.categories();
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['status'] == 'success') {
-          final List categoriesJson = (data['categories'] as List?) ?? const [];
-          setState(() {
-            _categories = categoriesJson
-                .whereType<Map<String, dynamic>>()
-                .map(CategoryModel.fromJson)
-                .toList();
-            _isLoading = false;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load categories: $e');
-    }
+      // "All books" leads, then one tile per category. Its count is the sum of
+      // the per-category counts, which is what the server counted as sellable.
+      final total = categories.fold<int>(0, (sum, c) => sum + c.bookCount);
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      setState(() {
+        _groups = [
+          _BrowseGroup(category: null, count: total),
+          for (final category in categories)
+            _BrowseGroup(category: category, count: category.bookCount),
+        ];
+        _loadError = null;
+        _isLoading = false;
+      });
+      return;
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.message(AppLocalizations.of(context));
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -145,12 +158,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       child: CircularProgressIndicator(color: GText1),
                     ),
                   )
-                else if (_categories.isEmpty)
+                else if (_groups.isEmpty)
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Text(
-                        'មិនមានប្រភេទទំនិញទេ',
+                        _loadError ?? lang.translate('no_books_available'),
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: fontSubtitle,
                           color: TextSoftColor,
@@ -163,7 +177,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _categories.length,
+                    itemCount: _groups.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       mainAxisSpacing: 18,
@@ -171,7 +185,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       childAspectRatio: 0.75,
                     ),
                     itemBuilder: (context, index) {
-                      return _buildCategoryItem(_categories[index]);
+                      return _buildCategoryItem(_groups[index]);
                     },
                   ),
               ],
@@ -185,29 +199,39 @@ class _CategoryScreenState extends State<CategoryScreen> {
   void _openSearch() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => SearchScreen(baseUrl: _baseUrl)),
+      MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
   }
 
-  void _openCategory(CategoryModel category) {
+  void _openGroup(_BrowseGroup group) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ProductScreen(
-          categoryId:    category.id,    // FK-based filter (preferred)
-          categoryName:  category.name,  // fallback display
-          categoryTitle: category.getTitle(context),
+          categoryId: group.category?.id,
+          categoryTitle: _titleFor(group),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryItem(CategoryModel category) {
-    final title = category.getTitle(context);
+  String _titleFor(_BrowseGroup group) {
+    final category = group.category;
+    if (category == null) {
+      return AppLocalizations.of(context)!.translate('books');
+    }
+
+    return category.nameFor(
+      khmer: AppLocalizations.of(context)!.locale.languageCode == 'km',
+    );
+  }
+
+  Widget _buildCategoryItem(_BrowseGroup group) {
+    final title = _titleFor(group);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openCategory(category),
+      onTap: () => _openGroup(group),
       child: Column(
         children: [
           Container(
@@ -219,12 +243,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
               border: Border.all(color: StrokeSearchBar, width: 1.5),
             ),
             child: Center(
-              child: _categoryIcon(category.name),
+              child: _categoryIcon(group),
             ),
           ),
           const SizedBox(height: 10),
           Text(
-            title,
+            '$title (${group.count})',
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -239,31 +263,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  /// Returns a fitting icon for the category name.
-  /// Falls back to a generic tag icon for unknown categories.
-  Widget _categoryIcon(String name) {
-    final key = name.trim().toLowerCase();
-
-    // Try asset image first for known categories
-    const assetMap = <String, String>{
-      'book':      'assets/book.png',
-      'books':     'assets/book.png',
-      'shirt':     'assets/tshirt.png',
-      't-shirt':   'assets/tshirt.png',
-      't-shirts':  'assets/tshirt.png',
-      'material':  'assets/material.png',
-      'materials': 'assets/material.png',
-    };
-
-    final assetPath = assetMap[key];
-    if (assetPath != null) {
+  /// The whole catalogue gets the book artwork; a category gets an icon.
+  Widget _categoryIcon(_BrowseGroup group) {
+    if (group.isEverything) {
       return Padding(
         padding: const EdgeInsets.all(15),
-        child: Image.asset(assetPath, fit: BoxFit.contain),
+        child: Image.asset('assets/book.png', fit: BoxFit.contain),
       );
     }
 
-    // Generic icon for dynamic categories added by admin
     return const Icon(Icons.category_rounded, size: 36, color: GText1);
   }
 }

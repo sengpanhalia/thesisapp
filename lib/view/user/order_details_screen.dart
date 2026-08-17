@@ -1,15 +1,22 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart' show AppLocalizations;
+import 'package:thesisapp/model/reservation.dart';
+import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
+/// One reservation, re-read from the server every time it is opened.
+///
+/// The counter moves a reservation forward on the web screens — confirms it,
+/// marks it ready, hands it over — so the status the list screen was showing
+/// may already be stale. This polls rather than trusting what it was handed.
 class OrderDetailsScreen extends StatefulWidget {
-  final Map<String, dynamic> order;
+  final Reservation order;
 
   const OrderDetailsScreen({super.key, required this.order});
 
@@ -18,257 +25,197 @@ class OrderDetailsScreen extends StatefulWidget {
 }
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
-  List<dynamic> _orderItems = [];
-  bool _isLoadingItems = true;
+  final InventoryApi _api = InventoryApi();
 
-  double _parseDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0.0;
-  }
-
-  String _money(double value) => '\$ ${value.toStringAsFixed(2)}';
+  late Reservation _order = widget.order;
+  bool _isRefreshing = true;
+  bool _isCancelling = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchOrderItems();
+    _refresh();
   }
 
-  Future<void> _fetchOrderItems() async {
-    final orderId = widget.order['id'] ?? widget.order['order_id'] ?? 0;
+  Future<void> _refresh() async {
+    if (mounted) setState(() => _isRefreshing = true);
+
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/get_order_items.php?order_id=$orderId'),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'success') {
-          setState(() {
-            _orderItems = data['items'] ?? [];
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Error fetching order items: $e');
+      final fresh = await _api.reservation(widget.order.code);
+      if (!mounted) return;
+
+      setState(() => _order = fresh);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      Fluttertoast.showToast(msg: error.message(AppLocalizations.of(context)));
     } finally {
-      setState(() => _isLoadingItems = false);
+      if (mounted) setState(() => _isRefreshing = false);
     }
   }
 
-  // Future<void> _cancelOrder(String reason) async {
-  //   final orderId = widget.order['id'] ?? widget.order['order_id'] ?? 0;
-  //   final authProvider = Provider.of<AuthProvider>(context, listen: false);
-  //   final user = authProvider.user;
+  Future<void> _cancel() async {
+    final lang = AppLocalizations.of(context)!;
+    final user = context.read<AuthProvider>().user;
 
-  //   if (user == null) {
-  //     Fluttertoast.showToast(msg: 'Please login first');
-  //     return;
-  //   }
-
-  //   setState(() => _isCancelling = true);
-
-  //   try {
-  //     final response = await http.post(
-  //       Uri.parse('${ApiConfig.baseUrl}/cancel_order.php'),
-  //       headers: {'Content-Type': 'application/json'},
-  //       body: jsonEncode({
-  //         'order_id': orderId,
-  //         'user_id': user.student_id,
-  //         'reason': reason,
-  //       }),
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.body);
-  //       if (data['status'] == 'success') {
-  //         Fluttertoast.showToast(msg: 'Order cancelled successfully');
-  //         // Update local order status
-  //         setState(() {
-  //           widget.order['status'] = 'cancelled';
-  //         });
-  //         Navigator.pop(
-  //           context,
-  //           true,
-  //         ); // Return true to indicate refresh needed
-  //       } else {
-  //         Fluttertoast.showToast(
-  //           msg: data['message'] ?? 'Failed to cancel order',
-  //         );
-  //       }
-  //     } else {
-  //       Fluttertoast.showToast(msg: 'Server error');
-  //     }
-  //   } catch (e) {
-  //     Fluttertoast.showToast(msg: 'Network error: $e');
-  //   } finally {
-  //     setState(() => _isCancelling = false);
-  //   }
-  // }
-
-  // void _showCancelDialog() {
-  //   final reasonController = TextEditingController();
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Text('Cancel Order'),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: [
-  //           const Text('Please provide a reason for cancellation:'),
-  //           const SizedBox(height: 16),
-  //           TextField(
-  //             controller: reasonController,
-  //             decoration: const InputDecoration(
-  //               hintText: 'Enter cancellation reason',
-  //               border: OutlineInputBorder(),
-  //             ),
-  //             maxLines: 3,
-  //           ),
-  //         ],
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text('Back'),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             if (reasonController.text.trim().isEmpty) {
-  //               Fluttertoast.showToast(msg: 'Please enter a reason');
-  //               return;
-  //             }
-  //             Navigator.pop(context);
-  //             _cancelOrder(reasonController.text.trim());
-  //           },
-  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-  //           child: _isCancelling
-  //               ? const SizedBox(
-  //                   width: 20,
-  //                   height: 20,
-  //                   child: CircularProgressIndicator(
-  //                     strokeWidth: 2,
-  //                     color: Colors.white,
-  //                   ),
-  //                 )
-  //               : const Text('Cancel Order'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Color _getStatusColor(String status) {
-  //   switch (status.toLowerCase()) {
-  //     case 'success':
-  //       return GreenColor;
-  //     case 'pending':
-  //       return processColor;
-  //     case 'cancelled':
-  //       return RedColor;
-  //     default:
-  //       return TextColor;
-  //   }
-  // }
-
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return '${date.day.toString().padLeft(2, '0')}/'
-          '${date.month.toString().padLeft(2, '0')}/'
-          '${date.year}  '
-          '${date.hour.toString().padLeft(2, '0')}:'
-          '${date.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
-  DateTime? _tryParseDate(String? dateStr) {
-    if (dateStr == null || dateStr.trim().isEmpty) return null;
-    try {
-      return DateTime.parse(dateStr);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String? _trackingNumber() {
-    final raw =
-        (widget.order['tracking_number'] ??
-                widget.order['trackingNumber'] ??
-                '')
-            .toString()
-            .trim();
-    if (raw.isEmpty || raw.toLowerCase() == 'null') {
-      return null;
-    }
-    return raw;
-  }
-
-  // Future<void> _copyTrackingNumber(String trackingNumber) async {
-  //   await Clipboard.setData(ClipboardData(text: trackingNumber));
-  //   Fluttertoast.showToast(msg: 'Code number of order copied');
-  // }
-
-  void _openReceipt({
-    required int orderId,
-    required String shippingAddress,
-    required String paymentMethod,
-    required double total,
-    required String? orderDate,
-  }) {
-    if (_isLoadingItems) {
-      Fluttertoast.showToast(msg: 'Loading items, please wait');
+    if (user == null) {
+      Fluttertoast.showToast(msg: lang.translate('please_log_in_first'));
       return;
     }
 
-    final items = _orderItems
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          lang.translate('cancel_reservation'),
+          style: TextStyle(fontFamily: getFontFamily(context)),
+        ),
+        content: Text(
+          lang.translate('cancel_reservation_message'),
+          style: TextStyle(fontFamily: getFontFamily(context)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(lang.translate('back')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(lang.translate('confirm')),
+          ),
+        ],
+      ),
+    );
 
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isCancelling = true);
+
+    try {
+      await _api.cancelReservation(
+        code: _order.code,
+        studentId: user.student_id,
+      );
+
+      if (!mounted) return;
+      Fluttertoast.showToast(msg: lang.translate('reservation_cancelled'));
+
+      // The held copies are free again the moment this returns, so leave with
+      // a flag that tells the list screen to re-read.
+      Navigator.pop(context, true);
+      return;
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: error.message(lang),
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } finally {
+      if (mounted) setState(() => _isCancelling = false);
+    }
+  }
+
+  void _openReceipt() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => OrderSuccessScreen(
-          orderId: orderId,
-          displayOrderNumber: widget.order['display_order_number'] is int
-              ? widget.order['display_order_number'] as int
-              : int.tryParse(
-                  widget.order['display_order_number']?.toString() ?? '',
-                ),
-          addressText: shippingAddress,
-          items: items,
-          total: total,
-          paymentMethod: paymentMethod,
-          createdAt: _tryParseDate(orderDate) ?? DateTime.now(),
-          trackingNumber: _trackingNumber(),
+          orderId: _order.id,
+          items: [
+            {
+              'name': _order.title,
+              'quantity': _order.quantity,
+              'price': _order.unitPrice,
+              'image': null,
+            },
+          ],
+          total: _order.totalPrice ?? 0,
+          paymentMethod: _order.paymentMethod,
+          createdAt: _order.createdAt,
+          trackingNumber: _order.code,
         ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '—';
+
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}  '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _modernCard({required String title, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: fontSubtitle,
+              fontWeight: FontWeight.w700,
+              color: TitleColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: getFontFamily(context),
+              fontSize: fontText,
+              color: TextSoftColor,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontFamily: getFontFamily(context),
+                fontSize: fontText,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? TextColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final orderId = widget.order['id'] ?? widget.order['order_id'] ?? 0;
-    // final displayOrderNumber = widget.order['display_order_number'];
-    final status = widget.order['status'] ?? 'pending';
-    // final normalizedStatus = status.toString().toLowerCase();
-    final total =
-        double.tryParse(widget.order['total_amount']?.toString() ?? '0') ?? 0.0;
-    final shippingAddress = widget.order['shipping_address'] ?? 'N/A';
-    final paymentMethod = widget.order['payment_method'] ?? 'cash_on_delivery';
-    final orderDate =
-        widget.order['order_date'] ?? widget.order['created_at'] ?? 'N/A';
-    final trackingNumber = _trackingNumber();
-    // final showTrackingCard =
-    //     trackingNumber != null ||
-    //     normalizedStatus == 'shipped' ||
-    //     normalizedStatus == 'delivered';
-    // final statusColor = _getStatusColor(status.toString());
-    // final canCancel = normalizedStatus == 'pending';
     final lang = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -292,467 +239,204 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          // Matching the warm gradient from your design
           gradient: gradientColor(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Column(
-          children: [
-            
-            /// ===== Gradient Header =====
-            // Container(
-            //   width: double.infinity,
-            //   padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
-            //   decoration: BoxDecoration(
-            //     gradient: LinearGradient(
-            //       colors: [statusColor.withOpacity(0.85), statusColor],
-            //     ),
-            //     borderRadius: const BorderRadius.only(
-            //       bottomLeft: Radius.circular(30),
-            //       bottomRight: Radius.circular(30),
-            //     ),
-            //   ),
-            //   child: Column(
-            //     crossAxisAlignment: CrossAxisAlignment.start,
-            //     children: [
-            //       // RoundIconButton(
-            //       //   icon: Icons.arrow_back_rounded,
-            //       //   iconColor: Colors.white,
-            //       //   backgroundColor: Colors.white.withOpacity(0.2),
-            //       //   elevation: 0,
-            //       //   onPressed: () => Navigator.pop(context),
-            //       // ),
-            //       const SizedBox(height: 20),
-            //       Text(
-            //         displayOrderNumber != null
-            //             ? "Order #$trackingNumber"
-            //             : "Order #$orderId",
-            //         style: const TextStyle(
-            //           color: Colors.white,
-            //           fontSize: 22,
-            //           fontWeight: FontWeight.bold,
-            //         ),
-            //       ),
-            //       const SizedBox(height: 12),
-            //       Container(
-            //         padding: const EdgeInsets.symmetric(
-            //           horizontal: 14,
-            //           vertical: 6,
-            //         ),
-            //         decoration: BoxDecoration(
-            //           color: Colors.white.withOpacity(0.2),
-            //           borderRadius: BorderRadius.circular(30),
-            //         ),
-            //         child: Text(
-            //           status.toString().toUpperCase(),
-            //           style: const TextStyle(
-            //             color: Colors.white,
-            //             fontWeight: FontWeight.w600,
-            //           ),
-            //         ),
-            //       ),
-            //       const SizedBox(height: 10),
-            //       Text(
-            //         _formatDate(orderDate.toString()),
-            //         style: const TextStyle(color: Colors.white70),
-            //       ),
-            //     ],
-            //   ),
-            // ),
-        
-                
-            /// ===== Body Content =====
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(Height20),
-                child: Column(
-                  
-                  children: [
-                    Row(
-              children: [
-                Image.asset('assets/tracking_number_icon.png', height: Height20,),
-                const SizedBox(width: Width10,),
-                Text(trackingNumber!, style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontSubtitle, fontWeight: FontWeight.bold, color: GreenColor),),
-              ],
-            ),
-            const SizedBox(height: 5,),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('assets/calendar_order_icon.png', height: Height20,),
-                    const SizedBox(width: Width10,),
-                    Text(_formatDate(orderDate.toString()), style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Image.asset('assets/box-tick.png', height: Height20,),
-                    const SizedBox(width: Width10,),
-                    Text('self-pickup', style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 5,),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('assets/payment_icon.png', height: Height20,),
-                    const SizedBox(width: Width10,),
-                    Text(paymentMethod, style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
-                  ],
-                ),
-                Row(
-              children: [
-                Image.asset('assets/status_icon.png', height: Height20,),
-                const SizedBox(width: Width10,),
-                Text(status, style: TextStyle(fontFamily: getFontFamily(context), fontSize: fontText, fontWeight: FontWeight.bold, color: TextColor),),
-              ],
-            ),
-              ],
-            ),
-            const SizedBox(height: Height15,), 
-                    /// Order Items Card
-                    if (_isLoadingItems)
-                      const Center(child: CircularProgressIndicator())
-                    else if (_orderItems.isNotEmpty)
-                      _modernCard(
-                        title: "order items",
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(Height20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/tracking_number_icon.png',
+                        height: Height20,
+                      ),
+                      const SizedBox(width: Width10),
+                      Text(
+                        _order.code,
+                        style: TextStyle(
+                          fontFamily: getFontFamily(context),
+                          fontSize: fontSubtitle,
+                          fontWeight: FontWeight.bold,
+                          color: GreenColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_isRefreshing)
+                        const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: Height15),
+
+                  // The one line the student is waiting for: whether it is
+                  // ready to collect.
+                  if (_order.status == ReservationStatus.readyForPickup)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: GreenColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        lang.translate('ready_for_pickup_message'),
+                        style: TextStyle(
+                          fontFamily: getFontFamily(context),
+                          fontSize: fontText,
+                          fontWeight: FontWeight.w600,
+                          color: GreenColor,
+                        ),
+                      ),
+                    ),
+
+                  _modernCard(
+                    title: lang.translate('order information'),
+                    children: [
+                      _row(
+                        lang.translate('status'),
+                        lang.translate(_order.status.translationKey),
+                      ),
+                      _row(
+                        lang.translate('receipt date'),
+                        _formatDate(_order.createdAt),
+                      ),
+                      _row(
+                        lang.translate('payment method'),
+                        _order.paymentMethod,
+                      ),
+                      // Only a cash sale is booked as paid, and nothing is
+                      // settled in the app — so this says PENDING until the
+                      // counter takes the money.
+                      _row(
+                        lang.translate('payment status'),
+                        _order.isPaid ? 'PAID' : 'PENDING',
+                        valueColor: _order.isPaid ? GreenColor : TextColor,
+                      ),
+                      if (_order.note.isNotEmpty)
+                        _row(lang.translate('note'), _order.note),
+                    ],
+                  ),
+
+                  _modernCard(
+                    title: lang.translate('order items'),
+                    children: [
+                      _row(lang.translate('book'), _order.title),
+                      _row(lang.translate('book_code'), _order.itemCode),
+                      _row(
+                        lang.translate('quantity'),
+                        _order.quantity.toString(),
+                      ),
+                      _row(lang.translate('price'), _order.unitPriceLabel),
+                    ],
+                  ),
+
+                  _modernCard(
+                    title: lang.translate('total amount'),
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _orderItems.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 24),
-                            itemBuilder: (context, index) {
-                              final item = _orderItems[index];
-                              final productName =
-                                  item['product_name'] ?? 'Product';
-                              final productImage =
-                                  item['product_image'] ?? '';
-                              final quantity = item['quantity'] ?? 1;
-                              final unitPrice = _parseDouble(item['price']);
-                              // final originalUnitPrice = _parseDouble(
-                              //   item['original_price'],
-                              // );
-                              final totalPrice = unitPrice * quantity;
-                              // final originalTotalPrice =
-                              //     originalUnitPrice * quantity;
-                              // final hasDiscount =
-                              //     originalUnitPrice > unitPrice;
-                
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Product Image
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      '${ApiConfig.productsUploadsUrl}/$productImage',
-                                      width: 60,
-                                      height: 60,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        width: 60,
-                                        height: 60,
-                                        color: Colors.grey[300],
-                                        child: const Icon(
-                                          Icons.image_rounded,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  // Product Info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          productName,
-                                          style: TextStyle(
-                                            fontSize: fontText,
-                                            color: TextColor,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: Height5,),
-                                        Text(
-                                          '${lang.translate('quantity')}: $quantity',
-                                          style: TextStyle(
-                                            color: TextColor,
-                                            fontSize: fontText,
-                                          ),
-                                        ),
-                                        // Row(
-                                        //   children: [
-                                        //     Text(
-                                        //       "Price(1): ",
-                                        //       style: TextStyle(
-                                        //         fontSize: 13,
-                                        //         color: Colors.grey[600],
-                                        //       ),
-                                        //     ),
-                                        //     Text(
-                                        //       _money(unitPrice),
-                                        //       style: const TextStyle(
-                                        //         fontSize: 13,
-                                        //         fontWeight: FontWeight.bold,
-                                        //         color: Color.fromARGB(
-                                        //           172,
-                                        //           202,
-                                        //           169,
-                                        //           5,
-                                        //         ),
-                                        //       ),
-                                        //     ),
-                                        //     const SizedBox(width: 5),
-                                        //     if (hasDiscount)
-                                        //       Row(
-                                        //         children: [
-                                        //           Text(
-                                        //             _money(originalUnitPrice),
-                                        //             style: TextStyle(
-                                        //               color: Colors.grey[500],
-                                        //               fontSize: 12,
-                                        //               decoration:
-                                        //                   TextDecoration
-                                        //                       .lineThrough,
-                                        //             ),
-                                        //           ),
-                                        //         ],
-                                        //       ),
-                                        //   ],
-                                        // ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  // Price
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        _money(totalPrice) ,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: TextColor,
-                                        ),
-                                      ),
-                                      // if (hasDiscount)
-                                      //   Text(
-                                      //     _money(originalTotalPrice),
-                                      //     style: TextStyle(
-                                      //       color: Colors.grey[500],
-                                      //       fontSize: 12,
-                                      //       decoration:
-                                      //           TextDecoration.lineThrough,
-                                      //     ),
-                                      //   ),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            },
+                          Text(
+                            lang.translate('grand total'),
+                            style: TextStyle(
+                              fontFamily: getFontFamily(context),
+                              fontWeight: FontWeight.w600,
+                              color: TextColor,
+                              fontSize: fontText,
+                            ),
+                          ),
+                          Text(
+                            _order.totalLabel,
+                            style: TextStyle(
+                              fontSize: fontSubtitle,
+                              fontWeight: FontWeight.bold,
+                              color: Sapphire,
+                            ),
                           ),
                         ],
                       ),
-                
-                
-                    /// Shipping Address Card
-                    // _modernCard(
-                    //   title: "Shipping Address",
-                    //   children: [
-                    //     Text(
-                    //       shippingAddress,
-                    //       style: TextStyle(
-                    //         color: Colors.grey[700],
-                    //         height: 1.5,
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
-                
-                    const SizedBox(height: Height15),
-                
-                    // if (showTrackingCard) ...[
-                    //   _modernCard(
-                    //     title: "Code Number of Order",
-                    //     children: [
-                    //       Row(
-                    //         children: [
-                    //           const Icon(
-                    //             Icons.local_shipping_rounded,
-                    //             color: AppColors.accentDeep,
-                    //           ),
-                    //           const SizedBox(width: 10),
-                    //           Expanded(
-                    //             child: SelectableText(
-                    //               trackingNumber ?? 'Not assigned yet',
-                    //               style: TextStyle(
-                    //                 color: Colors.grey[700],
-                    //                 fontWeight: FontWeight.w600,
-                    //               ),
-                    //             ),
-                    //           ),
-                    //           if (trackingNumber != null)
-                    //             IconButton(
-                    //               onPressed: () =>
-                    //                   _copyTrackingNumber(trackingNumber),
-                    //               icon: const Icon(Icons.copy_rounded),
-                    //               tooltip: 'Copy code number of order',
-                    //             ),
-                    //         ],
-                    //       ),
-                    //     ],
-                    //   ),
-                    //   const SizedBox(height: 16),
-                    // ],
-                
-                    /// Payment Method Card
-                    // _modernCard(
-                    //   title: "Payment Method",
-                    //   children: [
-                    //     Row(
-                    //       children: [
-                    //         Icon(Icons.money_rounded, color: ButtonColor),
-                    //         const SizedBox(width: 10),
-                    //         Text(
-                    //           'Cash on Delivery',
-                    //           style: TextStyle(color: Colors.grey[700]),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   ],
-                    // ),
-                
-                
-                    /// Total Amount Card
-                    _modernCard(
-                      title: lang.translate("total amount"),
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              lang.translate("grand total"),
-                              style: TextStyle(fontWeight: FontWeight.w600,color: TextColor,fontSize: fontText),
-                            ),
-                            Text(
-                              '\$${total.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: fontSubtitle,
-                                fontWeight: FontWeight.bold,
-                                color:Sapphire,
-                              ),
-                            ),
-                          ],
+                    ],
+                  ),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _openReceipt,
+                      icon: const Icon(
+                        Icons.receipt_long_rounded,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        lang.translate('view receipt'),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: getFontFamily(context),
                         ),
-                      ],
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ButtonColor,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-                
-                    const SizedBox(height: 16),
-                
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Cancelling releases the held copies straight away. Offered
+                  // only while the reservation can still be called off.
+                  if (_order.status.isCancellable)
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _openReceipt(
-                          orderId: orderId,
-                          shippingAddress: shippingAddress.toString(),
-                          paymentMethod: paymentMethod.toString(),
-                          total: total,
-                          orderDate: orderDate.toString(),
+                      child: OutlinedButton.icon(
+                        onPressed: _isCancelling ? null : _cancel,
+                        icon: _isCancelling
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.close_rounded, color: RedColor),
+                        label: Text(
+                          lang.translate('cancel_reservation'),
+                          style: TextStyle(
+                            color: RedColor,
+                            fontFamily: getFontFamily(context),
+                          ),
                         ),
-                        icon: const Icon(
-                          Icons.receipt_long_rounded,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'View Receipt',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ButtonColor,
+                        style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: RedColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
                     ),
-                
-                    const SizedBox(height: 24),
-                
-                    /// Cancel Button
-                    // if (canCancel)
-                    //   SizedBox(
-                    //     width: double.infinity,
-                    //     child: ElevatedButton.icon(
-                    //       onPressed: _showCancelDialog,
-                    //       icon: const Icon(
-                    //         Icons.cancel_rounded,
-                    //         color: Colors.white,
-                    //       ),
-                    //       label: const Text(
-                    //         'Cancel Order',
-                    //         style: TextStyle(color: Colors.white),
-                    //       ),
-                    //       style: ElevatedButton.styleFrom(
-                    //         backgroundColor: Colors.red[400],
-                    //         padding: const EdgeInsets.symmetric(vertical: 14),
-                    //         shape: RoundedRectangleBorder(
-                    //           borderRadius: BorderRadius.circular(12),
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                
-                    // const SizedBox(height: 20),
-                  ],
-                ),
+
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _modernCard({required String title, required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: fontSubtitle, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          ...children,
-        ],
       ),
     );
   }

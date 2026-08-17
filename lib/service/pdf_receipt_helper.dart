@@ -79,21 +79,11 @@ class PdfReceiptHelper {
       item['product_image_url'],
     ];
 
-    for (final c in candidates) {
-      final raw = (c ?? '').toString().trim();
-      if (raw.isEmpty) continue;
-      final lower = raw.toLowerCase();
-      if (lower == 'null' || lower == 'none' || lower == 'undefined') continue;
-      if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-      if (raw.contains('/')) {
-        final base = ApiConfig.baseUrl.endsWith('/')
-            ? ApiConfig.baseUrl.substring(0, ApiConfig.baseUrl.length - 1)
-            : ApiConfig.baseUrl;
-        final relative = raw.startsWith('/') ? raw.substring(1) : raw;
-        return '$base/$relative';
-      }
-      return '${ApiConfig.productsUploadsUrl}/$raw';
+    for (final candidate in candidates) {
+      final resolved = ApiConfig.resolveImageUrl(candidate?.toString());
+      if (resolved != null) return resolved;
     }
+
     return null;
   }
 
@@ -106,20 +96,30 @@ class PdfReceiptHelper {
     return '$day/$month/$year $hour:$minute';
   }
 
+  /// The four names the API accepts, as the receipt should read them.
   static String paymentLabel(String method) {
     switch (method) {
-      case 'card':
-        return 'KHQR Payment';
-      case 'cash_on_delivery':
-        return 'pay at store';
+      case 'Cash':
+        return 'Cash — pay at the book counter';
+      case 'KHQR':
+        return 'KHQR';
+      case 'Bakong':
+        return 'Bakong';
+      case 'Card':
+        return 'Card';
       default:
         return method;
     }
   }
 
+  /// What the system will have recorded.
+  ///
+  /// Only a cash sale is booked as PAID. A wallet or card payment is not
+  /// settled until the provider confirms it, and this system does not capture
+  /// payment at all — so anything else is unpaid until the counter says
+  /// otherwise, and the receipt must not claim it is paid.
   static String paymentStatus(String method) {
-    if (method == 'card' || method == 'KHQR Payment') return 'paid';
-    return 'pay at store';
+    return method == 'Cash' ? 'PAID' : 'PENDING';
   }
 
   static double discountedUnitPrice(Map<String, dynamic> item) {

@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/alert_dialog.dart';
+import 'package:thesisapp/component/api_key_dialog.dart';
 import 'package:thesisapp/component/button.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/component_profile.dart';
@@ -11,8 +10,9 @@ import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/localization/language_provider.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/notification_service.dart';
+import 'package:thesisapp/service/student_directory.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/user_api.dart';
 import 'package:thesisapp/view/signin_screen.dart';
 import 'package:thesisapp/view/user/personal_information.dart';
 
@@ -28,6 +28,24 @@ class _UserProfileState extends State<UserProfile> {
   bool _isLoadingUser = true;
 
   Future<void> _logout(BuildContext context) async {
+    /*
+     * Stop delivering to this handset first, then sign out.
+     *
+     * The order is the whole point: `devices.php` is guarded by the student
+     * session, and `logout()` clears it — so doing this afterwards would send
+     * an unauthenticated request that the server refuses, leaving the phone
+     * registered. It would then keep receiving "your books are ready" for a
+     * student who has signed out, on a phone that may not be theirs.
+     *
+     * Awaited, unlike the registration at sign-in, because the session it
+     * needs is about to be destroyed. It cannot throw and gives up quietly
+     * when there is nothing to unregister.
+     */
+    await NotificationService.forgetWithServer();
+    await NotificationService.removeBadge();
+
+    if (!context.mounted) return;
+
     await context.read<AuthProvider>().logout();
 
     if (!context.mounted) return;
@@ -47,52 +65,16 @@ class _UserProfileState extends State<UserProfile> {
       return;
     }
 
-    try {
-      http.Response response;
-      try {
-        response = await http
-            .post(
-              Uri.parse(APILocalLoginUrl),
-              headers: {"Content-Type": "application/json"},
-              body: jsonEncode({
-                "student_id": authUser.student_id,
-                "pwd": authUser.pwd,
-              }),
-            )
-            .timeout(const Duration(seconds: 10));
-      } catch (_) {
-        response = await http.post(
-          Uri.parse(APIStLoginKh),
-          body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
-        );
-      }
-
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
-          final userData =
-              (decoded['user_data'] as List?) ??
-              (decoded['student_users'] as List?) ??
-              (decoded['user'] != null ? [decoded['user']] : const []);
-          final details = userData
-              .whereType<Map<String, dynamic>>()
-              .map(UserDetail.fromJson)
-              .toList();
-
-          if (!mounted) return;
-          setState(() {
-            _userDetail = details.isNotEmpty ? details.first : null;
-            _isLoadingUser = false;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load user detail: $e');
-    }
+    final detail = await StudentDirectory.fetch();
 
     if (!mounted) return;
-    setState(() => _isLoadingUser = false);
+
+    setState(() {
+      // Null means the session lapsed or the server was unreachable; keep
+      // whatever the screen already had rather than blanking it.
+      if (detail != null) _userDetail = detail;
+      _isLoadingUser = false;
+    });
   }
 
   @override
@@ -250,7 +232,11 @@ class _UserProfileState extends State<UserProfile> {
                       children: [
                         ComponentProfile(
                           image: 'assets/graduate.png',
-                          title: lang.translate('account_information'),
+                          title: lang.translate('api_key'),
+                          // The same dialog the sign-in screen offers when it
+                          // is refused for want of a key — one copy, so the
+                          // wording of the two cannot drift apart.
+                          onTap: () => showApiKeyDialog(context),
                         ),
                         ComponentProfile(
                           image: 'assets/graduate.png',

@@ -1,12 +1,30 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/model/app_notification.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/service/notification_service.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
+import 'package:thesisapp/view/user/order_details_screen.dart';
 
+/// What the counter has told this student.
+///
+/// This used to be built out of `GET /orders.php` and said so: the inventory
+/// API had no notifications, nothing stored a message, nothing marked one read,
+/// and there was nowhere to register a push token against. So the screen showed
+/// the student's live reservations and called them news.
+///
+/// That could only ever say what was true at the moment it was opened. A
+/// reservation that was confirmed and then collected showed as collected, and
+/// the confirmation — the thing the student wanted to be told — had never been
+/// recorded anywhere. Anything that was not about an order had nowhere to live
+/// at all.
+///
+/// It now reads `GET /notifications.php`, which is a real inbox: a row is
+/// written when the counter moves the order, it stays written, and the push to
+/// the handset is a nudge towards it rather than the message itself. A phone
+/// that was flat or switched off finds everything waiting here.
 class NotificationScreen extends StatefulWidget {
   final dynamic userId;
 
@@ -17,309 +35,118 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  static const String _baseUrl = ApiConfig.baseUrl;
-  List<dynamic> _notifications = [];
-  bool _isLoading = true;
-  bool _isMarkingRead = false;
+  final InventoryApi _api = InventoryApi();
 
-  String? get _userIdString {
-    if (widget.userId == null) return null;
-    final str = widget.userId.toString().trim();
-    return str.isNotEmpty ? str : null;
-  }
+  List<AppNotification> _messages = [];
+  bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
     NotificationService.removeBadge();
-    _fetchNotifications();
+    _fetch();
   }
 
-  Future<void> _fetchNotifications() async {
-    final queryParams = <String, String>{};
-    final uid = _userIdString;
-    if (uid != null) {
-      queryParams['user_id'] = uid;
-    }
-
-    final url = Uri.parse('$_baseUrl/get_notifications.php').replace(queryParameters: queryParams);
-
+  Future<void> _fetch() async {
     try {
-      final response = await http.get(url);
+      final inbox = await _api.notifications();
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['status'] == 'success') {
-          setState(() {
-            _notifications = (data['notifications'] as List?) ?? [];
-            _isLoading = false;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load notifications: $e');
-    }
+      setState(() {
+        _messages = inbox.messages;
+        _loadError = null;
+        _isLoading = false;
+      });
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      /*
+       * Opening the screen is reading them.
+       *
+       * Marked after the list is on screen rather than before it, so the
+       * student still sees which ones were new — the unread marker is drawn
+       * from the list already fetched, and only the server's count moves.
+       * Failures are swallowed: a badge that is one out is not worth an error
+       * message over a list that loaded perfectly well.
+       */
+      await _markEverythingRead();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.message(AppLocalizations.of(context));
+        _isLoading = false;
+      });
+    }
   }
 
-  Future<void> _markAllAsRead() async {
-    if (_isMarkingRead || _notifications.isEmpty) return;
-
-    setState(() => _isMarkingRead = true);
-
-    final queryParams = <String, String>{};
-    final uid = _userIdString;
-    if (uid != null) {
-      queryParams['user_id'] = uid;
+  Future<void> _markEverythingRead() async {
+    // A broadcast is one row shared by every student, so the server cannot
+    // record this student having read it — asking would change nothing.
+    if (_messages.every((message) => message.isRead || message.isBroadcast)) {
+      return;
     }
-
-    final url = Uri.parse('$_baseUrl/mark_notifications_read.php').replace(queryParameters: queryParams);
 
     try {
-      final response = await http.post(url);
-      if (response.statusCode == 200) {
-        if (!mounted) return;
-        setState(() {
-          for (var item in _notifications) {
-            if (item is Map) {
-              item['is_read'] = 1;
-            }
-          }
-          _isMarkingRead = false;
-        });
-        return;
-      }
-    } catch (e) {
-      debugPrint('Failed to mark notifications as read: $e');
+      final unread = await _api.markNotificationsRead();
+      await NotificationService.updateBadgeCount(unread);
+    } on ApiException {
+      // The list is what matters, and it is already on screen.
     }
-
-    if (!mounted) return;
-    setState(() => _isMarkingRead = false);
   }
 
-  Future<void> _markSingleAsRead(int notificationId, int index) async {
-    if (notificationId <= 0) return;
-    if ((_notifications[index]['is_read'] ?? 0) == 1 || (_notifications[index]['is_read']?.toString() == '1')) return;
+  /// Opens the reservation a message is about.
+  ///
+  /// The message carries an order code rather than the reservation itself, so
+  /// it is fetched here. That is one request when a student taps a message, and
+  /// it is a deliberate trade against storing a copy of the order inside the
+  /// notification: the counter keeps moving the status after the message is
+  /// written, and a copy would show the student what was true when they were
+  /// told rather than what is true when they look.
+  Future<void> _open(AppNotification message) async {
+    final code = (message.orderCode ?? '').trim();
 
-    setState(() {
-      _notifications[index]['is_read'] = 1;
-    });
+    if (code.isEmpty) return;
+
+    final lang = AppLocalizations.of(context);
 
     try {
-      final queryParams = <String, String>{
-        'notification_id': notificationId.toString(),
-      };
-      final uid = _userIdString;
-      if (uid != null) {
-        queryParams['user_id'] = uid;
-      }
+      final reservation = await _api.reservation(code);
+      if (!mounted) return;
 
-      final url = Uri.parse('$_baseUrl/mark_notifications_read.php')
-          .replace(queryParameters: queryParams);
-      await http.post(url);
-    } catch (e) {
-      debugPrint('Failed to mark single notification as read: $e');
-    }
-  }
-
-  void _showNotificationDetailModal(Map<String, dynamic> item, int index) {
-    final notificationId = int.tryParse(item['id']?.toString() ?? '') ?? 0;
-    if (notificationId > 0) {
-      _markSingleAsRead(notificationId, index);
-    }
-
-    final title = item['title']?.toString() ?? '';
-    final body = item['body']?.toString() ?? '';
-    final type = item['type']?.toString() ?? 'info';
-    final createdAt = item['created_at']?.toString() ?? '';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getColorForType(type).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getIconForType(type),
-                      color: _getColorForType(type),
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: fontHeadTitle,
-                            fontWeight: FontWeight.bold,
-                            color: TitleColor,
-                            fontFamily: getFontFamily(context),
-                          ),
-                        ),
-                        if (createdAt.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            createdAt,
-                            style: TextStyle(
-                              fontSize: fontText,
-                              color: TextSoftColor,
-                              fontFamily: getFontFamily(context),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Divider(height: 1, color: StrokeCardColor),
-              ),
-              Text(
-                body,
-                style: TextStyle(
-                  fontSize: fontSubtitle,
-                  height: 1.5,
-                  color: TextColor,
-                  fontFamily: getFontFamily(context),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ButtonColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(
-                      fontSize: fontSubtitle,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: getFontFamily(context),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  IconData _getIconForType(String type) {
-    switch (type.toLowerCase()) {
-      case 'new_product':
-        return Icons.auto_stories_rounded;
-      case 'order_update':
-      case 'order_completed':
-        return Icons.local_shipping_rounded;
-      case 'payment_success':
-        return Icons.check_circle_rounded;
-      case 'news_alert':
-        return Icons.campaign_rounded;
-      default:
-        return Icons.notifications_rounded;
-    }
-  }
-
-  Color _getColorForType(String type) {
-    switch (type.toLowerCase()) {
-      case 'new_product':
-        return Colors.purple;
-      case 'payment_success':
-        return Colors.green;
-      case 'order_update':
-      case 'order_completed':
-        return ButtonColor;
-      case 'news_alert':
-        return Colors.blue;
-      default:
-        return IconOrangeColor;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OrderDetailsScreen(order: reservation),
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message(lang))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
-    final hasUnread = _notifications.any((n) => (n['is_read'] ?? 0) == 0 || (n['is_read']?.toString() == '0'));
+    final khmer = Localizations.localeOf(context).languageCode == 'km';
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
         title: Text(
           lang.translate('notifications'),
-          style: const TextStyle(fontFamily: 'KhmerMool1', fontSize: fontAppBar, color: TitleColor),
+          style: TextStyle(
+            fontFamily: getFontFamily(context),
+            fontSize: fontAppBar,
+            color: TitleColor,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: IconColor),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          if (_notifications.isNotEmpty && hasUnread)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                tooltip: lang.translate('mark_all_as_read'),
-                icon: _isMarkingRead
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: GText1),
-                      )
-                    : const Icon(Icons.done_all_rounded, color: GText1, size: 22),
-                onPressed: _markAllAsRead,
-              ),
-            ),
-        ],
+        centerTitle: true,
+        elevation: 0,
       ),
       body: Container(
         width: double.infinity,
@@ -332,115 +159,108 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
         child: SafeArea(
           child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: GText1),
-                )
-              : _notifications.isEmpty
-                  ? Center(
-                      child: Text(
-                        lang.translate('no_notifications'),
-                        style: TextStyle(
-                          fontSize: fontSubtitle,
-                          color: TextSoftColor,
-                          fontFamily: getFontFamily(context),
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _fetchNotifications,
-                      child: ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                        itemCount: _notifications.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final item = _notifications[index];
-                          final title = item['title']?.toString() ?? '';
-                          final body = item['body']?.toString() ?? '';
-                          final createdAt = item['created_at']?.toString() ?? '';
-                          final isUnread = (item['is_read'] ?? 0) == 0 || (item['is_read']?.toString() == '0');
-
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () => _showNotificationDetailModal(Map<String, dynamic>.from(item), index),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isUnread ? Colors.white : Colors.white.withOpacity(0.85),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isUnread ? GText1.withOpacity(0.4) : StrokeCardColor,
-                                  width: isUnread ? 1.4 : 1.0,
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: _fetch,
+                  child: _messages.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.3,
+                            ),
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                ),
+                                child: Text(
+                                  _loadError ??
+                                      lang.translate('no_notifications'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: getFontFamily(context),
+                                    fontSize: fontSubtitle,
+                                    color: TextSoftColor,
+                                  ),
                                 ),
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 40,
-                                    width: 40,
-                                    decoration: BoxDecoration(
-                                      color: (isUnread ? Colors.orange : Colors.blue).withOpacity(0.12),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      isUnread ? Icons.mark_email_unread_rounded : Icons.notifications_rounded,
-                                      color: isUnread ? Colors.orange : Colors.blue,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                title,
-                                                style: TextStyle(
-                                                  fontSize: fontSubtitle,
-                                                  fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
-                                                  color: TitleColor,
-                                                  fontFamily: getFontFamily(context),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          body,
-                                          style: TextStyle(
-                                            fontSize: fontText,
-                                            color: TextColor,
-                                            fontFamily: getFontFamily(context),
-                                          ),
-                                        ),
-                                        if (createdAt.isNotEmpty) ...[
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            createdAt,
-                                            style: TextStyle(
-                                              fontSize: fontText,
-                                              color: TextSoftColor,
-                                              fontFamily: getFontFamily(context),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          ],
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(20),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: _messages.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) =>
+                              _card(_messages[index], khmer, context),
+                        ),
+                ),
         ),
       ),
     );
+  }
+
+  Widget _card(AppNotification message, bool khmer, BuildContext context) {
+    // Unread is what the student came to see, so it is what the card marks.
+    final isNew = !message.isRead;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: message.opensOrder ? () => _open(message) : null,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isNew ? GreenColor : StrokeSearchBar,
+            width: isNew ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(_icon(message), color: isNew ? GreenColor : IconColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.title(khmer: khmer),
+                    style: TextStyle(
+                      fontFamily: getFontFamily(context),
+                      fontSize: fontText,
+                      fontWeight: FontWeight.w700,
+                      color: TitleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    message.body(khmer: khmer),
+                    style: TextStyle(
+                      fontFamily: getFontFamily(context),
+                      fontSize: fontText,
+                      color: TextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _icon(AppNotification message) {
+    if (message.isBroadcast) return Icons.campaign_rounded;
+
+    return message.opensOrder
+        ? Icons.inventory_rounded
+        : Icons.notifications_rounded;
   }
 }

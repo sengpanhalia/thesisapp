@@ -1,26 +1,35 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/carousel_slider.dart';
 import 'package:thesisapp/component/category_section_widget.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
-import 'package:thesisapp/model/product.dart';
+import 'package:thesisapp/model/book.dart';
+import 'package:thesisapp/model/book_category.dart';
+import 'package:thesisapp/model/reservation.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
+import 'package:thesisapp/service/student_directory.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/user_api.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/notification_screen.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 import 'package:thesisapp/view/user/search_screen.dart';
 
 // ---------------------------------------------------------------------------
+
+/// A home-screen section: one category and the books a student may buy from it.
+class _HomeCategory {
+  const _HomeCategory({required this.category, required this.books});
+
+  final BookCategory category;
+  final List<Book> books;
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,15 +39,23 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  static const String _baseUrl = ApiConfig.baseUrl;
   final TextEditingController searchController = TextEditingController();
+  final InventoryApi _api = InventoryApi();
 
-  /// All products from the API, grouped by DB category (lowercase key).
-  Map<String, List<Product>> _productsByCategory = {};
-  List<Product> _randomProducts = [];
+  /// One entry per book category that has something in it, in the catalogue's
+  /// own order, each with the books a student may buy from it.
+  List<_HomeCategory> _categorySections = [];
+  List<Book> _randomBooks = [];
   UserDetail? _userDetail;
   bool _isLoadingProducts = true;
-  int _unreadNotificationCount = 0;
+
+  /// Why the catalogue is empty, when it is empty for a reason worth saying.
+  String? _loadError;
+
+  /// Reservations waiting at the counter — the app's own reason to show a
+  /// badge. The API has no notifications of any kind; what a student needs to
+  /// be told is that a book is ready to collect, and that is in the orders.
+  int _readyForPickupCount = 0;
 
   Future<void> refresh() async {
     if (!mounted) return;
@@ -46,9 +63,9 @@ class HomePageState extends State<HomePage> {
       _isLoadingProducts = true;
     });
     await Future.wait([
-      _fetchProducts(),
+      _fetchBooks(),
       _fetchUserData(),
-      _fetchUnreadNotificationCount(),
+      _fetchReadyForPickupCount(),
     ]);
   }
 
@@ -65,7 +82,7 @@ class HomePageState extends State<HomePage> {
   void _openSearch() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => SearchScreen(baseUrl: _baseUrl)),
+      MaterialPageRoute(builder: (_) => const SearchScreen()),
     );
   }
 
@@ -73,135 +90,87 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+    _fetchBooks();
     _fetchUserData();
-    _fetchUnreadNotificationCount();
+    _fetchReadyForPickupCount();
   }
 
-  Future<void> _fetchUnreadNotificationCount() async {
-    final authUser = context.read<AuthProvider>().user;
-    final studentId = (authUser?.student_id.isNotEmpty == true)
-        ? authUser!.student_id
-        : _userDetail?.student_id;
+  Future<void> _fetchReadyForPickupCount() async {
+    final studentId = context.read<AuthProvider>().user?.student_id.trim();
 
-    final queryParams = <String, String>{};
-    if (studentId != null && studentId.trim().isNotEmpty) {
-      queryParams['user_id'] = studentId.trim();
-    }
-
-    final url = Uri.parse('$_baseUrl/get_notifications.php').replace(queryParameters: queryParams);
+    if (studentId == null || studentId.isEmpty) return;
 
     try {
-      final response = await http.get(url);
+      final reservations = await _api.reservationsFor(studentId);
       if (!mounted) return;
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['status'] == 'success') {
-          final List list = (data['notifications'] as List?) ?? [];
-          final unread = list.where((item) => (item['is_read'] ?? 0) == 0 || (item['is_read']?.toString() == '0')).length;
-          setState(() {
-            _unreadNotificationCount = unread;
-          });
-        }
-      }
-    } catch (_) {}
+
+      setState(() {
+        _readyForPickupCount = reservations
+            .where((r) => r.status == ReservationStatus.readyForPickup)
+            .length;
+      });
+    } on ApiException catch (error) {
+      // A badge is not worth interrupting the screen for.
+      debugPrint('Could not count ready reservations: $error');
+    }
   }
 
-  /// Fetch all products in one request then group by category.
-  Future<void> _fetchProducts() async {
-    final url = Uri.parse('$_baseUrl/get_products.php');
+  /// Reads the real book categories and the books in each.
+  ///
+  /// One section per category, in the catalogue's own order. The recommended
+  /// row is built from the union of everything on the way through, so it does
+  /// not need a separate read of the whole catalogue.
+  Future<void> _fetchBooks() async {
     try {
-      final response = await http.get(url);
-      if (!mounted) return;
+      final categories = await _api.categories();
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is Map<String, dynamic> && data['status'] == 'success') {
-          final List productsJson = (data['products'] as List?) ?? const [];
-          final allProducts = productsJson
-              .whereType<Map<String, dynamic>>()
-              .map(Product.fromJson)
-              .toList();
+      final sections = <_HomeCategory>[];
+      final everything = <int, Book>{};
 
-          // Group products by normalised category name
-          final grouped = <String, List<Product>>{};
-          for (final p in allProducts) {
-            final key = p.category.trim().toLowerCase();
-            grouped.putIfAbsent(key, () => []).add(p);
-          }
+      for (final category in categories) {
+        final books = await _api.booksInCategory(category.id);
+        if (books.isEmpty) continue;
 
-          // Pick 10 random products once during fetch so UI remains stable
-          final randomList = List<Product>.from(allProducts)..shuffle(Random());
-          final randomTen = randomList.take(10).toList();
-
-          setState(() {
-            _productsByCategory = grouped;
-            _randomProducts = randomTen;
-            _isLoadingProducts = false;
-          });
-          return;
+        sections.add(_HomeCategory(category: category, books: books));
+        for (final book in books) {
+          everything[book.id] = book;
         }
       }
-    } catch (_) {
-      // ignore
-    }
 
-    if (!mounted) return;
-    setState(() => _isLoadingProducts = false);
+      if (!mounted) return;
+
+      // Ten at random, chosen once per fetch so the row does not reshuffle on
+      // every rebuild.
+      final shuffled = everything.values.toList()..shuffle(Random());
+
+      setState(() {
+        _categorySections = sections;
+        _randomBooks = shuffled.take(10).toList();
+        _loadError = null;
+        _isLoadingProducts = false;
+      });
+      return;
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _categorySections = [];
+        _randomBooks = [];
+        _loadError = error.message(AppLocalizations.of(context));
+        _isLoadingProducts = false;
+      });
+      return;
+    }
   }
 
   Future<void> _fetchUserData() async {
     final authUser = context.read<AuthProvider>().user;
-    if (authUser == null) {
-      if (!mounted) return;
-      return;
-    }
+    if (authUser == null) return;
 
-    try {
-      http.Response response;
-      try {
-        response = await http
-            .post(
-              Uri.parse(APILocalLoginUrl),
-              headers: {"Content-Type": "application/json"},
-              body: jsonEncode({
-                "student_id": authUser.student_id,
-                "pwd": authUser.pwd,
-              }),
-            )
-            .timeout(const Duration(seconds: 10));
-      } catch (_) {
-        response = await http.post(
-          Uri.parse(APIStLoginKh),
-          body: {'student_id': authUser.student_id, 'pwd': authUser.pwd},
-        );
-      }
+    final detail = await StudentDirectory.fetch();
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic>) {
-          final userData =
-              (decoded['user_data'] as List?) ??
-              (decoded['student_users'] as List?) ??
-              (decoded['user'] != null ? [decoded['user']] : const []);
-          final details = userData
-              .whereType<Map<String, dynamic>>()
-              .map(UserDetail.fromJson)
-              .toList();
+    if (!mounted || detail == null) return;
 
-          final detail = details.isNotEmpty ? details.first : null;
-          if (!mounted) return;
-          setState(() {
-            _userDetail = detail;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load user detail: $e');
-    }
-
-    if (!mounted) return;
+    setState(() => _userDetail = detail);
   }
 
   // ------------------------------------------------------------------
@@ -269,7 +238,7 @@ class HomePageState extends State<HomePage> {
                     ),
                   ),
                 );
-                _fetchUnreadNotificationCount();
+                _fetchReadyForPickupCount();
               },
               child: Stack(
                 clipBehavior: Clip.none,
@@ -295,7 +264,7 @@ class HomePageState extends State<HomePage> {
                       size: 22,
                     ),
                   ),
-                  if (_unreadNotificationCount > 0)
+                  if (_readyForPickupCount > 0)
                     Positioned(
                       top: -2,
                       right: -2,
@@ -308,7 +277,7 @@ class HomePageState extends State<HomePage> {
                         ),
                         constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                         child: Text(
-                          _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                          _readyForPickupCount > 99 ? '99+' : '$_readyForPickupCount',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -409,56 +378,38 @@ class HomePageState extends State<HomePage> {
   }
 
   // ------------------------------------------------------------------
-  /// Builds one section widget per category that has at least one product.
+  /// One section per book category that has books, and a mixed row underneath.
   List<Widget> _buildCategorySections(BuildContext context) {
     final sections = <Widget>[];
     final lang = AppLocalizations.of(context)!;
-    final isEnglish = lang.locale.languageCode == 'en';
+    final khmer = lang.locale.languageCode == 'km';
 
-    // Iterate over every category key that came back from the API
-    for (final entry in _productsByCategory.entries) {
-      if (entry.key.trim().isEmpty) continue;
-      final products = entry.value;
-      if (products.isEmpty) continue;
+    for (final section in _categorySections) {
+      final books = section.books;
+      if (books.isEmpty) continue;
 
-      // Use category info from the first product in the list
-      final firstProduct = products.first;
-      final categoryName = firstProduct.category;
-      final categoryNameKh = firstProduct.categoryKh;
-      final categoryId = firstProduct.categoryId; // FK
+      final title = section.category.nameFor(khmer: khmer);
+      final categoryId = section.category.id;
 
-      final categoryTitle = isEnglish
-          ? (categoryName.isNotEmpty ? categoryName : categoryNameKh)
-          : (categoryNameKh.isNotEmpty ? categoryNameKh : categoryName);
-
-      sections.add(CategorySectionWidget(
-        title: categoryTitle,
-        products: products,
-        baseUrl: _baseUrl,
-        onSeeAll: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductScreen(
-                categoryId: categoryId,
-                categoryName: categoryName,
-                categoryTitle: categoryTitle,
+      sections.add(
+        CategorySectionWidget(
+          title: title,
+          books: books,
+          onSeeAll: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductScreen(
+                  categoryId: categoryId,
+                  categoryTitle: title,
+                  initialBooks: books,
+                ),
               ),
-            ),
-          );
-        },
-        onProductTap: (product) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(
-                product: product,
-                baseUrl: _baseUrl,
-              ),
-            ),
-          );
-        },
-      ));
+            );
+          },
+          onBookTap: (book) => _openBook(context, book),
+        ),
+      );
 
       sections.add(SizedBox(height: Height15));
     }
@@ -469,7 +420,8 @@ class HomePageState extends State<HomePage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 40),
             child: Text(
-              lang.translate('no items found'),
+              _loadError ?? lang.translate('no items found'),
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: fontSubtitle,
                 color: TextSoftColor,
@@ -481,33 +433,30 @@ class HomePageState extends State<HomePage> {
       );
     }
 
-    // ── Random products from all categories (always shown at the bottom) ──
-    if (_randomProducts.isNotEmpty) {
+    if (_randomBooks.isNotEmpty) {
       sections.add(SizedBox(height: Height5));
-      sections.add(RecommendedProductsSection(
-        title: lang.translate('general product'),
-        products: _randomProducts,
-        baseUrl: _baseUrl,
-        onSeeAll: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProductScreen()),
-          );
-        },
-        onProductTap: (product) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(
-                product: product,
-                baseUrl: _baseUrl,
-              ),
-            ),
-          );
-        },
-      ));
+      sections.add(
+        RecommendedProductsSection(
+          title: lang.translate('general product'),
+          books: _randomBooks,
+          onSeeAll: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProductScreen()),
+            );
+          },
+          onBookTap: (book) => _openBook(context, book),
+        ),
+      );
     }
 
     return sections;
+  }
+
+  void _openBook(BuildContext context, Book book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProductDetailScreen(book: book)),
+    );
   }
 }

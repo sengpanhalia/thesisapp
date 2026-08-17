@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/component/payment_option_card.dart';
 import 'package:thesisapp/view/user/order_summary_screen.dart';
@@ -19,7 +20,10 @@ class CheckoutPayment extends StatefulWidget {
 }
 
 class _CheckoutPaymentState extends State<CheckoutPayment> {
-  String selectedMethod = 'cash_on_delivery';
+  /// Cash by default, which is the only one the system books as paid. The
+  /// others are recorded as a stated intention and settled at the counter —
+  /// nothing is charged in the app.
+  PaymentMethod selectedMethod = PaymentMethod.cash;
 
   Future<void> _refreshCart() async {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
@@ -29,18 +33,12 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
   void placeOrder() {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final items = cartProvider.selectedItems;
-    final double total = items.fold(0.0, (sum, item) {
-      final double price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-      final int quantity = item['quantity'] ?? 1;
-      return sum + (price * quantity);
-    });
-
-    debugPrint('Cart items count: ${items.length}');
-    debugPrint('Total: $total');
-    debugPrint('Cart items: $items');
+    final total = cartProvider.total;
 
     if (items.isEmpty) {
-      Fluttertoast.showToast(msg: 'Your cart is empty');
+      Fluttertoast.showToast(
+        msg: AppLocalizations.of(context)!.translate('your cart is empty'),
+      );
       return;
     }
 
@@ -131,13 +129,34 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                   ),
                   const SizedBox(height: 14),
                   PaymentOptionCard(
-                    title: 'Pay at Store',
-                    subtitle: 'Pay at the store',
+                    title: lang.translate('payment_cash'),
+                    subtitle: lang.translate('pay_at_the_counter'),
                     icon: Icons.payments_rounded,
-                    selected: selectedMethod == 'cash_on_delivery',
+                    selected: selectedMethod == PaymentMethod.cash,
                     primary: primary,
                     onTap: () =>
-                        setState(() => selectedMethod = 'cash_on_delivery'),
+                        setState(() => selectedMethod = PaymentMethod.cash),
+                  ),
+                  const SizedBox(height: 12),
+                  PaymentOptionCard(
+                    title: lang.translate('payment_khqr'),
+                    subtitle: lang.translate('settled_at_the_counter'),
+                    icon: Icons.qr_code_rounded,
+                    selected: selectedMethod == PaymentMethod.khqr,
+                    primary: primary,
+                    onTap: () =>
+                        setState(() => selectedMethod = PaymentMethod.khqr),
+                  ),
+                  const SizedBox(height: 12),
+                  // Said plainly, because the system cannot take money: the
+                  // reservation only holds the copies.
+                  Text(
+                    lang.translate('reservation_payment_note'),
+                    style: TextStyle(
+                      fontSize: fontText,
+                      color: TextColor,
+                      fontFamily: getFontFamily(context),
+                    ),
                   ),
                   const SizedBox(height: 22),
                   SizedBox(
@@ -153,7 +172,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                         ),
                       ),
                       child: Text(
-                        'Place Order',
+                        lang.translate('reserve_books'),
                         style: GoogleFonts.poppins(
                           fontSize: fontTitle,
                           fontWeight: FontWeight.w600,

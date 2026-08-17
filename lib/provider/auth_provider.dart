@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thesisapp/model/user.dart';
+import 'package:thesisapp/service/student_session_store.dart';
 
 class AuthProvider extends ChangeNotifier {
   late SharedPreferences _prefs;
@@ -76,6 +77,9 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     await _prefs.setBool('isLoggedIn', false);
     await _prefs.remove('user');
+    // The student's signed session goes with them, so the next person to pick
+    // up the phone starts at sign-in rather than inside this account.
+    await StudentSessionStore.clear();
     notifyListeners();
   }
 

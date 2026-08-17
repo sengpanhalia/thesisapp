@@ -5,9 +5,36 @@ import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
+import 'package:thesisapp/model/book.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/util/api_config.dart';
 import 'package:thesisapp/view/user/checkout_payment.dart';
+
+/// A basket line's picture, or the placeholder when the catalogue has none.
+Widget _cartImage(String? rawImageUrl) {
+  final url = buildProductImageUrl(rawImageUrl);
+
+  if (url == null) {
+    return Container(
+      width: 50,
+      height: 50,
+      color: Colors.grey[200],
+      child: const Icon(Icons.menu_book_rounded, size: 26, color: Colors.grey),
+    );
+  }
+
+  return Image.network(
+    url,
+    width: 50,
+    height: 50,
+    fit: BoxFit.cover,
+    errorBuilder: (_, __, ___) => Container(
+      width: 50,
+      height: 50,
+      color: Colors.grey[200],
+      child: const Icon(Icons.menu_book_rounded, size: 26, color: Colors.grey),
+    ),
+  );
+}
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -295,12 +322,10 @@ class _CartScreenState extends State<CartScreen> {
                                     itemBuilder: (context, index) {
                                       final item = cartProvider.cartItems[index];
                                       final cartId = item['cart_id'];
-                                      final price =
-                                          double.tryParse(
-                                            item['price']?.toString() ?? '0',
-                                          ) ??
-                                          0.0;
-                                      final originalPrice = price;
+                                      // Null when the catalogue holds no price
+                                      // for the book; shown as a dash, never
+                                      // as $0.00.
+                                      final price = cartProvider.itemPrice(item);
                                       final quantity = item['quantity'] ?? 1;
                                       final isPurchasable = cartProvider
                                           .isItemPurchasable(item);
@@ -410,27 +435,9 @@ class _CartScreenState extends State<CartScreen> {
                                                                 BorderRadius.circular(
                                                                   8,
                                                                 ),
-                                                            child: Image.network(
-                                                              "${ApiConfig.productsUploadsUrl}/${item['image']}",
-                                                              width: 50,
-                                                              height: 50,
-                                                              fit: BoxFit.cover,
-                                                              errorBuilder:
-                                                                  (
-                                                                    _,
-                                                                    __,
-                                                                    ___,
-                                                                  ) => Container(
-                                                                    width: 50,
-                                                                    height: 50,
-                                                                    color: Colors
-                                                                        .grey[200],
-                                                                    child: const Icon(
-                                                                      Icons
-                                                                          .image_rounded,
-                                                                      size: 30,
-                                                                    ),
-                                                                  ),
+                                                            child: _cartImage(
+                                                              item['image']
+                                                                  ?.toString(),
                                                             ),
                                                           ),
                                                           const SizedBox(
@@ -493,7 +500,9 @@ class _CartScreenState extends State<CartScreen> {
                                                                 Row(
                                                                   children: [
                                                                     Text(
-                                                                      "\$${originalPrice.toStringAsFixed(2)}",
+                                                                      formatMoney(
+                                                                        price,
+                                                                      ),
                                                                       style: TextStyle(
                                                                         color:
                                                                             TextColor,

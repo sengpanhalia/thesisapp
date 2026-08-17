@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!--
+	  The inventory API is served by XAMPP at an IP address over plain HTTP,
+	  which App Transport Security blocks outright. Without this the app
+	  cannot reach it from an iPhone at all.
+
+	  The fix belongs on the server: give it a certificate, turn on
+	  `api.require_https` in the system's config/app.json, and point
+	  USEA_API_BASE_URL at https://. The API then refuses cleartext itself,
+	  because a bearer token read off the network is a working key. Remove
+	  this block once that is done.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

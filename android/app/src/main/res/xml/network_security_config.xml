@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The inventory API is served by XAMPP on the university network, at an IP
+  address, over plain HTTP. Android has refused cleartext by default since
+  Android 9, so without this the app cannot reach the server at all: every
+  call fails before it leaves the phone and the student is told there is no
+  connection.
+
+  This is deliberately not scoped to one host. The server address is a build
+  setting (USEA_API_BASE_URL) and moves between the campus server, a laptop
+  and the emulator's 10.0.2.2 — and Android's domain rules take hostnames,
+  not address ranges, so a scoped list would silently break the app the first
+  time the address changed.
+
+  The proper fix is on the server, not here: give it a certificate, set
+  `api.require_https` in the system's config/app.json, and point
+  USEA_API_BASE_URL at https://. The API then refuses plain HTTP itself,
+  because a bearer token sent in the clear can be read by anyone on the
+  network. Once that is done, set this back to false.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

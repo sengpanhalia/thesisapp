@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Widget Preview related
+.widget_preview/
+
+# Gradle build output. /build/ above only matches the repository root.
+/android/build/
