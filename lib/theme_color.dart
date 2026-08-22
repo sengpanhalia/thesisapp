@@ -42,12 +42,12 @@ const Sapphire = Color(0xFF002060);
 final processColor = Color(0xFF0B0C7F).withOpacity(0.9);
 
 
-const GBackground1 = Color(0xFFFDF6EE);
-const GBackground2 = Color(0xFFFAF0E4);
-const GBackground3 = Color(0xFFF4E2CC);
-const GBackground4 = Color(0xFFECD0AE);
+const GBackground1 = Color(0xFFFFFFFF);   // white — was cream; matches the web system's surfaces
+const GBackground2 = Color(0xFFFAFBFC);
+const GBackground3 = Color(0xFFF6F6F8);   // the web system's page background (--bg)
+const GBackground4 = Color(0xFFF0F1F4);
 
-const StrokeSearchBar = Color(0xFFE8E6E2);
+const StrokeSearchBar = Color(0xFFE5E7EB);   // cool light border
 
 const GText1 = Color(0xFF0B0C7F);   // USEA brand navy (was orange)
 const GText2 = Color(0xFF08096B);
@@ -65,15 +65,15 @@ const TextSoftColor = Color(0xFFB8B2A8);
 const GreyColor = Color(0xFFD9D9D9);
 
 const ButtonColor = Color(0xFF0B0C7F);   // USEA brand navy
-const CardColor = Color(0xFFFDF8F2);
+const CardColor = Color(0xFFFFFFFF);   // white cards, like the web
 
 
-const StrokeCardColor = Color(0xFFFDF6EE);
+const StrokeCardColor = Color(0xFFE9EAEE);
 
 const IconColor = Color(0xFF2C2C2C);
 const IconOrangeColor = Color(0xFF0B0C7F);
 
-const ColorNavBar = Color(0xFFFAEBD7);
+const ColorNavBar = Color(0xFFFFFFFF);   // white nav bar, like the web topbar
 
 const SoftGreen = Color(0xFFAFE4B5);
 
