@@ -21,7 +21,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  static const Color _accent = Color(0xFFD67C2A);
+  static const Color _accent = Color(0xFF0B0C7F);   // USEA brand navy
   static const String _historyKey = 'recent_searches';
 
   final TextEditingController _queryController = TextEditingController();

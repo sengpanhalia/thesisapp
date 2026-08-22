@@ -39,7 +39,7 @@ final StrokeColor = Color(0xFF9A9288).withOpacity(0.5);
 const TranparentColor = Colors.transparent;
 const BlackColor = Color(0xFF000000);
 const Sapphire = Color(0xFF002060);
-final processColor = Color(0xFFD97F2E).withOpacity(0.9);
+final processColor = Color(0xFF0B0C7F).withOpacity(0.9);
 
 
 const GBackground1 = Color(0xFFFDF6EE);
@@ -49,10 +49,10 @@ const GBackground4 = Color(0xFFECD0AE);
 
 const StrokeSearchBar = Color(0xFFE8E6E2);
 
-const GText1 = Color(0xFFC46520);
-const GText2 = Color(0xFFA34E1B);
-const GText3 = Color(0xFF843F1C);
-final GText4 = Color(0xFF6C341A).withOpacity(0.7);
+const GText1 = Color(0xFF0B0C7F);   // USEA brand navy (was orange)
+const GText2 = Color(0xFF08096B);
+const GText3 = Color(0xFF06074F);
+final GText4 = Color(0xFF040538).withOpacity(0.7);
 
 const Sapphire2 = Color(0xFF002060);
 const Sapphire3 = Color.fromARGB(255, 10, 47, 122);
@@ -64,20 +64,20 @@ const TitleColor = Color(0xFF2C2822);
 const TextSoftColor = Color(0xFFB8B2A8);
 const GreyColor = Color(0xFFD9D9D9);
 
-const ButtonColor = Color(0xFFD97F2E);
+const ButtonColor = Color(0xFF0B0C7F);   // USEA brand navy
 const CardColor = Color(0xFFFDF8F2);
 
 
 const StrokeCardColor = Color(0xFFFDF6EE);
 
 const IconColor = Color(0xFF2C2C2C);
-const IconOrangeColor = Color(0xFFC46520);
+const IconOrangeColor = Color(0xFF0B0C7F);
 
 const ColorNavBar = Color(0xFFFAEBD7);
 
 const SoftGreen = Color(0xFFAFE4B5);
 
-final checkboxColor = Color(0xFFE39A4F).withOpacity(0.7);
+final checkboxColor = Color(0xFF0B0C7F).withOpacity(0.7);
 
 const double ZeroPixel = 0.0;
 

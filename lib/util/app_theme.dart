@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppThemes {
-  static const Color _accent = Color(0xFFD67C2A);
-  static const Color _accentDeep = Color(0xFFC46520);
+  // The USEA Smart Inventory system's brand navy, from the web app's
+  // public/css/style.css (--brand #0b0c7f, --brand-dark #08096b), so the
+  // phone app and the system it talks to read as one product. Everything
+  // below seeds from these two, so the whole app follows.
+  static const Color _accent = Color(0xFF0B0C7F);
+  static const Color _accentDeep = Color(0xFF08096B);
   static const Color _lightBg = Color(0xFFFDF6EE);
   static const Color _lightSurface = Colors.white;
   static const Color _textDark = Color(0xFF3D2B1F);
