@@ -115,6 +115,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+  /// The e-invoice, which is the thing finance checks the code against.
+  ///
+  /// Every line, not the first one. The receipt has always drawn a table from
+  /// `items` and was only ever handed one row, so an order of four books
+  /// printed a slip for one of them under a code covering all four — a total
+  /// that did not add up from the lines above it, which is precisely what a
+  /// person reconciling it would query.
   void _openReceipt() {
     Navigator.push(
       context,
@@ -122,12 +129,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         builder: (_) => OrderSuccessScreen(
           orderId: _order.id,
           items: [
-            {
-              'name': _order.title,
-              'quantity': _order.quantity,
-              'price': _order.unitPrice,
-              'image': null,
-            },
+            for (final line in _order.asLines)
+              {
+                'name': line.titleEn,
+                'quantity': line.quantity,
+                'price': line.unitPrice,
+                'image': null,
+              },
           ],
           total: _order.totalPrice ?? 0,
           paymentMethod: _order.paymentMethod,
@@ -217,6 +225,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
+    final khmer = Localizations.localeOf(context).languageCode == 'km';
 
     return Scaffold(
       appBar: AppBar(
@@ -330,16 +339,28 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     ],
                   ),
 
+                  /*
+                   * Every title under this code, not just the first.
+                   *
+                   * This card read `_order.title` and `_order.quantity`, which
+                   * was the whole order while an order was one book. One code
+                   * now covers everything a student checked out together, and
+                   * showing one of four on the screen they check their money
+                   * against is worse than showing none.
+                   */
                   _modernCard(
                     title: lang.translate('order items'),
                     children: [
-                      _row(lang.translate('book'), _order.title),
-                      _row(lang.translate('book_code'), _order.itemCode),
-                      _row(
-                        lang.translate('quantity'),
-                        _order.quantity.toString(),
-                      ),
-                      _row(lang.translate('price'), _order.unitPriceLabel),
+                      for (final (index, line) in _order.asLines.indexed) ...[
+                        if (index > 0) const Divider(height: 24),
+                        _row(lang.translate('book'), line.title(khmer: khmer)),
+                        _row(lang.translate('book_code'), line.itemCode),
+                        _row(
+                          lang.translate('quantity'),
+                          line.quantity.toString(),
+                        ),
+                        _row(lang.translate('price'), line.unitPriceLabel),
+                      ],
                     ],
                   ),
 

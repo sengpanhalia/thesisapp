@@ -249,6 +249,47 @@ class InventoryApi {
     return Reservation.fromJson(order);
   }
 
+  /// Holds a whole cart under one code, or holds none of it.
+  ///
+  /// The cart used to be emptied by calling [reserve] once per line, which
+  /// produced one order code per book: a student who checked out four books
+  /// carried four codes to the counter and gave finance four things to check
+  /// for one transaction.
+  ///
+  /// It was also decided a line at a time, so a cart whose third book had just
+  /// sold out left the student holding two reservations, no third, and two
+  /// codes to explain. The server locks every title and refuses the lot if one
+  /// is short — a slip printed for four books and honoured for three is a
+  /// queue at the desk rather than a sale — so this either returns one order
+  /// covering everything or throws, and the cart is emptied only on success.
+  Future<Reservation> reserveAll({
+    required List<({int itemId, int quantity})> items,
+    required String studentId,
+    required PaymentMethod paymentMethod,
+    String note = '',
+  }) async {
+    if (items.isEmpty) {
+      throw ApiException(ApiErrorKind.badRequest);
+    }
+
+    final json = await _client.postJson('orders.php', {
+      'items': [
+        for (final item in items) {'item_id': item.itemId, 'qty': item.quantity},
+      ],
+      'student_id': studentId.trim(),
+      'payment_method': paymentMethod.wireName,
+      'note': note,
+    });
+
+    final order = json['order'];
+
+    if (order is! Map<String, dynamic>) {
+      throw ApiException(ApiErrorKind.malformed);
+    }
+
+    return Reservation.fromJson(order);
+  }
+
   /// Every reservation this student has made, newest first.
   Future<List<Reservation>> reservationsFor(String studentId) async {
     final json = await _client.getJson(

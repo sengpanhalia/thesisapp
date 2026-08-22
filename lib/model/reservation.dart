@@ -46,11 +46,71 @@ enum ReservationStatus {
   };
 }
 
+/// One title within a reservation.
+///
+/// A student who checks out three books has one [Reservation] with three of
+/// these under it, sharing one code and one trip to the counter.
+class ReservationLine {
+  const ReservationLine({
+    required this.id,
+    required this.itemId,
+    required this.itemCode,
+    required this.titleEn,
+    required this.titleKh,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
+
+  final int id;
+  final int itemId;
+  final String itemCode;
+  final String titleEn;
+  final String titleKh;
+  final int quantity;
+  final double? unitPrice;
+  final double? totalPrice;
+
+  /// The title in the language asked for, falling back to whichever exists —
+  /// the same rule [Book] follows, because it is the same catalogue row.
+  String title({required bool khmer}) {
+    final first = khmer ? titleKh : titleEn;
+
+    if (first.trim().isNotEmpty) return first.trim();
+
+    return (khmer ? titleEn : titleKh).trim();
+  }
+
+  String get unitPriceLabel => formatMoney(unitPrice);
+
+  String get totalLabel => formatMoney(totalPrice);
+
+  factory ReservationLine.fromJson(Map<String, dynamic> json) {
+    return ReservationLine(
+      id: Reservation._int(json['id']) ?? 0,
+      itemId: Reservation._int(json['item_id']) ?? 0,
+      itemCode: Reservation._text(json['item_code']),
+      titleEn: Reservation._text(json['title']),
+      titleKh: Reservation._text(json['title_kh']),
+      quantity: Reservation._int(json['quantity']) ?? 0,
+      unitPrice: Reservation._money(json['unit_price']),
+      totalPrice: Reservation._money(json['total_price']),
+    );
+  }
+}
+
 /// One reservation, as `/api/v1/orders.php` returns it.
 ///
 /// A reservation holds copies without selling them: availability drops, stock
-/// does not, and the sale is recorded when the student collects. One
-/// reservation covers one title — a basket of three books is three of these.
+/// does not, and the sale is recorded when the student collects.
+///
+/// An order is a **basket**: one code covering every title the student checked
+/// out together, in [lines]. It used to be one title — the app posted the cart
+/// a line at a time and a student who bought four books walked to the counter
+/// with four codes, which is four things for finance to check for one
+/// transaction. The flat [title], [quantity] and [unitPrice] below are the
+/// first line and the whole basket's totals, kept because most orders are one
+/// title and every screen was written against that shape.
 class Reservation {
   const Reservation({
     required this.id,
@@ -67,6 +127,7 @@ class Reservation {
     required this.paymentMethod,
     required this.note,
     required this.createdAt,
+    this.lines = const [],
   });
 
   final int id;
@@ -89,9 +150,38 @@ class Reservation {
   final String note;
   final DateTime? createdAt;
 
+  /// Every title under this one code.
+  ///
+  /// Empty only when talking to a server old enough not to send them, in which
+  /// case [asLines] rebuilds the single line from the flat fields so no screen
+  /// has to handle both shapes.
+  final List<ReservationLine> lines;
+
   /// Anything but cash is unsettled until the provider confirms it, and this
   /// system does not capture payment. Never show it as paid.
   bool get isPaid => paymentMethod.toLowerCase() == 'cash';
+
+  /// True when this order covers more than one title.
+  bool get isBasket => lines.length > 1;
+
+  /// The lines to render, whatever the server sent.
+  ///
+  /// One place decides it, so a screen never has to ask whether it is looking
+  /// at a basket or at the older one-title shape.
+  List<ReservationLine> get asLines => lines.isNotEmpty
+      ? lines
+      : [
+          ReservationLine(
+            id: id,
+            itemId: itemId,
+            itemCode: itemCode,
+            titleEn: title,
+            titleKh: '',
+            quantity: quantity,
+            unitPrice: unitPrice,
+            totalPrice: totalPrice,
+          ),
+        ];
 
   String get totalLabel => formatMoney(totalPrice);
 
@@ -113,6 +203,12 @@ class Reservation {
       paymentMethod: _text(json['payment_method']),
       note: _text(json['note']),
       createdAt: _dateTime(json['created_at']),
+      lines: (json['lines'] is List)
+          ? (json['lines'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(ReservationLine.fromJson)
+                .toList()
+          : const [],
     );
   }
 

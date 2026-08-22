@@ -44,10 +44,20 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     return double.tryParse(value.toString());
   }
 
-  /// Sends one reservation per basket line, because the API holds one title
-  /// per order. Each is decided on its own: if the third book has just sold
-  /// out, the first two stay reserved and the student is told which one
-  /// failed and why, rather than losing the lot.
+  /// Reserves the whole cart under one code, or reserves none of it.
+  ///
+  /// This used to send one request per line, because the API held one title
+  /// per order — so a student checking out four books was handed four codes
+  /// and the success screen joined them with commas. Four codes is four things
+  /// for finance to check for one trip to the counter, and four slips for a
+  /// receptionist to match against one identity card.
+  ///
+  /// It was also decided a line at a time. If the third book had just sold
+  /// out, the first two stayed reserved and the student was told which one
+  /// failed — leaving them holding a partial order they did not ask for, with
+  /// copies held against their name that they may not want without the third.
+  /// The server now locks every title and refuses the lot if one is short, so
+  /// there is one answer to show and one cart to empty.
   Future<void> _placeOrder() async {
     final lang = AppLocalizations.of(context)!;
     final cartProvider = context.read<CartProvider>();
@@ -69,62 +79,60 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
     setState(() => _isLoading = true);
 
-    final placed = <Reservation>[];
-    final reservedCartIds = <int>[];
-    final failures = <String>[];
+    final Reservation order;
 
-    for (final line in lines) {
-      try {
-        final reservation = await _api.reserve(
-          itemId: _parseInt(line['item_id']),
-          quantity: _parseInt(line['quantity']),
-          studentId: user.student_id,
-          paymentMethod: widget.paymentMethod,
-        );
+    try {
+      order = await _api.reserveAll(
+        items: [
+          for (final line in lines)
+            (
+              itemId: _parseInt(line['item_id']),
+              quantity: _parseInt(line['quantity']),
+            ),
+        ],
+        studentId: user.student_id,
+        paymentMethod: widget.paymentMethod,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-        placed.add(reservation);
-        reservedCartIds.add(_parseInt(line['cart_id']));
-      } on ApiException catch (error) {
-        final title = (line['name'] ?? '').toString();
-        failures.add('$title: ${error.message(lang)}');
-      }
+      // The server's refusal names the title that was short and by how much,
+      // which is the actionable part — nothing is held, so the cart is left
+      // exactly as it was for the student to adjust and try again.
+      Fluttertoast.showToast(
+        msg: error.message(lang),
+        toastLength: Toast.LENGTH_LONG,
+      );
+      return;
     }
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (reservedCartIds.isNotEmpty) {
-      cartProvider.removeCheckedOutItems(reservedCartIds);
-    }
-
-    for (final failure in failures) {
-      Fluttertoast.showToast(msg: failure, toastLength: Toast.LENGTH_LONG);
-    }
-
-    if (placed.isEmpty) return;
-
-    final total = placed.fold<double>(
-      0.0,
-      (sum, reservation) => sum + (reservation.totalPrice ?? 0),
-    );
+    // Emptied only now, and only of what was actually reserved.
+    cartProvider.removeCheckedOutItems([
+      for (final line in lines) _parseInt(line['cart_id']),
+    ]);
 
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (_) => OrderSuccessScreen(
-          orderId: placed.first.id,
+          orderId: order.id,
           items: [
-            for (final reservation in placed)
+            for (final line in order.asLines)
               {
-                'name': reservation.title,
-                'quantity': reservation.quantity,
-                'price': reservation.unitPrice,
+                'name': line.titleEn,
+                'quantity': line.quantity,
+                'price': line.unitPrice,
                 'image': null,
               },
           ],
-          total: total,
+          total: order.totalPrice ?? 0,
           paymentMethod: widget.paymentMethod.wireName,
-          trackingNumber: placed.map((r) => r.code).join(', '),
+          // One code for the whole basket — this joined several with commas.
+          trackingNumber: order.code,
         ),
       ),
       (route) => false,

@@ -220,8 +220,9 @@ class _OrderScreenState extends State<OrderScreen> {
                               final statusColor = _getStatusColor(
                                 order.status.wireName,
                               );
-                              // One reservation covers one title, so the count
-                              // shown is the copies of that title.
+                              // Copies across the whole order — an order is a
+                              // basket now, so this is every title's quantity
+                              // added up, not the first title's.
                               final orderItemCount = order.quantity;
                               return GestureDetector(
                                 onTap: () async {
@@ -330,9 +331,18 @@ class _OrderScreenState extends State<OrderScreen> {
                                                     _formatDate(order.createdAt),
                                                   ),
                                                   const SizedBox(height: 10),
+                                                  // "Title × 2", or "Title
+                                                  // and 3 more × 5" — naming
+                                                  // the first and counting
+                                                  // the rest, because a card
+                                                  // that listed four titles
+                                                  // would push the status and
+                                                  // the total off the screen.
                                                   _buildInfoRow(
                                                     Icons.menu_book_rounded,
-                                                    '${order.title} × $orderItemCount',
+                                                    order.isBasket
+                                                        ? '${order.title} +${order.lines.length - 1} × $orderItemCount'
+                                                        : '${order.title} × $orderItemCount',
                                                   ),
                                                   // if (showTracking) ...[
                                                   //   const SizedBox(height: 10),

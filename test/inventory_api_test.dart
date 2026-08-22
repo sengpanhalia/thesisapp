@@ -108,6 +108,95 @@ void main() {
       expect(reservation.status.isCancellable, isFalse);
     });
 
+    test('reads a basket as orders.php now sends one', () {
+      // One code, three titles. The flat fields are the first line and the
+      // basket's totals, kept so screens written before baskets still read.
+      final order = Reservation.fromJson(
+        jsonDecode('''
+        {
+          "id": 1216, "code": "ORD-USEA-85714C79", "status": "PENDING",
+          "student_id": "BSR170342", "student_name": "Rithy Student",
+          "payment_method": "KHQR", "note": "",
+          "created_at": "2026-08-17 13:24:02",
+          "quantity": 4, "total_price": 6.51, "line_count": 3,
+          "lines": [
+            {"id": 1216, "item_id": 1, "item_code": "0001CT",
+             "title": "Critical Thinking", "title_kh": "ការគិតត្រិះរិះពិចារណា",
+             "quantity": 2, "unit_price": 2, "total_price": 4},
+            {"id": 1217, "item_id": 9, "item_code": "0009IM",
+             "title": "Investment Management", "title_kh": "ការគ្រប់គ្រងការវិនិយោគ",
+             "quantity": 1, "unit_price": 1.13, "total_price": 1.13},
+            {"id": 1218, "item_id": 14, "item_code": "0014OM",
+             "title": "Office Management", "title_kh": "ការគ្រប់គ្រងការិយាល័យ",
+             "quantity": 1, "unit_price": 1.38, "total_price": 1.38}
+          ],
+          "item_id": 1, "item_code": "0001CT", "title": "Critical Thinking",
+          "unit_price": 2
+        }''') as Map<String, dynamic>,
+      );
+
+      expect(order.code, 'ORD-USEA-85714C79');
+      expect(order.isBasket, isTrue);
+      expect(order.lines, hasLength(3));
+      expect(order.asLines, hasLength(3));
+
+      // The totals are the whole basket, not the first line — that is what a
+      // student checks their money against.
+      expect(order.quantity, 4);
+      expect(order.totalPrice, 6.51);
+
+      expect(order.lines[1].itemCode, '0009IM');
+      expect(order.lines[1].title(khmer: true), 'ការគ្រប់គ្រងការវិនិយោគ');
+      expect(order.lines[1].title(khmer: false), 'Investment Management');
+    });
+
+    test('a one-title order is the same thing with one line', () {
+      final order = Reservation.fromJson(
+        jsonDecode('''
+        {
+          "id": 3, "code": "ORD-USEA-1A2B3C4D", "status": "PENDING",
+          "student_id": "BSR170342", "student_name": "Rithy Student",
+          "payment_method": "Cash", "note": "",
+          "created_at": "2026-08-06 06:45:41",
+          "quantity": 1, "total_price": 10.0, "line_count": 1,
+          "lines": [
+            {"id": 3, "item_id": 8, "item_code": "BOK-0004",
+             "title": "Khmer Literature Reader", "title_kh": "",
+             "quantity": 1, "unit_price": 10.0, "total_price": 10.0}
+          ],
+          "item_id": 8, "item_code": "BOK-0004",
+          "title": "Khmer Literature Reader", "unit_price": 10.0
+        }''') as Map<String, dynamic>,
+      );
+
+      expect(order.isBasket, isFalse);
+      expect(order.asLines, hasLength(1));
+      expect(order.asLines.first.title(khmer: true), 'Khmer Literature Reader');
+    });
+
+    test('a server too old to send lines still renders', () {
+      // The shape orders.php answered before baskets existed. asLines rebuilds
+      // the one line from the flat fields, so no screen handles two shapes.
+      final order = Reservation.fromJson({
+        'id': 3,
+        'code': 'ORD-000001',
+        'status': 'PENDING',
+        'item_id': 8,
+        'item_code': 'BOK-0004',
+        'title': 'Khmer Literature Reader',
+        'quantity': 2,
+        'unit_price': 10.0,
+        'total_price': 20.0,
+        'payment_method': 'Cash',
+      });
+
+      expect(order.lines, isEmpty);
+      expect(order.isBasket, isFalse);
+      expect(order.asLines, hasLength(1));
+      expect(order.asLines.first.quantity, 2);
+      expect(order.asLines.first.itemCode, 'BOK-0004');
+    });
+
     test('only a live reservation may be cancelled', () {
       expect(ReservationStatus.pending.isCancellable, isTrue);
       expect(ReservationStatus.readyForPickup.isCancellable, isTrue);
