@@ -50,7 +50,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   Future<void> _fetchGroups() async {
     try {
-      final categories = await _api.categories();
+      final categories = await _api.categories(forMyYear: true);
       if (!mounted) return;
 
       // "All books" leads, then one tile per category. Its count is the sum of

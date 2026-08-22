@@ -122,13 +122,13 @@ class HomePageState extends State<HomePage> {
   /// not need a separate read of the whole catalogue.
   Future<void> _fetchBooks() async {
     try {
-      final categories = await _api.categories();
+      final categories = await _api.categories(forMyYear: true);
 
       final sections = <_HomeCategory>[];
       final everything = <int, Book>{};
 
       for (final category in categories) {
-        final books = await _api.booksInCategory(category.id);
+        final books = await _api.booksInCategory(category.id, forMyYear: true);
         if (books.isEmpty) continue;
 
         sections.add(_HomeCategory(category: category, books: books));

@@ -56,7 +56,16 @@ class InventoryApi {
   /// university's own catalogue leaves the year blank on every row today, so
   /// filtering by year currently returns nothing — the app offers the filter
   /// but does not depend on it.
-  Future<List<Book>> books({String? search, String? yearLevel}) async {
+  ///
+  /// [forMyYear] narrows the catalogue to the signed-in student's own year and
+  /// semester, read live on the server from their enrolment (`mine=1`). It is
+  /// for browsing, not search — a student searching by title wants to find a
+  /// book whatever year it is filed under, so the search screen leaves it off.
+  Future<List<Book>> books({
+    String? search,
+    String? yearLevel,
+    bool forMyYear = false,
+  }) async {
     final query = <String, String>{};
 
     final trimmedSearch = (search ?? '').trim();
@@ -64,6 +73,8 @@ class InventoryApi {
 
     final trimmedYear = (yearLevel ?? '').trim();
     if (trimmedYear.isNotEmpty) query['year_level'] = trimmedYear;
+
+    if (forMyYear) query['mine'] = '1';
 
     final json = await _client.getJson('books.php', query: query);
 
@@ -97,8 +108,15 @@ class InventoryApi {
   /// This is what the Category tab is built from. It used to group by
   /// `year_level`, which every book leaves blank, so it showed one heap; these
   /// four categories are the genuine split of the catalogue.
-  Future<List<BookCategory>> categories() async {
-    final json = await _client.getJson('categories.php');
+  ///
+  /// [forMyYear] narrows the counts to the signed-in student's own year and
+  /// semester, so every tile's number is of the books that student will
+  /// actually see when they open it.
+  Future<List<BookCategory>> categories({bool forMyYear = false}) async {
+    final json = await _client.getJson(
+      'categories.php',
+      query: forMyYear ? {'mine': '1'} : null,
+    );
 
     return _list(json['categories']).map(BookCategory.fromJson).toList();
   }
@@ -106,10 +124,13 @@ class InventoryApi {
   /// The books in one category, filtered exactly as [books] filters — in stock
   /// and approved for sale. A book filed under several categories appears in
   /// each.
-  Future<List<Book>> booksInCategory(int categoryId) async {
+  Future<List<Book>> booksInCategory(int categoryId, {bool forMyYear = false}) async {
     final json = await _client.getJson(
       'categories.php',
-      query: {'id': categoryId.toString()},
+      query: {
+        'id': categoryId.toString(),
+        if (forMyYear) 'mine': '1',
+      },
     );
 
     return _list(json['books']).map(Book.fromJson).toList();

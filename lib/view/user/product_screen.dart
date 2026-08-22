@@ -73,8 +73,8 @@ class _ProductScreenState extends State<ProductScreen> {
     try {
       final categoryId = widget.categoryId;
       final fetched = categoryId != null
-          ? await _api.booksInCategory(categoryId)
-          : await _api.books(yearLevel: widget.yearLevel);
+          ? await _api.booksInCategory(categoryId, forMyYear: true)
+          : await _api.books(yearLevel: widget.yearLevel, forMyYear: true);
       if (!mounted) return;
 
       setState(() {
