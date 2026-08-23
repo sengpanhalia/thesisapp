@@ -145,7 +145,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     debugPrint('OrderSummary - items: ${widget.items}');
     debugPrint('OrderSummary - total: ${widget.total}');
     final lang = AppLocalizations.of(context)!;
-    const background = Color(0xFFF7F3EE);
+    const background = Colors.white;
 
     return Scaffold(
       backgroundColor: background,

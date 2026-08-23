@@ -8,7 +8,7 @@ class AppThemes {
   // below seeds from these two, so the whole app follows.
   static const Color _accent = Color(0xFF0B0C7F);
   static const Color _accentDeep = Color(0xFF08096B);
-  static const Color _lightBg = Color(0xFFF6F6F8);   // the web system's page background
+  static const Color _lightBg = Colors.white;        // pure white page background
   static const Color _lightSurface = Colors.white;
   static const Color _textDark = Color(0xFF3D2B1F);
 

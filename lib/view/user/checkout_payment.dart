@@ -67,7 +67,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
     final primary = Theme.of(context).colorScheme.primary;
-    const background = Color(0xFFF7F3EE);
+    const background = Colors.white;
     final canPlaceOrder = cartProvider.selectedItems.isNotEmpty;
     final lang = AppLocalizations.of(context)!;
 
