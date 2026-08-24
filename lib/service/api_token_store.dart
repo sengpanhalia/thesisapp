@@ -3,16 +3,20 @@ import 'package:thesisapp/util/api_config.dart';
 
 /// Where the API token lives on the device.
 ///
-/// The inventory system issues tokens under **Settings ▸ API Tokens** and
-/// shows the key once, at creation, because only its SHA-256 hash is kept on
-/// the server. Nothing here can recover a lost one — the operator issues a new
-/// token and revokes the old.
+/// There is **one** API token for the whole system — `api.token` in the
+/// server's `config/secrets.json` — and it does not rotate. Bake that single
+/// value into the build with `--dart-define=USEA_API_TOKEN=…` and every install
+/// carries the same permanent key. There is no per-device issuing any more; the
+/// old "Settings ▸ API Tokens" screen was removed.
 ///
-/// Two ways in, in this order:
+/// Precedence:
 ///
-///  1. a token saved on the device, which is how a single build is pointed at
-///     a different server or re-keyed after a revocation;
-///  2. `--dart-define=USEA_API_TOKEN=usea_…` baked into the build.
+///  1. the token baked into the build (`USEA_API_TOKEN`), when there is one —
+///     it is the permanent, operator-set key, so it wins. A stale token typed
+///     into one device can never shadow it and force the "ask for a new one"
+///     flow, which is what this ordering exists to prevent;
+///  2. otherwise, a token saved on the device (the profile dialog) — for a dev
+///     build shipped without a baked-in one.
 ///
 /// Never a literal in the source: a token in the repository is a token in
 /// everybody's checkout, and the API cannot tell the difference between the
@@ -26,15 +30,21 @@ class ApiTokenStore {
   static bool _loaded = false;
 
   static Future<String> read() async {
-    if (_loaded) return _cached ?? ApiConfig.buildTimeToken;
+    // The baked-in token is the one permanent key: it wins over anything saved
+    // on the device, so the app never needs re-keying and a stale saved token
+    // cannot lock it out.
+    final built = ApiConfig.buildTimeToken.trim();
+    if (built.isNotEmpty) {
+      return built;
+    }
+
+    if (_loaded) return (_cached ?? '').trim();
 
     final prefs = await SharedPreferences.getInstance();
     _cached = prefs.getString(_prefsKey);
     _loaded = true;
 
-    final stored = (_cached ?? '').trim();
-
-    return stored.isNotEmpty ? stored : ApiConfig.buildTimeToken;
+    return (_cached ?? '').trim();
   }
 
   static Future<void> save(String token) async {
