@@ -74,7 +74,7 @@ class NotificationService {
         ?.createNotificationChannel(channel);
 
     // 5. Subscribe to "news_alerts" topic for broadcast news notifications
-    await _messaging.subscribeToTopic('news_alerts');
+    await _subscribeToTopicWithRetry('news_alerts');
 
     /*
      * 5b. Keep the server's delivery address up to date.
@@ -107,6 +107,33 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       removeBadge();
     });
+  }
+
+  static Future<void> _subscribeToTopicWithRetry(String topic) async {
+    const maxAttempts = 3;
+    const baseDelay = Duration(seconds: 2);
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Bounded, so a device without working Play services fails this attempt
+        // instead of leaving the call pending forever.
+        await _messaging
+            .subscribeToTopic(topic)
+            .timeout(const Duration(seconds: 5));
+        if (kDebugMode) {
+          print('Subscribed to topic: $topic');
+        }
+        return;
+      } catch (e) {
+        if (attempt == maxAttempts) {
+          if (kDebugMode) {
+            print('Topic subscription failed after $maxAttempts attempts: $e');
+          }
+          return;
+        }
+        await Future.delayed(baseDelay * attempt);
+      }
+    }
   }
 
   /// Displays head-up notification banner when app is open
@@ -199,7 +226,7 @@ class NotificationService {
     try {
       // No session means nobody is signed in, so there is nobody to register
       // this handset to and the endpoint would answer 401.
-      if ((await StudentSessionStore.read()).trim().isEmpty) return;
+      if ((await StudentSessionStore.readValid()).trim().isEmpty) return;
 
       final address = (token ?? await getFcmToken() ?? '').trim();
 
@@ -220,11 +247,11 @@ class NotificationService {
   /// is guarded by that session. Phones get shared and sold, and what must not
   /// happen is the next "your books are ready" landing on somebody else's lock
   /// screen naming this student's order.
-  static Future<void> forgetWithServer({InventoryApi? api}) async {
+  static Future<void> forgetWithServer({String? token, InventoryApi? api}) async {
     try {
-      if ((await StudentSessionStore.read()).trim().isEmpty) return;
+      if ((await StudentSessionStore.readValid()).trim().isEmpty) return;
 
-      final address = (await getFcmToken() ?? '').trim();
+      final address = (token ?? await getFcmToken() ?? '').trim();
 
       if (address.isEmpty) return;
 

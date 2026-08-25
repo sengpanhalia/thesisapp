@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -15,8 +17,14 @@ import 'package:thesisapp/service/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.initialize();
+
+  // The app starts first; notifications set themselves up in the background.
+  // Firebase Cloud Messaging blocks on Google Play services, and a device
+  // without working Play services — an emulator, most often — leaves that call
+  // pending forever. Awaiting it here held runApp() back and stuck the app on
+  // its splash logo. Its own errors are the service's to log.
   runApp(const MyApp());
+  unawaited(NotificationService.initialize().catchError((_) {}));
 }
 
 class MyApp extends StatelessWidget {
