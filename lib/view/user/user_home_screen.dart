@@ -15,6 +15,7 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/service/student_directory.dart';
+import 'package:thesisapp/service/student_session_store.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/notification_screen.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
@@ -96,12 +97,16 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchReadyForPickupCount() async {
-    final studentId = context.read<AuthProvider>().user?.student_id.trim();
+    // The badge reads the student's *own* reservations, so it needs their
+    // signed session — orders scoped by a bare student number are refused now.
+    // Without a session there is nobody to count for, so skip quietly rather
+    // than let me.php answer 401: the badge is not worth a sign-in prompt.
+    final session = await StudentSessionStore.read();
 
-    if (studentId == null || studentId.isEmpty) return;
+    if (session.isEmpty) return;
 
     try {
-      final reservations = await _api.reservationsFor(studentId);
+      final reservations = await _api.myReservations();
       if (!mounted) return;
 
       setState(() {
