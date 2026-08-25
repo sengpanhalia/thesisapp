@@ -9,6 +9,13 @@ import 'package:thesisapp/util/api_config.dart';
 /// carries the same permanent key. There is no per-device issuing any more; the
 /// old "Settings ▸ API Tokens" screen was removed.
 ///
+/// The value lives in a config file rather than being retyped each run: copy
+/// `dart_defines.example.json` to `dart_defines.json` (gitignored — the token
+/// never enters the repository) and run with `./run.sh`, which passes
+/// `--dart-define-from-file=dart_defines.json`. A bare `flutter run`, or one
+/// after `flutter clean`, compiles this as empty — which is why the app then
+/// asks for a key — so the file has to be passed every build.
+///
 /// Precedence:
 ///
 ///  1. the token baked into the build (`USEA_API_TOKEN`), when there is one —

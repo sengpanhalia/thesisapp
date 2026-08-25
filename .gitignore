@@ -48,3 +48,6 @@ app.*.map.json
 
 # Gradle build output. /build/ above only matches the repository root.
 /android/build/
+
+# Local build config: the API token + base URL, never committed.
+dart_defines.json
