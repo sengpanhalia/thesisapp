@@ -27,10 +27,23 @@ class ApiConfig {
     defaultValue: _defaultBaseUrl,
   );
 
-  /// The bearer token, supplied at build time. Empty by default: no token is
-  /// ever committed to this repository. See [ApiTokenStore], which prefers a
-  /// token the operator typed into the app over this one.
-  static const String buildTimeToken = String.fromEnvironment('USEA_API_TOKEN');
+  /// The bearer token. Its default is baked in below, so the app is always
+  /// keyed: a bare `flutter run`, or one after `flutter clean`, still carries it
+  /// and never shows "ask the book counter for a new one". This is a client
+  /// credential that already ships inside every installed build, so holding it
+  /// here (in this private repository) is no more exposed than in the APK.
+  /// Override per build with --dart-define=USEA_API_TOKEN=…; rotate by changing
+  /// api.token in the server's config/secrets.json and the default below.
+  static const String buildTimeToken = String.fromEnvironment(
+    'USEA_API_TOKEN',
+    defaultValue: _bakedToken,
+  );
+
+  /// The one permanent token — `api.token` from the server's
+  /// `config/secrets.json`. Fill this single value in once and every
+  /// `flutter run` is keyed; until then the app runs unkeyed and the counter
+  /// message shows.
+  static const String _bakedToken = 'PASTE_API_TOKEN_HERE';
 
   static Uri endpoint(String file, [Map<String, String>? query]) {
     final base = baseUrl.endsWith('/')
