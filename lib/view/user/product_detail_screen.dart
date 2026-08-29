@@ -9,7 +9,6 @@ import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/full_image_view.dart';
-import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/component/product_spec_row.dart';
 import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
@@ -18,6 +17,7 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/view/user/checkout_payment.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -151,11 +151,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _buyNow({int quantity = 1}) async {
-    final navigationProvider = context.read<NavigationProvider>();
+    // Buy Now means buy now: add the copy, then go straight to checkout rather
+    // than dropping the student on the cart tab to find the button themselves.
     final added = await _addToCart(context, quantity: quantity);
     if (!added || !mounted) return;
-    navigationProvider.setIndex(2);
-    Navigator.of(context).popUntil((route) => route.isFirst);
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CheckoutPayment()),
+    );
   }
 
   Future<int?> _showQuantityDialog(
