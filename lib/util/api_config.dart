@@ -27,23 +27,33 @@ class ApiConfig {
     defaultValue: _defaultBaseUrl,
   );
 
-  /// The bearer token. Its default is baked in below, so the app is always
-  /// keyed: a bare `flutter run`, or one after `flutter clean`, still carries it
-  /// and never shows "ask the book counter for a new one". This is a client
-  /// credential that already ships inside every installed build, so holding it
-  /// here (in this private repository) is no more exposed than in the APK.
-  /// Override per build with --dart-define=USEA_API_TOKEN=…; rotate by changing
-  /// api.token in the server's config/secrets.json and the default below.
+  /// The bearer token baked into this build.
+  ///
+  /// It must match `api.token` in the server's `config/secrets.json`. The server
+  /// checks it with `hash_equals`, so even a whitespace mismatch is a refusal.
+  ///
+  /// **If the baked token ever drifts from the server, students are not locked
+  /// out.** The server now falls back to the student's signed session whenever
+  /// the bearer token is absent or invalid, so the catalogue, orders, profile
+  /// and notifications keep working. The token only matters for staff or bot
+  /// callers that rely on its authority.
+  ///
+  /// Override per build with `--dart-define=USEA_API_TOKEN=…`; to rotate, change
+  /// `api.token` in `config/secrets.json` and the default below together.
   static const String buildTimeToken = String.fromEnvironment(
     'USEA_API_TOKEN',
     defaultValue: _bakedToken,
   );
 
-  /// The one permanent token — `api.token` from the server's
-  /// `config/secrets.json`. Fill this single value in once and every
-  /// `flutter run` is keyed; until then the app runs unkeyed and the counter
-  /// message shows.
-  static const String _bakedToken = 'PASTE_API_TOKEN_HERE';
+  /// The current permanent token — `api.token` from the server's
+  /// `config/secrets.json`.
+  ///
+  /// Keep this in sync with the server. When the server rotates the token,
+  /// update this value and rebuild. Because the server falls back to student
+  /// sessions for the student endpoints, a mismatch here does not break the
+  /// student app — but a staff or bot build that depends on this token will
+  /// need it corrected.
+  static const String _bakedToken = '53a2b48099dc86710e266858c269aae33cc6f089c95ea6762e0cf7409c4d7831';
 
   static Uri endpoint(String file, [Map<String, String>? query]) {
     final base = baseUrl.endsWith('/')

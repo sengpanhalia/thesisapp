@@ -201,7 +201,7 @@ class ApiClient {
       headers['Authorization'] = 'Bearer $token';
     }
 
-    final session = (await StudentSessionStore.read()).trim();
+    final session = (await StudentSessionStore.readValid()).trim();
     if (session.isNotEmpty) {
       headers['X-Student-Session'] = session;
     }

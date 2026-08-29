@@ -101,7 +101,7 @@ class HomePageState extends State<HomePage> {
     // signed session — orders scoped by a bare student number are refused now.
     // Without a session there is nobody to count for, so skip quietly rather
     // than let me.php answer 401: the badge is not worth a sign-in prompt.
-    final session = await StudentSessionStore.read();
+    final session = await StudentSessionStore.readValid();
 
     if (session.isEmpty) return;
 

@@ -40,7 +40,6 @@ class AuthProvider extends ChangeNotifier {
           final Map<String, dynamic> map = jsonDecode(userJson);
           _user = User.fromJson(map);
         } catch (e) {
-          // Corrupted data – clear it
           await _prefs.remove('user');
           _isLoggedIn = false;
           await _prefs.setBool('isLoggedIn', false);
@@ -48,6 +47,16 @@ class AuthProvider extends ChangeNotifier {
       } else {
         _isLoggedIn = false;
         await _prefs.setBool('isLoggedIn', false);
+      }
+
+      if (_isLoggedIn) {
+        final session = await StudentSessionStore.readValid();
+        if (session.isEmpty) {
+          _isLoggedIn = false;
+          _user = null;
+          await _prefs.setBool('isLoggedIn', false);
+          await _prefs.remove('user');
+        }
       }
     } finally {
       _isLoading = false;

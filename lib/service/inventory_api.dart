@@ -233,7 +233,7 @@ class InventoryApi {
   /// none — in which case `me.php` answers 401 and the app signs the student
   /// out, which is the right outcome.
   Future<Map<String, String>> _studentSessionHeader() async {
-    final session = await StudentSessionStore.read();
+    final session = await StudentSessionStore.readValid();
 
     return session.isEmpty ? const {} : {'X-Student-Session': session};
   }
