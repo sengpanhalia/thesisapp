@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Saving the e-receipt into the gallery. API 33+ writes through MediaStore
+         and needs no permission; API 32 and below need this to write an image. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
 
     <application
         android:label="USEA Store"

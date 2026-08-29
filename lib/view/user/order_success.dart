@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:lottie/lottie.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/component/component_app.dart';
@@ -43,6 +46,7 @@ class OrderSuccessScreen extends StatefulWidget {
 class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSavingPdf = false;
+  bool _isSavingImage = false;
   String? _resolvedTrackingNumber;
   UserDetail? _userDetail;
 
@@ -131,6 +135,55 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     } finally {
       if (mounted) {
         setState(() => _isSavingPdf = false);
+      }
+    }
+  }
+
+  /// Saves the receipt as an image into the phone's gallery — where a student
+  /// looks for a screenshot — rather than a PDF buried in the Downloads folder.
+  Future<void> _saveReceiptImage() async {
+    if (_isSavingImage) return;
+    setState(() => _isSavingImage = true);
+    final lang = AppLocalizations.of(context)!;
+
+    try {
+      // Android 12 and below need the storage permission to write to the photo
+      // library; 13+ and iOS do not, so a denial there is not fatal and the
+      // save is still attempted.
+      if (Platform.isAndroid) {
+        await Permission.storage.request();
+      }
+
+      final bytes = await _screenshotController.capture(
+        pixelRatio: 3.0,
+        delay: const Duration(milliseconds: 80),
+      );
+
+      var saved = false;
+      if (bytes != null) {
+        final result = await ImageGallerySaver.saveImage(
+          bytes,
+          quality: 100,
+          name: 'USEA-receipt-${_resolvedTrackingNumber ?? DateTime.now().millisecondsSinceEpoch}',
+        );
+        saved = result is Map && (result['isSuccess'] == true);
+      }
+
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: saved ? lang.translate('saved to gallery') : lang.translate('could not save receipt'),
+        backgroundColor: saved ? Colors.green : Colors.redAccent,
+      );
+    } catch (_) {
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: lang.translate('could not save receipt'),
+          backgroundColor: Colors.redAccent,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingImage = false);
       }
     }
   }
@@ -511,6 +564,40 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                     //   ),
                     // ),
                     // const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSavingImage ? null : _saveReceiptImage,
+                        icon: _isSavingImage
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.photo_library_rounded),
+                        label: Text(
+                          lang.translate('save to gallery'),
+                          style: TextStyle(
+                            fontFamily: getFontFamily(context),
+                            fontSize: fontSubtitle,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFFFFFFF),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D6A4F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
