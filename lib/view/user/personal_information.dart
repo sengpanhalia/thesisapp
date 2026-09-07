@@ -295,21 +295,31 @@ Widget CardYear({
 }) {
   final lang = AppLocalizations.of(context)!;
 
-  // The server sends year and semester already labelled (e.g. "ឆ្នាំទី 3",
+  // The server sends year and semester already labelled ("ឆ្នាំទី 3",
   // "ឆមាសទី 2 · 2024–2025") and usually sends nothing for the promotion or the
-  // academic year. The old four-column card therefore duplicated those labels,
-  // left two columns empty, and squeezed the long semester text until the row
-  // looked broken. Show instead a centred, wrapping row of just the facts that
-  // are present — self-labelled ones as they are, the others with their label —
-  // so nothing overflows and nothing is repeated or blank.
-  final items = <String>[
-    if (year.trim().isNotEmpty) year.trim(),
-    if (semester.trim().isNotEmpty) semester.trim(),
-    if (stage_name.trim().isNotEmpty) '${lang.translate('promotion')} ${stage_name.trim()}',
-    if (academic_year.trim().isNotEmpty) '${lang.translate('acad_year')} ${academic_year.trim()}',
+  // academic year. Show a proper aligned table: the label as a heading, the
+  // value directly under it. Strip the label back out of the value so the
+  // heading is not repeated, and skip any field with no value so the remaining
+  // columns share the width evenly and line up.
+  String strip(String value, String label) {
+    final v = value.trim();
+    return v.startsWith(label) ? v.substring(label.length).trim() : v;
+  }
+
+  final entries = <MapEntry<String, String>>[
+    if (year.trim().isNotEmpty)
+      MapEntry(lang.translate('student_study_year'),
+          strip(year, lang.translate('student_study_year'))),
+    if (semester.trim().isNotEmpty)
+      MapEntry(lang.translate('semester'),
+          strip(semester, lang.translate('semester'))),
+    if (stage_name.trim().isNotEmpty)
+      MapEntry(lang.translate('promotion'), stage_name.trim()),
+    if (academic_year.trim().isNotEmpty)
+      MapEntry(lang.translate('acad_year'), academic_year.trim()),
   ];
 
-  if (items.isEmpty) return const SizedBox.shrink();
+  if (entries.isEmpty) return const SizedBox.shrink();
 
   return Container(
     width: double.infinity,
@@ -330,32 +340,56 @@ Widget CardYear({
         vertical: Height10,
         horizontal: MgPd10,
       ),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 8,
-        children: items
-            .map((text) => _YearChip(context: context, text: text))
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: entries
+            .map((e) => Expanded(
+                  child: _CardYearItem(
+                    context: context,
+                    title: e.key,
+                    value: e.value,
+                  ),
+                ))
             .toList(),
       ),
     ),
   );
 }
 
-Widget _YearChip({required BuildContext context, required String text}) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(
-      color: GBackground3,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: fontTitle,
-        fontFamily: getFontFamily(context),
-        color: TextColor,
+Widget _CardYearItem({
+  required BuildContext context,
+  required String title,
+  required String value,
+}) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Text(
+        title,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: fontText,
+          fontFamily: getFontFamily(context),
+          color: TextSoftColor,
+        ),
       ),
-    ),
+      SizedBox(height: Height5),
+      // No FittedBox: a long value (e.g. "2 · 2024–2025") wraps onto a second
+      // line instead of being shrunk, so every column keeps the same text size
+      // and the values stay lined up under their headings.
+      Text(
+        value,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: fontTitle,
+          fontFamily: getFontFamily(context),
+          color: TextColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
   );
 }
