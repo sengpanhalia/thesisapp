@@ -294,6 +294,23 @@ Widget CardYear({
   required String academic_year,
 }) {
   final lang = AppLocalizations.of(context)!;
+
+  // The server sends year and semester already labelled (e.g. "ឆ្នាំទី 3",
+  // "ឆមាសទី 2 · 2024–2025") and usually sends nothing for the promotion or the
+  // academic year. The old four-column card therefore duplicated those labels,
+  // left two columns empty, and squeezed the long semester text until the row
+  // looked broken. Show instead a centred, wrapping row of just the facts that
+  // are present — self-labelled ones as they are, the others with their label —
+  // so nothing overflows and nothing is repeated or blank.
+  final items = <String>[
+    if (year.trim().isNotEmpty) year.trim(),
+    if (semester.trim().isNotEmpty) semester.trim(),
+    if (stage_name.trim().isNotEmpty) '${lang.translate('promotion')} ${stage_name.trim()}',
+    if (academic_year.trim().isNotEmpty) '${lang.translate('acad_year')} ${academic_year.trim()}',
+  ];
+
+  if (items.isEmpty) return const SizedBox.shrink();
+
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
@@ -313,59 +330,32 @@ Widget CardYear({
         vertical: Height10,
         horizontal: MgPd10,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 10,
-            child: _CardYearItem(context: context, title: lang.translate('student_study_year'), value: year),
-          ),
-          Expanded(
-            flex: 10,
-            child: _CardYearItem(context: context, title: lang.translate('semester'), value: semester),
-          ),
-          Expanded(
-            flex: 10,
-            child: _CardYearItem(context: context, title: lang.translate('promotion'), value: stage_name),
-          ),
-          Expanded(
-            flex: 15,
-            child: _CardYearItem(context: context, title: lang.translate('acad_year'), value: academic_year),
-          ),
-        ],
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: items
+            .map((text) => _YearChip(context: context, text: text))
+            .toList(),
       ),
     ),
   );
 }
 
-Widget _CardYearItem({required BuildContext context, required String title, required String value}) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(
-        title,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: fontTitle,
-          fontFamily: getFontFamily(context),
-          color: TextColor,
-        ),
+Widget _YearChip({required BuildContext context, required String text}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: GBackground3,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: fontTitle,
+        fontFamily: getFontFamily(context),
+        color: TextColor,
       ),
-      SizedBox(height: Height10),
-      FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          value,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          style: TextStyle(
-            fontSize: fontTitle,
-            fontFamily: getFontFamily(context),
-            color: TextColor,
-          ),
-        ),
-      ),
-    ],
+    ),
   );
 }
