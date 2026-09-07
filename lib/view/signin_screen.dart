@@ -96,15 +96,11 @@ class _SigninScreenState extends State<SigninScreen> {
        */
       unawaited(NotificationService.registerWithServer());
 
-      // The registry gave essentially every student the same password and
-      // nobody changed it. Signing in worked, but the credential guards
-      // nothing — tell the student so, without blocking them.
-      if (result.passwordIsSharedDefault) {
-        Fluttertoast.showToast(
-          msg: lang.translate('password_is_shared_default'),
-          toastLength: Toast.LENGTH_LONG,
-        );
-      }
+      // The shared-default-password notice is intentionally not shown in
+      // production: the shared credential is a known, accepted situation, so
+      // warning every student about it on each sign-in is only noise.
+      // (result.passwordIsSharedDefault still arrives from the server if ever
+      // needed again.)
 
       if (!mounted) return;
       _openHome();
