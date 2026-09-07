@@ -23,7 +23,14 @@ class ComponentProfile extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Image.asset(image, height: 30, width: 30),
+          // Tinted to the USEA brand navy — the source PNG is orange.
+          child: Image.asset(
+            image,
+            height: 30,
+            width: 30,
+            color: ButtonColor,
+            colorBlendMode: BlendMode.srcIn,
+          ),
         ),
       ),
       title: Text(

@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/alert_dialog.dart';
-import 'package:thesisapp/component/api_key_dialog.dart';
 import 'package:thesisapp/component/button.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/component_profile.dart';
@@ -196,47 +195,6 @@ class _UserProfileState extends State<UserProfile> {
                               ),
                             );
                           },
-                        ),
-                        // ComponentProfile(
-                        //   image: 'assets/graduate.png',
-                        //   title: lang.translate('account_information'),
-                        // ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: Height20),
-                  Text(
-                    lang.translate('privacy'),
-                    style: TextStyle(
-                      fontFamily: getFontFamily(context),
-                      fontSize: fontAppBar,
-                      color: TextColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: Height15),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: CardColor,
-                      border: Border.all(color: WhiteColor, width: 1.5),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: BlackColor.withOpacity(0.2),
-                          blurRadius: 4.0,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        ComponentProfile(
-                          image: 'assets/graduate.png',
-                          title: lang.translate('api_key'),
-                          // The same dialog the sign-in screen offers when it
-                          // is refused for want of a key — one copy, so the
-                          // wording of the two cannot drift apart.
-                          onTap: () => showApiKeyDialog(context),
                         ),
                         ComponentProfile(
                           image: 'assets/graduate.png',

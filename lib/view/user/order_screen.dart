@@ -411,7 +411,17 @@ class _OrderScreenState extends State<OrderScreen> {
       children: [
         Icon(icon, size: 18, color: IconColor),
         const SizedBox(width: 10),
-        Text(text, style: TextStyle(color: TextColor, fontSize: fontText)),
+        // Expanded + ellipsis: a long item name (e.g. "Investment
+        // Management (…)") wraps within the card instead of overflowing
+        // the row to the right.
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: TextColor, fontSize: fontText),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
