@@ -5,13 +5,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
-import 'package:thesisapp/model/user_detail.dart';
-import 'package:thesisapp/provider/auth_provider.dart';
-import 'package:thesisapp/service/student_directory.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/main_screen.dart';
 import 'package:thesisapp/service/pdf_receipt_helper.dart';
@@ -45,10 +41,8 @@ class OrderSuccessScreen extends StatefulWidget {
 
 class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
-  bool _isSavingPdf = false;
   bool _isSavingImage = false;
   String? _resolvedTrackingNumber;
-  UserDetail? _userDetail;
 
   @override
   void initState() {
@@ -56,41 +50,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     // The reservation codes came back with the reservations themselves, so
     // there is nothing further to look up.
     _resolvedTrackingNumber = _normalizeTrackingNumber(widget.trackingNumber);
-    _fetchUserData();
-  }
-
-  Future<void> _fetchUserData() async {
-    final authUser = context.read<AuthProvider>().user;
-    if (authUser == null) return;
-
-    final detail = await StudentDirectory.fetch();
-
-    if (!mounted || detail == null) return;
-
-    setState(() => _userDetail = detail);
-  }
-
-  PdfReceiptHelper _buildPdfHelper() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
-    final name = (_userDetail?.name_kh.isNotEmpty == true)
-        ? _userDetail!.name_kh
-        : (user?.name_kh ?? '');
-
-    return PdfReceiptHelper(
-      context: context,
-      orderId: widget.orderId,
-      items: widget.items,
-      total: widget.total,
-      paymentMethod: widget.paymentMethod,
-      createdAt: widget.createdAt,
-      resolvedTrackingNumber: _resolvedTrackingNumber,
-      screenshotController: _screenshotController,
-      customerName: name,
-      customerGender: _userDetail?.gender,
-      customerDob: _userDetail?.date_of_birth,
-      customerPhone: _userDetail?.phone_number,
-    );
   }
 
   String? _normalizeTrackingNumber(dynamic value) {
@@ -126,18 +85,6 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   //   }
   //   return 'Order #${widget.orderId}';
   // }
-
-  Future<void> _saveReceiptPdf() async {
-    if (_isSavingPdf) return;
-    setState(() => _isSavingPdf = true);
-    try {
-      await _buildPdfHelper().saveReceiptPdf();
-    } finally {
-      if (mounted) {
-        setState(() => _isSavingPdf = false);
-      }
-    }
-  }
 
   /// Saves the receipt as an image into the phone's gallery — where a student
   /// looks for a screenshot — rather than a PDF buried in the Downloads folder.
@@ -588,42 +535,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D6A4F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _isSavingPdf ? null : _saveReceiptPdf,
-                        icon: _isSavingPdf
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.picture_as_pdf_rounded),
-                        label: Text(
-                          _isSavingPdf
-                              ? 'Saving ...'
-                              : Platform.isAndroid
-                              ? lang.translate('save receipt')
-                              : lang.translate('save receipt'),
-                          style: TextStyle(
-                            fontFamily: getFontFamily(context),
-                            fontSize: fontSubtitle,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFFFFFFF),
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D6A4F),
+                          backgroundColor: ButtonColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -646,7 +558,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          side: BorderSide(color: Theme.of(context).primaryColor),
+                          side: const BorderSide(color: ButtonColor),
                         ),
                         child: Text(
                           lang.translate('continue shopping'),
@@ -654,7 +566,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             fontFamily: getFontFamily(context),
                             fontSize: fontSubtitle,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).primaryColor,
+                            color: ButtonColor,
                           ),
                         ),
                       ),
