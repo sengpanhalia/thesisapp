@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -10,7 +12,7 @@ import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/main_screen.dart';
-import 'package:thesisapp/service/pdf_receipt_helper.dart';
+import 'package:thesisapp/service/receipt_format.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
   final int orderId;
@@ -101,10 +103,15 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         await Permission.storage.request();
       }
 
-      final bytes = await _screenshotController.capture(
+      // capture() only works on a widget wrapped in Screenshot(controller:),
+      // which is the receipt in build() below. Without that wrapper it had
+      // nothing to read and returned null, so every save — reserved or not —
+      // ended in the "could not save" toast.
+      final shot = await _screenshotController.capture(
         pixelRatio: 3.0,
         delay: const Duration(milliseconds: 80),
       );
+      final bytes = shot == null ? null : await _onReceiptBackground(shot, 3.0);
 
       var saved = false;
       if (bytes != null) {
@@ -119,13 +126,14 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
       if (!mounted) return;
       Fluttertoast.showToast(
         msg: saved ? lang.translate('saved to gallery') : lang.translate('could not save receipt'),
-        backgroundColor: saved ? Colors.green : Colors.redAccent,
+        backgroundColor: ButtonColor,
       );
-    } catch (_) {
+    } catch (error, stack) {
+      debugPrint('Saving the receipt to the gallery failed: $error\n$stack');
       if (mounted) {
         Fluttertoast.showToast(
           msg: lang.translate('could not save receipt'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: ButtonColor,
         );
       }
     } finally {
@@ -133,6 +141,40 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         setState(() => _isSavingImage = false);
       }
     }
+  }
+
+  /// The receipt on screen has no background of its own — it sits on the
+  /// page's gradient. Captured alone it is transparent, and both platforms
+  /// save the photo as a JPEG, which turns transparency black. So the capture
+  /// is laid on the same gradient, with a margin, before it is saved.
+  Future<Uint8List> _onReceiptBackground(Uint8List png, double pixelRatio) async {
+    final codec = await ui.instantiateImageCodec(png);
+    final receipt = (await codec.getNextFrame()).image;
+
+    final margin = 16 * pixelRatio;
+    final width = receipt.width + margin * 2;
+    final height = receipt.height + margin * 2;
+    final area = Rect.fromLTWH(0, 0, width, height);
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, area);
+    canvas.drawRect(area, Paint()..color = Colors.white);
+    canvas.drawRect(
+      area,
+      Paint()
+        ..shader = gradientColor(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(area),
+    );
+    canvas.drawImage(receipt, Offset(margin, margin), Paint());
+
+    final composed = await recorder.endRecording().toImage(width.round(), height.round());
+    final data = await composed.toByteData(format: ui.ImageByteFormat.png);
+    receipt.dispose();
+    composed.dispose();
+
+    return data!.buffer.asUint8List();
   }
 
   Widget _infoRow(String label, String value) {
@@ -158,7 +200,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     final style = TextStyle(
       fontSize: bold ? 18 : 14,
       fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-      color: bold ? Colors.green[700] : Colors.grey[800],
+      color: bold ? ButtonColor : Colors.grey[800],
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -166,7 +208,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[700])),
-          Text(PdfReceiptHelper.money(amount), style: style),
+          Text(ReceiptFormat.money(amount), style: style),
         ],
       ),
     );
@@ -207,7 +249,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   }
 
   Widget _buildReceiptContent({required bool showImages}) {
-    final paymentStatus = PdfReceiptHelper.paymentStatus(widget.paymentMethod);
+    final paymentStatus = ReceiptFormat.paymentStatus(widget.paymentMethod);
     final trackingNumber = _trackingNumberLabel();
     final lang = AppLocalizations.of(context)!;
 
@@ -283,11 +325,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           children: [
             _infoRow(
               lang.translate('receipt date'),
-              PdfReceiptHelper.formatDate(widget.createdAt),
+              ReceiptFormat.formatDate(widget.createdAt),
             ),
             _infoRow(
               lang.translate('payment method'),
-              PdfReceiptHelper.paymentLabel(widget.paymentMethod),
+              ReceiptFormat.paymentLabel(widget.paymentMethod),
             ),
             _infoRow(lang.translate('payment status'), paymentStatus),
             _infoRow(lang.translate('code number of order'), trackingNumber),
@@ -331,12 +373,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 separatorBuilder: (_, __) => const Divider(height: 20),
                 itemBuilder: (context, index) {
                   final item = widget.items[index];
-                  final name = PdfReceiptHelper.itemName(item);
-                  final qty = PdfReceiptHelper.parseInt(item['quantity']);
-                  final originalUnitPrice = PdfReceiptHelper.parseDouble(item['price']);
+                  final name = ReceiptFormat.itemName(item);
+                  final qty = ReceiptFormat.parseInt(item['quantity']);
+                  final originalUnitPrice = ReceiptFormat.parseDouble(item['price']);
                   final double totalPricePerItem = originalUnitPrice * qty;
                   final imageUrl = showImages
-                      ? PdfReceiptHelper.resolveItemImageUrl(item)
+                      ? ReceiptFormat.resolveItemImageUrl(item)
                       : null;
 
                   return Row(
@@ -386,7 +428,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${lang.translate('qty')}: $qty - ${PdfReceiptHelper.money(originalUnitPrice)}',
+                              '${lang.translate('qty')}: $qty - ${ReceiptFormat.money(originalUnitPrice)}',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: fontText,
@@ -416,7 +458,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            PdfReceiptHelper.money(totalPricePerItem),
+                            ReceiptFormat.money(totalPricePerItem),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           // if (hasDiscount)
@@ -477,7 +519,13 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildReceiptContent(showImages: true),
+                    // What "save to gallery" captures. The controller reads
+                    // this widget and nothing else, so the buttons below are
+                    // left out of the photo.
+                    Screenshot(
+                      controller: _screenshotController,
+                      child: _buildReceiptContent(showImages: true),
+                    ),
                     const SizedBox(height: 16),
                     // SizedBox(
                     //   width: double.infinity,

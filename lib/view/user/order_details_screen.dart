@@ -238,7 +238,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ButtonColor),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -275,7 +275,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           fontFamily: getFontFamily(context),
                           fontSize: fontSubtitle,
                           fontWeight: FontWeight.bold,
-                          color: GreenColor,
+                          color: ButtonColor,
                         ),
                       ),
                       const Spacer(),
@@ -297,7 +297,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: GreenColor.withValues(alpha: 0.12),
+                        color: ButtonColor.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(
@@ -306,7 +306,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           fontFamily: getFontFamily(context),
                           fontSize: fontText,
                           fontWeight: FontWeight.w600,
-                          color: GreenColor,
+                          color: ButtonColor,
                         ),
                       ),
                     ),
@@ -332,7 +332,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       _row(
                         lang.translate('payment status'),
                         _order.isPaid ? 'PAID' : 'PENDING',
-                        valueColor: _order.isPaid ? GreenColor : TextColor,
+                        valueColor: _order.isPaid ? ButtonColor : TextColor,
                       ),
                       if (_order.note.isNotEmpty)
                         _row(lang.translate('note'), _order.note),
@@ -434,17 +434,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.close_rounded, color: RedColor),
+                            : const Icon(Icons.close_rounded, color: ButtonColor),
                         label: Text(
                           lang.translate('cancel_reservation'),
                           style: TextStyle(
-                            color: RedColor,
+                            color: ButtonColor,
                             fontFamily: getFontFamily(context),
                           ),
                         ),
+                        // Blue like every other button on the app's order
+                        // screens; the confirm dialog is what guards the cancel.
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: RedColor),
+                          side: const BorderSide(color: ButtonColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),

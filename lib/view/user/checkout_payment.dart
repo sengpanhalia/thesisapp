@@ -83,7 +83,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ButtonColor),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,

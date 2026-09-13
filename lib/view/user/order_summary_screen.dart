@@ -159,7 +159,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ButtonColor),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -230,7 +230,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                   child: InfoRow(
                     label: 'Grand Total',
                     value: '\$${widget.total.toStringAsFixed(2)}',
-                    valueColor: Colors.green[700],
+                    valueColor: ButtonColor,
                     valueWeight: FontWeight.w700,
                   ),
                 ),

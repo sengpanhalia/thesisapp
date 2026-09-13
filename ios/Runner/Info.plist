@@ -46,6 +46,12 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<!--
+	  The receipt screen's "save to gallery" writes the receipt into Photos.
+	  iOS terminates an app that adds to the photo library without this key.
+	-->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save your USEA receipt to Photos so you can show it when collecting your order.</string>
+	<!--
 	  The inventory API is served by XAMPP at an IP address over plain HTTP,
 	  which App Transport Security blocks outright. Without this the app
 	  cannot reach it from an iPhone at all.

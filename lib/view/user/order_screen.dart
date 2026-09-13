@@ -488,8 +488,8 @@ class _OrderScreenState extends State<OrderScreen> {
 
   Widget _buildFilterButton(String label, OrderHistoryFilter filter) {
     final isSelected = _selectedFilter == filter;
-    final background = isSelected ? SoftGreen : Colors.white;
-    final borderColor = isSelected ? SoftGreen : StrokeCardColor;
+    final background = isSelected ? ButtonColor : Colors.white;
+    final borderColor = isSelected ? ButtonColor : StrokeCardColor;
     final textColor = isSelected ? Colors.white : TextColor;
 
     return Material(
@@ -509,7 +509,7 @@ class _OrderScreenState extends State<OrderScreen> {
             boxShadow: [
               if (isSelected)
                 BoxShadow(
-                  color: SoftGreen.withOpacity(0.25),
+                  color: ButtonColor.withOpacity(0.25),
                   blurRadius: 10,
                   offset: const Offset(0, 6),
                 ),
