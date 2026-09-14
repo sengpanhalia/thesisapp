@@ -1,154 +1,73 @@
-# Dashboard Metrics Calculation Documentation
+# How the dashboard figures are worked out
 
-## Overview
+This describes the **web system's** overview dashboard (USEA Smart Inventory
+Management System, `views/overview/summary.php`), not a screen of this app. It
+is kept here because the app shows some of the same numbers.
 
-The inventory dashboard displays four key metrics that are aggregated across three inventory types: **Material**, **Book**, and **Asset**.
-
----
-
-## 1. តម្លៃសរុប (Total Stock Value)
-
-**Displayed value:** $23,414.30
-
-### How it's calculated
-
-For each inventory type, the value is computed differently:
-
-**Materials & Books:**
-The value is calculated by iterating through every product and summing the value of its open batches:
-
-```
-value += batch.qty_remaining * batch.unit_cost
-```
-
-This is implemented in `ProductRepository::stockValue()` (lines 240-251), which:
-1. Retrieves all products via `$this->list()`
-2. For each product, fetches open batches with `$this->openBatches($id, $stockQty)`
-3. Multiplies remaining quantity by unit cost for each batch
-4. Returns the total rounded to 2 decimal places
-
-**Assets:**
-The value is the sum of the `value` column for all asset models in the `assets_items` table (lines 100-119 of `AssetRepository::summary()`).
-
-### Database tables & columns used
-
-- **Materials/Books:** `stock_orders` / `book_stock_orders` — `pro_id`, `qty` (as `balance`), `price` (as `unit_cost`)
-- **Assets:** `assets_items` — `asset_id`, `unit_price` (as `unit_cost`)
+Four figures are worked out for each catalogue — **Materials**, **Books** and
+**Assets** — and then added together. The values move with the data, so none is
+quoted here.
 
 ---
 
-## 2. ចំនួនសរុប (Total Units in Stock)
+## 1. តម្លៃសរុប — Total stock value
 
-**Displayed value:** 28,195
+**Materials and books** — `ProductRepository::stockValue()`:
 
-### How it's calculated
+- Takes every product that is not archived (`activeThresholds()`).
+- For each, walks its open FIFO batches (`openBatches()`): the deliveries whose
+  units are still on the shelf, oldest used first.
+- Adds `units still on the shelf × what was paid per unit` for every batch, and
+  rounds to 2 decimals.
 
-For each inventory type, the total units are computed as follows:
+So the value is what the remaining stock actually cost, not today's price.
 
-**Materials & Books:**
-The stock quantity for each product is derived in `ProductRepository::baseQuery()` (lines 793-885) and `stockMap()` (lines 348-379):
+**Assets** — `AssetRepository::summary()` adds each asset model's `value`, which
+`AssetRepository::list()` works out as the sum of `assets_items`.`unit_cost`
+over that model's units.
+
+## 2. ចំនួនសរុប — Total units in stock
+
+**Materials and books** — `ProductRepository::summary()` adds the stock on hand
+of every product that is not archived. Stock on hand comes from
+`ProductRepository::stockMap()`, per product:
 
 ```
-stock_qty = COALESCE(received.qty, 0) - COALESCE(issued.qty, 0) + COALESCE(adjusted.qty, 0)
+on hand = received (stock_orders / book_stock_orders . qty)
+        − issued   (stock_stockcontrol / book_stock_stockcontrol, signed by movement type)
+        + adjusted (stock_adjustment / book_stock_adjustment . ad_total)
 ```
 
-Where:
-- **Received** — sum of `qty` from `stock_orders` / `book_stock_orders` grouped by `pro_id`
-- **Issued** — sum of signed quantities from `stock_stockcontrol` / `book_stock_stockcontrol` grouped by `pro_id`
-- **Adjusted** — sum of `ad_total` from `stock_adjustment` / `book_stock_adjustment` grouped by `pro_id`
+It is summed from the history every time, never stored.
 
-The total units is then the sum of `stock_qty` across all products (line 227 in `ProductRepository::summary()`).
+**Assets** — the number of `assets_items` rows (units) across all models.
 
-**Assets:**
-The total units is the sum of `COALESCE(u.units, 0)` where `u.units` is the count of asset items per model from the `assets_items` table (lines 46-55 of `AssetRepository::list()`).
+## 3. ប្រភេទទំនិញ — Distinct items
 
-### Database tables & columns used
+- **Materials / Books:** the number of products that are not archived.
+- **Assets:** the number of asset models (`assets` rows).
 
-- **Materials/Books:**
-  - `stock_products` / `book_stock_products` — product list
-  - `stock_orders` / `book_stock_orders` — received quantities (`qty` as `balance`)
-  - `stock_stockcontrol` / `book_stock_stockcontrol` — issued quantities (`total` as `qty`, `txn_type`)
-  - `stock_adjustment` / `book_stock_adjustment` — adjusted quantities (`ad_total` as `qty`)
-- **Assets:**
-  - `assets_items` — `asset_id` (counted for units)
+## 4. ស្តុកជិតអស់ — Low stock
+
+- **Materials / Books:** a product (not archived) is low when its stock on hand
+  is **at or below its threshold** — the product's `low_stock` column, or 5 when
+  it has none.
+- **Assets:** a model is counted when it has **no units** at all.
 
 ---
 
-## 3. ប្រភេទទំនិញ (Distinct Items / Product Categories)
+## Adding them up
 
-**Displayed value:** 788
-
-### How it's calculated
-
-This is simply the count of all product rows (or asset models) across all inventory types:
-
-```
-items = count($rows)
-```
-
-For **Materials & Books**, `$rows` comes from `$repository->list()` which returns all rows from the product table.
-
-For **Assets**, `$rows` comes from `$this->list()` which returns all rows from the `assets` table (each row represents one type/category of asset).
-
-The grand total is the sum across all three inventory types (Material + Book + Asset).
-
-### Database tables & columns used
-
-- **Materials:** `stock_products` — all rows
-- **Books:** `book_stock_products` — all rows
-- **Assets:** `assets` — all rows
-
----
-
-## 4. ស្តុកជិតអស់ (Low Stock Items)
-
-**Displayed value:** 461
-
-### How it's calculated
-
-For each inventory type, "low stock" is determined differently:
-
-**Materials & Books:**
-A product is considered "low stock" when its `stock_qty` is less than or equal to its `low_stock_threshold`:
-
-```php
-if ($row['stock_qty'] <= $row['low_stock_threshold']) {
-    $low++;
-}
-```
-
-The threshold is configurable per product (default is typically 5 units).
-
-**Assets:**
-For assets, "low stock" means zero units remaining:
-
-```php
-'low' => count(array_filter($rows, static fn(array $r): bool => (int)$r['stock_qty'] === 0))
-```
-
-### Database tables & columns used
-
-- **Materials/Books:** `stock_products` / `book_stock_products` — `low_stock` (mapped to `low_stock_threshold`), plus derived `stock_qty`
-- **Assets:** `assets_items` — `asset_id` (counted to determine if any units exist)
-
----
-
-## Aggregation Process
-
-All four metrics are calculated per inventory type (Material, Book, Asset) and then summed to produce the grand totals displayed on the dashboard:
-
-1. Each system's `summary()` method returns: `['items', 'units', 'value', 'low']`
-2. The `_gather.php` view collects these per-system summaries
-3. The `summary.php` view sums them using `array_sum()` for `value` and `units`, and adds `items` and `low` across systems
-
-### Key source files
+1. Each catalogue's `summary()` returns `items`, `units`, `value` and `low`.
+2. `views/overview/_gather.php` collects the three and adds them into the grand
+   totals (`$grand`), skipping any catalogue the signed-in account cannot open.
+3. `views/overview/summary.php` shows the totals and the per-catalogue cards.
 
 | File | Role |
 |------|------|
-| `src/Repositories/ProductRepository.php` | Core calculations for Materials & Books |
-| `src/Repositories/AssetRepository.php` | Core calculations for Assets |
-| `views/overview/_gather.php` | Per-system aggregation |
-| `views/overview/summary.php` | Grand total display |
-| `includes/dashboard_cards.php` | Per-system dashboard cards |
-| `api/v1/stock.php` | REST API endpoint |
-| `live.php` | Live stats JSON endpoint |
+| `src/Repositories/ProductRepository.php` | Materials and books: `summary()`, `stockValue()`, `stockMap()`, `openBatches()` |
+| `src/Repositories/AssetRepository.php` | Assets: `list()`, `summary()` |
+| `views/overview/_gather.php` | Collects and totals the three catalogues |
+| `views/overview/summary.php` | The dashboard screen |
+| `api/v1/stock.php` | The same summary over the API |
+| `live.php` | The live counts the pages refresh |

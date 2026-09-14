@@ -4,7 +4,7 @@
 /// root, so the whole address ends in `/api/v1`. Override it at build time
 /// rather than editing this file:
 ///
-///   flutter run --dart-define=USEA_API_BASE_URL=http://<host-ip>/USEA/USEA_Smart_Inventory_Management_System/api/v1
+///   `flutter run --dart-define=USEA_API_BASE_URL=http://HOST_IP/USEA/USEA_Smart_Inventory_Management_System/api/v1`
 ///
 /// **Default is the Android emulator's alias to host localhost** (`10.0.2.2`).
 /// For a physical phone on the same WiFi, replace it with the host machine's

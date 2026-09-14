@@ -6,6 +6,8 @@ import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/book.dart';
+import 'package:thesisapp/service/api_client.dart';
+import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/checkout_payment.dart';
 
@@ -49,6 +51,17 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _refreshCartScreen() async {
     final cartProvider = context.read<CartProvider>();
     await cartProvider.fetchCart();
+
+    // A book that is no longer offered (sold out or taken off sale) leaves the
+    // basket; the rest take the current price and free copies. If the server
+    // cannot be reached the basket is left as it was.
+    try {
+      final offered = await InventoryApi().books();
+      await cartProvider.syncWithCatalogue(offered);
+    } on ApiException catch (error) {
+      debugPrint('Could not check the basket against the catalogue: $error');
+    }
+
     if (!mounted) return;
     setState(() {});
   }
