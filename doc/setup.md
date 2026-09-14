@@ -73,16 +73,10 @@ The application derives its own base URL from the running script, so **no path e
 
    `api.token` is the one token the Telegram bot and the mobile app use; there is
    no screen that issues tokens. Push notifications also need a Firebase service
-   account key at `config/firebase_service_account.json`
-   (`php scripts/check_push.php` says whether Google accepts it).
+   account key at `config/firebase_service_account.json`.
 
-3. Verify the database connection before proceeding:
-
-   ```bash
-   php scripts/check_db.php
-   ```
-
-   This connects to the database, reports which columns already exist, and makes no changes.
+3. Open `login.php`. If the database cannot be reached, or is missing this
+   system's tables, the page says so and names the SQL file to run.
 
 ### 1.4 Upgrade the Schema
 
@@ -98,9 +92,6 @@ new columns. It changes no existing column, value or trigger, runs on MySQL 8
 and MariaDB, and is safe to run twice. `New Table and Field.md` beside it lists
 every table and column with its purpose.
 
-`php scripts/migrate.php` is for development copies only; it is not run on the
-server.
-
 ### 1.5 Bootstrap Administrators
 
 `config/access.php` lists the usernames who must be able to sign in before
@@ -109,8 +100,8 @@ in with their existing university password straight after the schema upgrade —
 their ADMIN role is filled in by the SQL, and also written at their first
 sign-in. They then give everyone else a role in Settings ▸ Users.
 
-`php scripts/sync_access.php` applies the file again if needed. It never creates
-accounts — it only grants roles to existing ones.
+Nothing is created: roles are only ever granted to accounts the university
+already has.
 
 ### 1.6 Enable Production Mode
 
@@ -126,15 +117,13 @@ This disables on-screen error messages. Errors are written to the web server log
 
 ### 1.7 Verify Installation
 
-Run the full test suite:
+Sign in as an administrator and open each system once (Stock, Book, Reception,
+Asset, Settings). With the bot switched on, Settings ▸ AI & Telegram should say
+"Bot is running", and this should end with "All required checks passed":
 
 ```bash
-sh tests/run.sh
+php telegram-bot/telegram_bot.php doctor
 ```
-
-This runs 23 checks, on a development or test copy — it signs in over HTTP as
-`bivc` and rolls its writes back; the migration check builds a scratch copy and
-drops it. Do not run it against the live server.
 
 ### 1.8 Optional: Telegram Bot
 
@@ -146,15 +135,16 @@ If you want the Telegram bot active:
    `chat_book` (books). A room with no chat is not sent anything.
 3. Make sure `api.token` and `api.base_url` are set in `config/secrets.json`;
    the bot reads both.
-4. Check and start it: `php scripts/telegram_bot.php doctor`, then
-   `php scripts/telegram_bot.php start`.
+4. Check and start it: `php telegram-bot/telegram_bot.php doctor`, then
+   `php telegram-bot/telegram_bot.php start`. After that, the switch on the
+   settings screen starts and stops it.
 
 **Choose one way to keep the bot running:**
 
 **Option A — Cron watcher (works everywhere):**
 
 ```bash
-* * * * * cd /path/to/USEA_Smart_Inventory_Management_System && php scripts/telegram_bot.php >> storage/telegram-bot-supervisor.log 2>&1
+* * * * * cd /path/to/USEA_Smart_Inventory_Management_System && php telegram-bot/telegram_bot.php >> storage/telegram-bot-supervisor.log 2>&1
 ```
 
 **Option B — systemd (Linux servers):**
@@ -233,7 +223,7 @@ Keep `secrets.json` at mode 600 or 640. Do **not** make it world-writable.
   location ^~ /storage/ { deny all; }
   ```
 
-- `database/backups/` — not served. Grow without pruning; each dump is ~140 MB.
+- `telegram-bot/` — not served (its `.htaccess` denies it); the two PHP files in it run only from the command line.
 
 **HTTPS:**
 
@@ -258,19 +248,22 @@ Cloudflare publishes the full list at `https://www.cloudflare.com/ips/`.
 **Nightly database backup:**
 
 ```bash
-0 2 * * * cd /path/to/USEA_Smart_Inventory_Management_System && php scripts/backup.php --quiet
+0 2 * * * mysqldump --single-transaction usea_main | gzip > /path/to/backups/usea_main-$(date +\%F).sql.gz
 ```
+
+(The database credentials come from the cron user's `~/.my.cnf`. Keep the
+backups outside the web root.)
 
 **Low-stock alerts (twice daily):**
 
 ```bash
-0 7,13 * * * cd /path/to/USEA_Smart_Inventory_Management_System && php scripts/stock_alerts.php >> storage/stock-alerts.log 2>&1
+0 7,13 * * * cd /path/to/USEA_Smart_Inventory_Management_System && php telegram-bot/stock_alerts.php >> storage/stock-alerts.log 2>&1
 ```
 
 **Telegram bot supervisor (if using cron, not systemd):**
 
 ```bash
-* * * * * cd /path/to/USEA_Smart_Inventory_Management_System && php scripts/telegram_bot.php >> storage/telegram-bot-supervisor.log 2>&1
+* * * * * cd /path/to/USEA_Smart_Inventory_Management_System && php telegram-bot/telegram_bot.php >> storage/telegram-bot-supervisor.log 2>&1
 ```
 
 ### 1.12 Legacy Media
