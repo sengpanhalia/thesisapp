@@ -48,6 +48,32 @@ class AppNotification {
   final bool isRead;
   final DateTime? createdAt;
 
+  AppNotification copyWith({
+    int? id,
+    String? titleEn,
+    String? titleKh,
+    String? bodyEn,
+    String? bodyKh,
+    String? type,
+    String? orderCode,
+    bool? isBroadcast,
+    bool? isRead,
+    DateTime? createdAt,
+  }) {
+    return AppNotification(
+      id: id ?? this.id,
+      titleEn: titleEn ?? this.titleEn,
+      titleKh: titleKh ?? this.titleKh,
+      bodyEn: bodyEn ?? this.bodyEn,
+      bodyKh: bodyKh ?? this.bodyKh,
+      type: type ?? this.type,
+      orderCode: orderCode ?? this.orderCode,
+      isBroadcast: isBroadcast ?? this.isBroadcast,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   /// The title in the language asked for, falling back to whichever exists.
   ///
   /// Falling back rather than showing an empty line: a message sent by hand

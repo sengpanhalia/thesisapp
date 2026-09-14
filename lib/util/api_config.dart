@@ -20,7 +20,7 @@ class ApiConfig {
   const ApiConfig._();
 
   static const String _defaultBaseUrl =
-      'http://10.0.2.2/USEA/USEA_Smart_Inventory_Management_System/api/v1';
+      'http://192.168.3.3/USEA_Smart_Inventory_Management_System/api/v1';
 
   static const String baseUrl = String.fromEnvironment(
     'USEA_API_BASE_URL',

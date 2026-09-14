@@ -40,6 +40,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   List<AppNotification> _messages = [];
   bool _isLoading = true;
   String? _loadError;
+  bool _isMarkingAll = false;
+
+  bool get _hasUnread => _messages.any((m) => !m.isRead);
 
   @override
   void initState() {
@@ -59,16 +62,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _isLoading = false;
       });
 
-      /*
-       * Opening the screen is reading them.
-       *
-       * Marked after the list is on screen rather than before it, so the
-       * student still sees which ones were new — the unread marker is drawn
-       * from the list already fetched, and only the server's count moves.
-       * Failures are swallowed: a badge that is one out is not worth an error
-       * message over a list that loaded perfectly well.
-       */
-      await _markEverythingRead();
+      await NotificationService.updateBadgeCount(inbox.unread);
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -78,18 +72,45 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  Future<void> _markEverythingRead() async {
-    // A broadcast is one row shared by every student, so the server cannot
-    // record this student having read it — asking would change nothing.
-    if (_messages.every((message) => message.isRead || message.isBroadcast)) {
-      return;
-    }
+  Future<void> _markAllAsRead() async {
+    if (!_hasUnread || _isMarkingAll) return;
+
+    setState(() {
+      _isMarkingAll = true;
+      _messages = [
+        for (final m in _messages) m.copyWith(isRead: true),
+      ];
+    });
 
     try {
       final unread = await _api.markNotificationsRead();
       await NotificationService.updateBadgeCount(unread);
     } on ApiException {
-      // The list is what matters, and it is already on screen.
+      // The list is what matters, and it is already updated on screen.
+    } finally {
+      if (mounted) {
+        setState(() => _isMarkingAll = false);
+      }
+    }
+  }
+
+  Future<void> _markAsRead(AppNotification message) async {
+    if (message.isRead) return;
+
+    setState(() {
+      final index = _messages.indexWhere((m) => m.id == message.id);
+      if (index != -1) {
+        _messages[index] = _messages[index].copyWith(isRead: true);
+      }
+    });
+
+    if (!message.isBroadcast) {
+      try {
+        final unread = await _api.markNotificationsRead(id: message.id);
+        await NotificationService.updateBadgeCount(unread);
+      } on ApiException {
+        // Swallowed
+      }
     }
   }
 
@@ -126,6 +147,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
+  /// Shows a bottom sheet that slides up from the bottom with full notification details.
+  void _showDetail(AppNotification message, bool khmer) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _NotificationDetailSheet(
+        message: message,
+        khmer: khmer,
+        icon: _icon(message),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context)!;
@@ -145,6 +180,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          TextButton(
+            onPressed: _hasUnread && !_isMarkingAll ? _markAllAsRead : null,
+            style: TextButton.styleFrom(
+              foregroundColor: GreenColor,
+              disabledForegroundColor: TextSoftColor.withOpacity(0.4),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: Text(
+              lang.translate('mark_all_as_read'),
+              style: TextStyle(
+                fontFamily: getFontFamily(context),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
         centerTitle: true,
         elevation: 0,
       ),
@@ -209,7 +263,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: message.opensOrder ? () => _open(message) : null,
+      onTap: () {
+        _markAsRead(message);
+        if (message.opensOrder) {
+          _open(message);
+        } else {
+          _showDetail(message.copyWith(isRead: true), khmer);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -250,6 +311,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: TextSoftColor,
+            ),
           ],
         ),
       ),
@@ -262,5 +329,227 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return message.opensOrder
         ? Icons.inventory_rounded
         : Icons.notifications_rounded;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom-sheet detail panel
+// ---------------------------------------------------------------------------
+
+class _NotificationDetailSheet extends StatelessWidget {
+  const _NotificationDetailSheet({
+    required this.message,
+    required this.khmer,
+    required this.icon,
+  });
+
+  final AppNotification message;
+  final bool khmer;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNew = !message.isRead;
+    final createdAt = message.createdAt;
+
+    String? formattedDate;
+    if (createdAt != null) {
+      final local = createdAt.toLocal();
+      final h = local.hour.toString().padLeft(2, '0');
+      final m = local.minute.toString().padLeft(2, '0');
+      formattedDate = '${local.day}/${local.month}/${local.year}  $h:$m';
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // drag handle
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: StrokeSearchBar,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // scrollable body — shrinks to content, scrolls if very tall
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.80,
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                24, 16, 24,
+                MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // icon circle
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: isNew
+                          ? GreenColor.withOpacity(0.1)
+                          : GBackground3,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 32,
+                      color: isNew ? GreenColor : IconColor,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // title
+                  Text(
+                    message.title(khmer: khmer),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: getFontFamily(context),
+                      fontSize: fontHeadTitle,
+                      fontWeight: FontWeight.w700,
+                      color: TitleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // body
+                  Text(
+                    message.body(khmer: khmer),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: getFontFamily(context),
+                      fontSize: fontSubtitle,
+                      color: TextColor,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  const Divider(color: StrokeSearchBar),
+                  const SizedBox(height: 16),
+
+                  // type row
+                  _detailRow(
+                    context,
+                    rowIcon: Icons.label_outline_rounded,
+                    label: 'Type',
+                    value: message.isBroadcast
+                        ? 'Broadcast'
+                        : message.type
+                            .replaceAll('_', ' ')
+                            .split(' ')
+                            .map((w) => w.isEmpty
+                                ? ''
+                                : '${w[0].toUpperCase()}${w.substring(1)}')
+                            .join(' '),
+                  ),
+
+                  if (formattedDate != null) ...[
+                    const SizedBox(height: 12),
+                    _detailRow(
+                      context,
+                      rowIcon: Icons.access_time_rounded,
+                      label: 'Date',
+                      value: formattedDate,
+                    ),
+                  ],
+
+                  if ((message.orderCode ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _detailRow(
+                      context,
+                      rowIcon: Icons.receipt_long_rounded,
+                      label: 'Order',
+                      value: message.orderCode!,
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+
+                  // close button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ButtonColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Close',
+                        style: TextStyle(
+                          fontFamily: getFontFamily(context),
+                          fontSize: fontSubtitle,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(
+    BuildContext context, {
+    required IconData rowIcon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(rowIcon, size: 18, color: GreenColor),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: getFontFamily(context),
+                  fontSize: 11,
+                  color: TextSoftColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: getFontFamily(context),
+                  fontSize: fontText,
+                  color: TitleColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
