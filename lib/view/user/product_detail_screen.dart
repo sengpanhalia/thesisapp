@@ -52,7 +52,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _refreshBook() async {
     try {
       final fresh = await _api.refreshBook(widget.book);
-      if (!mounted || fresh == null) return;
+      if (!mounted) return;
+
+      // No longer in the catalogue the app offers — out of stock or taken off
+      // sale. The app does not show a student such a book, so it leaves the
+      // basket and the page closes. (A book with no code cannot be looked up,
+      // which is not the same as gone.)
+      if (fresh == null) {
+        if (widget.book.code.trim().isEmpty) return;
+        await context.read<CartProvider>().removeItem(widget.book.id);
+        if (mounted) Navigator.of(context).maybePop();
+        return;
+      }
 
       setState(() => _book = fresh);
     } on ApiException catch (error) {
@@ -445,18 +456,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   SizedBox(height: Height5),
-                  Text(
-                    availableQty == null
-                        ? lang.translate('availability_unknown')
-                        : availableQty <= 0
-                        ? lang.translate('out of stock')
-                        : '${lang.translate('in stock')}: $availableQty ${_book.unit}',
-                    style: TextStyle(
-                      fontFamily: getFontFamily(context),
-                      fontSize: fontText,
-                      color: (availableQty ?? 1) <= 0 ? RedColor : GreenColor,
-                    ),
-                  ),
+                  // No stock line at all — neither "out of stock" nor a count.
+                  // The app only offers books with copies free, and keeping
+                  // them in stock is the book room's job, not the student's
+                  // concern. The quantity picker below still stops at the
+                  // copies that are free.
                   // SizedBox(height: Height15),
                   // Container(
                   //   padding: const EdgeInsets.symmetric(

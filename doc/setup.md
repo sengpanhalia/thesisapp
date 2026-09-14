@@ -6,22 +6,22 @@ Step-by-step instructions for deploying the **USEA Smart Inventory Management Sy
 
 ## Table of Contents
 
-1. [Backend System (PHP + MariaDB)](#1-backend-system-php--mariadb)
+1. [Backend System (PHP + MySQL)](#1-backend-system-php--mysql)
 2. [Mobile App (Flutter)](#2-mobile-app-flutter)
 3. [Post-Deployment Checklist](#3-post-deployment-checklist)
 
 ---
 
-## 1. Backend System (PHP + MariaDB)
+## 1. Backend System (PHP + MySQL)
 
 ### 1.1 Prerequisites
 
 The server must have the following installed and running:
 
 - **PHP 8.2 or newer** with extensions: `pdo_mysql`, `mbstring`, `zip`, `curl`
-- **MariaDB 10.1.4 or newer** — **not MySQL**. The migration scripts use MariaDB-specific syntax (`ADD COLUMN IF NOT EXISTS`, `CHANGE COLUMN IF EXISTS`, `CREATE INDEX IF NOT EXISTS`) that MySQL does not support at any version.
-- **mysqldump** — the migration script refuses to run without it
-- **Apache** with `mod_rewrite` (or equivalent) and `.htaccess` support
+- **The university's `usea_main` database** — MySQL 8.0.31 on the server
+  (MariaDB 10.x also works)
+- **Apache** with `.htaccess` support
 
 The web server process user must have write access to:
 - `config/`
@@ -59,7 +59,9 @@ The application derives its own base URL from the running script, so **no path e
        "password": "your_secure_password_here"
      },
      "api": {
-       "token": "usea_production_device_token_here",
+       "token": "a_long_random_token_at_least_16_characters",
+       "token_user": "bivc",
+       "scope": "",
        "base_url": "https://your-domain.com/USEA_Smart_Inventory_Management_System/api/v1"
      },
      "telegram": {
@@ -68,6 +70,11 @@ The application derives its own base URL from the running script, so **no path e
      "api_signing_secret": "your_api_signing_secret_here"
    }
    ```
+
+   `api.token` is the one token the Telegram bot and the mobile app use; there is
+   no screen that issues tokens. Push notifications also need a Firebase service
+   account key at `config/firebase_service_account.json`
+   (`php scripts/check_push.php` says whether Google accepts it).
 
 3. Verify the database connection before proceeding:
 
@@ -79,27 +86,31 @@ The application derives its own base URL from the running script, so **no path e
 
 ### 1.4 Upgrade the Schema
 
-Run the migration script. It creates an automatic backup before altering anything, so if the backup cannot be taken, nothing runs.
+The database manager backs up `usea_main`, then opens phpMyAdmin → `usea_main`
+→ SQL, and pastes and runs:
 
-```bash
-php scripts/migrate.php --dry-run    # review changes first
-php scripts/migrate.php
+```
+doc/New Table and Field to Add to Server/Schema of New Table and Field.sql
 ```
 
-The migration is **idempotent** — running it twice is a safe no-op. Backups are stored in `database/backups/`.
+It adds 11 new tables, 85 new columns and 35 indexes, then fills in only the
+new columns. It changes no existing column, value or trigger, runs on MySQL 8
+and MariaDB, and is safe to run twice. `New Table and Field.md` beside it lists
+every table and column with its purpose.
+
+`php scripts/migrate.php` is for development copies only; it is not run on the
+server.
 
 ### 1.5 Bootstrap Administrators
 
-Edit `config/access.php` to list the usernames who must be able to sign in before anyone can grant roles through the interface.
+`config/access.php` lists the usernames who must be able to sign in before
+anyone can grant roles through the interface (`bivc`, `bunseang`). They can sign
+in with their existing university password straight after the schema upgrade —
+their ADMIN role is filled in by the SQL, and also written at their first
+sign-in. They then give everyone else a role in Settings ▸ Users.
 
-Then run:
-
-```bash
-php scripts/sync_access.php --dry-run
-php scripts/sync_access.php
-```
-
-This script never creates accounts — it only grants roles to existing ones. It will also warn you if any bootstrap password is shorter than the 8-character minimum.
+`php scripts/sync_access.php` applies the file again if needed. It never creates
+accounts — it only grants roles to existing ones.
 
 ### 1.6 Enable Production Mode
 
@@ -121,16 +132,22 @@ Run the full test suite:
 sh tests/run.sh
 ```
 
-This runs 17 checks. Nothing in the suite writes to the live database — the migration check builds a scratch copy and drops it. If the output is green, the system is ready.
+This runs 23 checks, on a development or test copy — it signs in over HTTP as
+`bivc` and rolls its writes back; the migration check builds a scratch copy and
+drops it. Do not run it against the live server.
 
 ### 1.8 Optional: Telegram Bot
 
 If you want the Telegram bot active:
 
 1. Create a Telegram bot via @BotFather and note the bot token.
-2. In the web app, go to **Settings → AI and Telegram** and enter the bot token.
-3. Generate an API token in **Settings → API Tokens**, ticking **"provide this token to the Telegram bot"**. This writes the plain token to `config/secrets.json` at the moment of creation.
-4. Restart the bot after saving credentials.
+2. In the web app, go to **Settings → AI and Telegram**: enter the bot token and
+   the chats — `chat_admin` (purchase approvals), `chat_stock` (materials),
+   `chat_book` (books). A room with no chat is not sent anything.
+3. Make sure `api.token` and `api.base_url` are set in `config/secrets.json`;
+   the bot reads both.
+4. Check and start it: `php scripts/telegram_bot.php doctor`, then
+   `php scripts/telegram_bot.php start`.
 
 **Choose one way to keep the bot running:**
 
@@ -172,13 +189,14 @@ The `User=` account must be able to read `config/secrets.json`.
 
 ### 1.9 Optional: AI Assistant
 
-The AI assistant requires three things before the chat button appears:
+The assistant answers from the system's own data — there is no AI provider and
+no API key. It needs only:
 
-1. The assistant switch enabled in **Settings → AI and Telegram**
-2. An AI provider configured (e.g., Azure OpenAI, OpenAI)
-3. An API key for that provider
+1. The switch enabled in **Settings → AI and Telegram**
+2. The roles that may use the chat panel ticked on the same screen
 
-Both the API key and the Telegram token are written to `config/secrets.json`, so the web server user must have write access to that file and its parent directory.
+The Telegram token and the switch are written to `config/secrets.json`, so the
+web server user must have write access to that file and its parent directory.
 
 If the bot reports its token is not set after you saved one, the web server could not write the file. Fix permissions:
 
@@ -199,7 +217,7 @@ Keep `secrets.json` at mode 600 or 640. Do **not** make it world-writable.
 
 **File permissions:**
 
-- `config/secrets.json` — mode 600 or 640. Contains database password, Telegram bot token, API signing secret, and API tokens.
+- `config/secrets.json` — mode 600 or 640. Contains the database password, the Telegram bot token, the API signing secret and the API token.
 - `config/` — writable by the web server user only.
 - `public/uploads/` — writable by the web server user. Ships with an `.htaccess` that disables PHP execution inside it. If you use nginx, add:
 
@@ -284,36 +302,23 @@ Leave it empty and those rows show a placeholder instead of broken images.
 
 The app reads the API base URL from a build-time environment variable. **Do not** edit `lib/util/api_config.dart` directly — it is overridden at build time.
 
-Build the release APK with the production API URL:
+Put the values in `dart_defines.json` (copy `dart_defines.example.json`; the
+file is git-ignored) and build with it:
 
 ```bash
 flutter pub get
-
-flutter build apk \
-  --dart-define=USEA_API_BASE_URL=https://your-domain.com/USEA_Smart_Inventory_Management_System/api/v1 \
-  --dart-define=USEA_API_TOKEN=your_production_device_token_here
+flutter build apk --release --dart-define-from-file=dart_defines.json
+flutter build appbundle --release --dart-define-from-file=dart_defines.json   # Google Play
+flutter build ios --release --dart-define-from-file=dart_defines.json
 ```
 
-For iOS:
-
-```bash
-flutter build ios \
-  --dart-define=USEA_API_BASE_URL=https://your-domain.com/USEA_Smart_Inventory_Management_System/api/v1 \
-  --dart-define=USEA_API_TOKEN=your_production_device_token_here
-```
-
-For an Android App Bundle (Google Play):
-
-```bash
-flutter build appbundle \
-  --dart-define=USEA_API_BASE_URL=https://your-domain.com/USEA_Smart_Inventory_Management_System/api/v1 \
-  --dart-define=USEA_API_TOKEN=your_production_device_token_here
-```
+For development, `./run.sh` runs the app with the same file.
 
 **Notes:**
 
 - `USEA_API_BASE_URL` must point to the `/api/v1` path of the deployed backend.
-- `USEA_API_TOKEN` is the device token created in **Settings → API Tokens** on the web app. Create a dedicated production token and do **not** commit it to source control.
+- `USEA_API_TOKEN` must equal `api.token` in the server's `config/secrets.json`.
+  Do **not** commit it to source control.
 - If you use an app signing scheme (e.g., Google Play App Signing), configure it in `android/app/build.gradle` before building.
 
 ### 2.3 Firebase Cloud Messaging (FCM)
@@ -358,8 +363,9 @@ Then use Xcode to archive and upload to App Store Connect.
 
 - [ ] `config/secrets.json` contains production credentials (not the default XAMPP `root` / empty password)
 - [ ] `config/app.json` has `"environment": "production"`
-- [ ] `php scripts/migrate.php` has been run successfully
-- [ ] `sh tests/run.sh` passes all 17 checks
+- [ ] `usea_main` was backed up, then `Schema of New Table and Field.sql` was run once
+- [ ] The same version of the code was deployed with it
+- [ ] `api.base_url` in `config/secrets.json` is the server's address (the bot and the asset QR labels use it)
 - [ ] At least one administrator account exists and has changed the bootstrap password
 - [ ] `config/secrets.json` is not world-readable (mode 600/640)
 - [ ] `public/uploads/` has an `.htaccess` denying PHP execution (or equivalent nginx rule)
@@ -369,6 +375,6 @@ Then use Xcode to archive and upload to App Store Connect.
 - [ ] `USEA_API_TOKEN` used in the mobile build is a production token (not a dev token)
 - [ ] Cron jobs (backup, stock alerts, bot supervisor if using cron) are active
 - [ ] Telegram bot is running (if enabled) and responds to commands
-- [ ] AI assistant is configured with a provider and API key (if enabled)
+- [ ] Settings ▸ AI & Telegram has the admin, stock and book chats (if Telegram is used)
 - [ ] Firebase Cloud Messaging is configured for the production project
 - [ ] Nightly backup cron is tested and dumps are appearing in `database/backups/`

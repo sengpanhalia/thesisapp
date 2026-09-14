@@ -361,6 +361,51 @@ class CartProvider extends ChangeNotifier {
     await _persist();
   }
 
+  /// Brings the basket in line with what the app is offering right now.
+  ///
+  /// [offered] is the catalogue as the server sends it, which only ever holds
+  /// books on sale with copies free. A line whose book is no longer in it is
+  /// taken out of the basket — the app does not show a student a book that is
+  /// out of stock — and every other line takes the current price and is capped
+  /// at the copies that are free.
+  Future<void> syncWithCatalogue(List<Book> offered) async {
+    if (_cartItems.isEmpty) return;
+
+    final byId = {for (final book in offered) book.id: book};
+    var changed = false;
+
+    _cartItems.removeWhere((item) {
+      final id = _parseInt(item['cart_id']);
+      final gone = !byId.containsKey(id);
+      if (gone) {
+        _selectedItemIds.remove(id);
+        changed = true;
+      }
+      return gone;
+    });
+
+    for (final item in _cartItems) {
+      final book = byId[_parseInt(item['cart_id'])]!;
+      final available = book.availableQty;
+
+      if (item['price'] != book.price || item['available_qty'] != available) {
+        item['price'] = book.price;
+        item['available_qty'] = available;
+        changed = true;
+      }
+
+      if (available != null && available > 0 && itemQuantity(item) > available) {
+        item['quantity'] = available;
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+
+    notifyListeners();
+    await _persist();
+  }
+
   Future<void> removeItem(int cartId) async {
     _cartItems.removeWhere((item) => _parseInt(item['cart_id']) == cartId);
     _selectedItemIds.remove(cartId);
