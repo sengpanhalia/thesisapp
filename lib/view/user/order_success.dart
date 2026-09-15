@@ -336,7 +336,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             const SizedBox(height: 8),
             Text(
               lang.translate('collect_at_the_counter'),
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(color: RedColor, fontSize: fontText),
             ),
             // if (_resolvedTrackingNumber != null)
             //   Align(

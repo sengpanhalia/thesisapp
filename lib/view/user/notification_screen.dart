@@ -311,12 +311,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: TextSoftColor,
-            ),
+            // const SizedBox(width: 8),
+            // const Icon(
+            //   Icons.chevron_right_rounded,
+            //   size: 18,
+            //   color: TextSoftColor,
+            // ),
           ],
         ),
       ),
@@ -442,20 +442,20 @@ class _NotificationDetailSheet extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // type row
-                  _detailRow(
-                    context,
-                    rowIcon: Icons.label_outline_rounded,
-                    label: 'Type',
-                    value: message.isBroadcast
-                        ? 'Broadcast'
-                        : message.type
-                            .replaceAll('_', ' ')
-                            .split(' ')
-                            .map((w) => w.isEmpty
-                                ? ''
-                                : '${w[0].toUpperCase()}${w.substring(1)}')
-                            .join(' '),
-                  ),
+                  // _detailRow(
+                  //   context,
+                  //   rowIcon: Icons.label_outline_rounded,
+                  //   label: 'Type',
+                  //   value: message.isBroadcast
+                  //       ? 'Broadcast'
+                  //       : message.type
+                  //           .replaceAll('_', ' ')
+                  //           .split(' ')
+                  //           .map((w) => w.isEmpty
+                  //               ? ''
+                  //               : '${w[0].toUpperCase()}${w.substring(1)}')
+                  //           .join(' '),
+                  // ),
 
                   if (formattedDate != null) ...[
                     const SizedBox(height: 12),

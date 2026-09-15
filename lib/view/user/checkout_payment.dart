@@ -109,7 +109,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    lang.translate('select Payment Method'),
+                    lang.translate('payment method'),
                     style: TextStyle(
                       fontSize: fontTitle,
                       fontWeight: FontWeight.w700,
@@ -119,7 +119,7 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    lang.translate('review and choose payment method'),
+                    lang.translate('payment will be made directly when you pick up the item.'),
                     style: TextStyle(
                       fontSize: fontText,
                       fontWeight: FontWeight.w500,
@@ -138,26 +138,26 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                         setState(() => selectedMethod = PaymentMethod.cash),
                   ),
                   const SizedBox(height: 12),
-                  PaymentOptionCard(
-                    title: lang.translate('payment_khqr'),
-                    subtitle: lang.translate('settled_at_the_counter'),
-                    icon: Icons.qr_code_rounded,
-                    selected: selectedMethod == PaymentMethod.khqr,
-                    primary: primary,
-                    onTap: () =>
-                        setState(() => selectedMethod = PaymentMethod.khqr),
-                  ),
-                  const SizedBox(height: 12),
+                  // PaymentOptionCard(
+                  //   title: lang.translate('payment_khqr'),
+                  //   subtitle: lang.translate('settled_at_the_counter'),
+                  //   icon: Icons.qr_code_rounded,
+                  //   selected: selectedMethod == PaymentMethod.khqr,
+                  //   primary: primary,
+                  //   onTap: () =>
+                  //       setState(() => selectedMethod = PaymentMethod.khqr),
+                  // ),
+                  // const SizedBox(height: 12),
                   // Said plainly, because the system cannot take money: the
                   // reservation only holds the copies.
-                  Text(
-                    lang.translate('reservation_payment_note'),
-                    style: TextStyle(
-                      fontSize: fontText,
-                      color: TextColor,
-                      fontFamily: getFontFamily(context),
-                    ),
-                  ),
+                  // Text(
+                  //   lang.translate('reservation_payment_note'),
+                  //   style: TextStyle(
+                  //     fontSize: fontText,
+                  //     color: TextColor,
+                  //     fontFamily: getFontFamily(context),
+                  //   ),
+                  // ),
                   const SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,
@@ -172,10 +172,12 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
                         ),
                       ),
                       child: Text(
-                        lang.translate('reserve_books'),
-                        style: GoogleFonts.poppins(
-                          fontSize: fontTitle,
-                          fontWeight: FontWeight.w600,
+                        lang.translate('continue'),
+                        style: TextStyle(
+                          fontSize: fontSubtitle,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontFamily: getFontFamily(context),
                         ),
                       ),
                     ),

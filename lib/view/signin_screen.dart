@@ -179,173 +179,172 @@ class _SigninScreenState extends State<SigninScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: gradientColor(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(top: Height30),
-              child: Column(
-                children: [
-                  // SizedBox(height: 100),
-                  Image.asset('assets/logo_app.png', height: 150),
-                  SizedBox(height: 20),
-                  Text(
-                    'សាកលវិទ្យាល័យ សៅស៍អុីសថ៍អេយសៀ',
-                    style: TextStyle(
-                      fontSize: fontAppBar,
-                      fontFamily: 'KhmerMool1',
-                      color: TextColor,
-                    ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: gradientColor(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: Height30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/logo_app.png', height: 150),
+                const SizedBox(height: 20),
+                Text(
+                  'សាកលវិទ្យាល័យ សៅស៍អុីសថ៍អេយសៀ',
+                  style: TextStyle(
+                    fontSize: fontAppBar,
+                    fontFamily: 'KhmerMool1',
+                    color: TextColor,
                   ),
-                  SizedBox(height: 5),
-                  Text(
-                    'University of South-East Asia',
-                    style: TextStyle(
-                      fontSize: fontAppBar,
-                      letterSpacing: 1.5,
-                      color: TextColor,
-                      fontFamily: UEFontFamily,
-                    ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'University of South-East Asia',
+                  style: TextStyle(
+                    fontSize: fontAppBar,
+                    letterSpacing: 1.5,
+                    color: TextColor,
+                    fontFamily: UEFontFamily,
                   ),
-                  SizedBox(height: 15),
-                  Text(
-                    'សូមស្វាគមន៍',
-                    style: TextStyle(
-                      fontSize: fontAppBar,
-                      fontFamily: 'KhmerMool1',
-                      color: TextColor,
-                    ),
+                ),
+                const SizedBox(height: 15),
+                Text(
+                  'សូមស្វាគមន៍',
+                  style: TextStyle(
+                    fontSize: fontAppBar,
+                    fontFamily: 'KhmerMool1',
+                    color: TextColor,
                   ),
-                  SizedBox(height: 5),
-                  Text(
-                    '3',
-                    style: TextStyle(
-                      fontSize: fontAppBar,
-                      fontFamily: 'tacteng',
-                      fontWeight: FontWeight.w500,
-                      color: TextColor,
-                    ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '3',
+                  style: TextStyle(
+                    fontSize: fontAppBar,
+                    fontFamily: 'tacteng',
+                    fontWeight: FontWeight.w500,
+                    color: TextColor,
                   ),
-                  SizedBox(height: 10),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.80,
-                    decoration: BoxDecoration(
-                      color: CardColor,
-                      borderRadius: BorderRadius.circular(Round20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          offset: Offset(0, 5),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.80,
+                  decoration: BoxDecoration(
+                    color: CardColor,
+                    borderRadius: BorderRadius.circular(Round20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(MgPd20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "អត្តលេខនិស្សិត",
+                          style: TextStyle(
+                            fontSize: fontTitle,
+                            color: TextColor,
+                            fontFamily: getFontFamily(context),
+                          ),
+                        ),
+                        const SizedBox(height: Height5),
+                        TextField(
+                          controller: _usernameController,
+                          decoration: InputDecoration(
+                            hintText: 'អត្តលេខនិស្សិត',
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Round15),
+                              borderSide: BorderSide(
+                                color: StrokeColor,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Round15),
+                              borderSide: BorderSide(
+                                color: StrokeColor,
+                                width: 1,
+                              ),
+                            ),
+                            hintStyle: TextStyle(
+                              color: TextSoftColor,
+                              fontFamily: getFontFamily(context),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: MgPd10,
+                              vertical: MgPd15,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                        const SizedBox(height: Height10),
+                        Text(
+                          "លេខកូដសម្ងាត់",
+                          style: TextStyle(
+                            fontSize: fontTitle,
+                            color: TextColor,
+                            fontFamily: getFontFamily(context),
+                          ),
+                        ),
+                        const SizedBox(height: Height5),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Round15),
+                              borderSide: BorderSide(
+                                color: StrokeColor,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Round15),
+                              borderSide: BorderSide(
+                                color: StrokeColor,
+                                width: 1,
+                              ),
+                            ),
+                            hintText: 'លេខកូដសម្ងាត់',
+                            hintStyle: TextStyle(
+                              color: TextSoftColor,
+                              fontFamily: getFontFamily(context),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: MgPd10,
+                              vertical: MgPd15,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                        const SizedBox(height: Height30),
+                        AppButton(
+                          title: 'ចូលគណនី',
+                          onTap: () {
+                            // Guarded rather than disabled: two taps must
+                            // not start two sign-ins.
+                            if (_isSigningIn) return;
+                            login();
+                          },
                         ),
                       ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(MgPd20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "អត្តលេខនិស្សិត",
-                            style: TextStyle(
-                              fontSize: fontTitle,
-                              color: TextColor,
-                              fontFamily: getFontFamily(context),
-                            ),
-                          ),
-                          SizedBox(height: Height5),
-                          TextField(
-                            controller: _usernameController,
-                            decoration: InputDecoration(
-                              hintText: 'អត្តលេខនិស្សិត',
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(Round15),
-                                borderSide: BorderSide(
-                                  color: StrokeColor,
-                                  width: 1,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(Round15),
-                                borderSide: BorderSide(
-                                  color: StrokeColor,
-                                  width: 1,
-                                ),
-                              ),
-                              hintStyle: TextStyle(
-                                color: TextSoftColor,
-                                fontFamily: getFontFamily(context),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: MgPd10,
-                                vertical: MgPd15,
-                              ),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                          SizedBox(height: Height10),
-                          Text(
-                            "លេខកូដសម្ងាត់",
-                            style: TextStyle(
-                              fontSize: fontTitle,
-                              color: TextColor,
-                              fontFamily: getFontFamily(context),
-                            ),
-                          ),
-                          SizedBox(height: Height5),
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(Round15),
-                                borderSide: BorderSide(
-                                  color: StrokeColor,
-                                  width: 1,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(Round15),
-                                borderSide: BorderSide(
-                                  color: StrokeColor,
-                                  width: 1,
-                                ),
-                              ),
-                              hintText: 'លេខកូដសម្ងាត់',
-                              hintStyle: TextStyle(
-                                color: TextSoftColor,
-                                fontFamily: getFontFamily(context),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: MgPd10,
-                                vertical: MgPd15,
-                              ),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                          SizedBox(height: Height30),
-                          AppButton(
-                            title: 'ចូលគណនី',
-                            onTap: () {
-                              // Guarded rather than disabled: two taps must
-                              // not start two sign-ins.
-                              if (_isSigningIn) return;
-                              login();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

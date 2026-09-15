@@ -17,6 +17,8 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
+import 'package:thesisapp/view/cart_screen.dart';
+import 'package:thesisapp/view/signin_screen.dart';
 import 'package:thesisapp/view/user/checkout_payment.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 
@@ -54,20 +56,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       final fresh = await _api.refreshBook(widget.book);
       if (!mounted) return;
 
-      // No longer in the catalogue the app offers — out of stock or taken off
-      // sale. The app does not show a student such a book, so it leaves the
-      // basket and the page closes. (A book with no code cannot be looked up,
-      // which is not the same as gone.)
-      if (fresh == null) {
-        if (widget.book.code.trim().isEmpty) return;
-        await context.read<CartProvider>().removeItem(widget.book.id);
-        if (mounted) Navigator.of(context).maybePop();
-        return;
+      if (fresh != null) {
+        setState(() => _book = fresh);
       }
-
-      setState(() => _book = fresh);
     } on ApiException catch (error) {
       debugPrint('Could not refresh the book: $error');
+    } catch (e) {
+      debugPrint('Could not refresh the book: $e');
     }
   }
 
@@ -135,6 +130,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     if (user == null) {
       Fluttertoast.showToast(msg: lang.translate('please_log_in_first'));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SigninScreen()),
+      );
       return false;
     }
 
@@ -162,14 +161,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _buyNow({int quantity = 1}) async {
-    // Buy Now means buy now: add the copy, then go straight to checkout rather
-    // than dropping the student on the cart tab to find the button themselves.
-    final added = await _addToCart(context, quantity: quantity);
+    final user = context.read<AuthProvider>().user;
+    final lang = AppLocalizations.of(context)!;
+
+    if (user == null) {
+      Fluttertoast.showToast(msg: lang.translate('please_log_in_first'));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SigninScreen()),
+      );
+      return;
+    }
+
+    final cart = context.read<CartProvider>();
+    cart.toggleSelectAll(false);
+    final added = await cart.addBook(_book, quantity: quantity);
     if (!added || !mounted) return;
 
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CheckoutPayment()),
+      MaterialPageRoute(builder: (_) => const CartScreen()),
     );
   }
 
@@ -638,7 +649,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: () async {
                     final quantity = await _showQuantityDialog(
                       context,
-                      maxQuantity: availableQty ?? 0,
+                      maxQuantity: (availableQty != null && availableQty > 0)
+                          ? availableQty
+                          : 999,
                     );
                     if (quantity == null) return;
                     await _addToCart(context, quantity: quantity);
@@ -660,11 +673,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   onPressed: () async {
                     final quantity = await _showQuantityDialog(
                       context,
-                      maxQuantity: availableQty ?? 0,
+                      maxQuantity: (availableQty != null && availableQty > 0)
+                          ? availableQty
+                          : 999,
                     );
                     if (quantity == null) return;
                     await _buyNow(quantity: quantity);
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GText1,
+                    foregroundColor: Colors.white,
+                  ),
                   child: Text(
                     lang.translate('buy now'),
                     style: TextStyle(

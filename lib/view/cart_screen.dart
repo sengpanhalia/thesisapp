@@ -284,25 +284,15 @@ class _CartScreenState extends State<CartScreen> {
                                           height: 22,
                                           decoration: BoxDecoration(
                                             color: cartProvider.allSelected
-                                                ? checkboxColor
+                                                ? ButtonColor
                                                 : Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              6,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: cartProvider.allSelected
+                                                  ? ButtonColor
+                                                  : const Color(0xFFB0B7C3),
+                                              width: 1.5,
                                             ),
-                                            // border: Border.all(
-                                            //   color:
-                                            //       (cartProvider
-                                            //                   .selectedItemIds
-                                            //                   .length ==
-                                            //               cartProvider
-                                            //                   .cartItems
-                                            //                   .length &&
-                                            //           cartProvider
-                                            //               .cartItems
-                                            //               .isNotEmpty)
-                                            //       ? yellow
-                                            //       : Colors.white70,
-                                            // ),
                                           ),
                                           child: cartProvider.allSelected
                                               ? const Icon(
@@ -391,33 +381,18 @@ class _CartScreenState extends State<CartScreen> {
                                                     top: 8,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color:
-                                                        cartProvider
-                                                                .selectedItemIds
-                                                                .contains(
-                                                                  cartId,
-                                                                ) &&
-                                                            isPurchasable
-                                                        ? checkboxColor
-                                                        : isPurchasable
-                                                        ? Colors.white
-                                                        : Colors.grey[200],
-                                                    borderRadius:
-                                                        BorderRadius.circular(6),
-                                                    // border: Border.all(
-                                                    //   color:
-                                                    //       cartProvider
-                                                    //           .selectedItemIds
-                                                    //           .contains(cartId)
-                                                    //       ? Color(
-                                                    //           0xFFE39A4F,
-                                                    //         ).withOpacity(0.7)
-                                                    //       : Colors.white,
-                                                    // ),
+                                                    color: cartProvider.selectedItemIds.contains(cartId)
+                                                        ? ButtonColor
+                                                        : Colors.white,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: cartProvider.selectedItemIds.contains(cartId)
+                                                          ? ButtonColor
+                                                          : const Color(0xFFB0B7C3),
+                                                      width: 1.5,
+                                                    ),
                                                   ),
-                                                  child:
-                                                      cartProvider.selectedItemIds
-                                                          .contains(cartId)
+                                                  child: cartProvider.selectedItemIds.contains(cartId)
                                                       ? const Icon(
                                                           Icons.check_rounded,
                                                           size: 16,

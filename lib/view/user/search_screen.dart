@@ -221,7 +221,19 @@ class _SearchScreenState extends State<SearchScreen> {
                   // fontWeight: FontWeight.w500,
                   fontFamily: getFontFamily(context),
                 ),
-                border: InputBorder.none,
+                // border: InputBorder.none,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: Sapphire2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: Sapphire2),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: Sapphire2),
+                ),
               ),
             ),
           ),

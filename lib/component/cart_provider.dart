@@ -105,11 +105,7 @@ class CartProvider extends ChangeNotifier {
 
   bool isItemPurchasable(Map<String, dynamic> item) {
     final quantity = itemQuantity(item);
-    if (quantity <= 0) return false;
-
-    final available = availableQuantity(item);
-
-    return available == null || available >= quantity;
+    return quantity > 0;
   }
 
   /// A translation key naming what is wrong with the line, or null when it is
@@ -225,15 +221,7 @@ class CartProvider extends ChangeNotifier {
       (item) => _parseInt(item['cart_id']) == book.id,
     );
 
-    final available = book.availableQty;
-
     if (index == -1) {
-      final wanted = available == null
-          ? quantity
-          : quantity.clamp(0, available).toInt();
-
-      if (wanted <= 0) return false;
-
       _cartItems.add({
         'cart_id': book.id,
         'item_id': book.id,
@@ -245,17 +233,11 @@ class CartProvider extends ChangeNotifier {
         'image': book.imageUrl,
         'price': book.price,
         'available_qty': book.availableQty,
-        'quantity': wanted,
+        'quantity': quantity,
       });
     } else {
       final current = itemQuantity(_cartItems[index]);
-      final wanted = available == null
-          ? current + quantity
-          : (current + quantity).clamp(0, available).toInt();
-
-      if (wanted == current) return false;
-
-      _cartItems[index]['quantity'] = wanted;
+      _cartItems[index]['quantity'] = current + quantity;
       // The catalogue may have moved since the line was added.
       _cartItems[index]['price'] = book.price;
       _cartItems[index]['available_qty'] = book.availableQty;
@@ -342,19 +324,13 @@ class CartProvider extends ChangeNotifier {
 
     if (index == -1) return;
 
-    final available = availableQuantity(_cartItems[index]);
     final current = itemQuantity(_cartItems[index]);
     var next = current + change;
 
     if (next <= 0) return;
-    if (available != null && next > available) next = available;
     if (next == current) return;
 
     _cartItems[index]['quantity'] = next;
-
-    if (!isItemPurchasable(_cartItems[index])) {
-      _selectedItemIds.remove(cartId);
-    }
 
     _selectionInitialized = true;
     notifyListeners();
@@ -362,41 +338,24 @@ class CartProvider extends ChangeNotifier {
   }
 
   /// Brings the basket in line with what the app is offering right now.
-  ///
-  /// [offered] is the catalogue as the server sends it, which only ever holds
-  /// books on sale with copies free. A line whose book is no longer in it is
-  /// taken out of the basket — the app does not show a student a book that is
-  /// out of stock — and every other line takes the current price and is capped
-  /// at the copies that are free.
+  /// Updates prices and stock indicators without deleting out-of-stock items.
   Future<void> syncWithCatalogue(List<Book> offered) async {
     if (_cartItems.isEmpty) return;
 
     final byId = {for (final book in offered) book.id: book};
     var changed = false;
 
-    _cartItems.removeWhere((item) {
-      final id = _parseInt(item['cart_id']);
-      final gone = !byId.containsKey(id);
-      if (gone) {
-        _selectedItemIds.remove(id);
-        changed = true;
-      }
-      return gone;
-    });
-
     for (final item in _cartItems) {
-      final book = byId[_parseInt(item['cart_id'])]!;
-      final available = book.availableQty;
+      final id = _parseInt(item['cart_id']);
+      final book = byId[id];
 
-      if (item['price'] != book.price || item['available_qty'] != available) {
-        item['price'] = book.price;
-        item['available_qty'] = available;
-        changed = true;
-      }
-
-      if (available != null && available > 0 && itemQuantity(item) > available) {
-        item['quantity'] = available;
-        changed = true;
+      if (book != null) {
+        final available = book.availableQty;
+        if (item['price'] != book.price || item['available_qty'] != available) {
+          item['price'] = book.price;
+          item['available_qty'] = available;
+          changed = true;
+        }
       }
     }
 

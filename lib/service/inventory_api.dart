@@ -81,14 +81,21 @@ class InventoryApi {
     return _list(json['books']).map(Book.fromJson).toList();
   }
 
-  /// The current state of one book — its price and how many are free.
-  ///
-  /// Deliberately a search on the book's code rather than `books.php?id=`.
-  /// That parameter is documented but does not work: it looks the id up in the
-  /// materials catalogue instead of the books one, so it answers `404 No such
-  /// book` for every real book. Reported to the system's maintainers; until it
-  /// is fixed, the code is the only handle that reaches the right catalogue.
   Future<Book?> refreshBook(Book book) async {
+    if (book.id > 0) {
+      try {
+        final json = await _client.getJson(
+          'books.php',
+          query: {'id': book.id.toString()},
+        );
+        if (json['book'] is Map<String, dynamic>) {
+          return Book.fromJson(json['book'] as Map<String, dynamic>);
+        }
+      } catch (_) {
+        // Fall back to searching by code if direct ID lookup fails.
+      }
+    }
+
     if (book.code.trim().isEmpty) return null;
 
     final matches = await books(search: book.code);

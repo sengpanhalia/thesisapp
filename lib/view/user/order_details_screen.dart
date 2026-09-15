@@ -202,7 +202,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             style: TextStyle(
               fontFamily: getFontFamily(context),
               fontSize: fontText,
-              color: TextSoftColor,
+              color: TextColor,
             ),
           ),
           Flexible(

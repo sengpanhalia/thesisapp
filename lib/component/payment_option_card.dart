@@ -61,18 +61,29 @@ class PaymentOptionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
+                    // style: GoogleFonts.poppins(
+                    //   fontWeight: FontWeight.w600,
+                    //   fontSize: fontSubtitle,
+                    //   color: Colors.black87,
+                    // ),
+                    style: TextStyle(
                       fontSize: fontSubtitle,
-                      color: Colors.black87,
+                      fontWeight: FontWeight.w700,
+                      color: TextColor,
+                      fontFamily: getFontFamily(context),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: GoogleFonts.poppins(
+                    // style: GoogleFonts.poppins(
+                    //   fontSize: fontText,
+                    //   color: Colors.grey[600],
+                    style: TextStyle(
                       fontSize: fontText,
-                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                      color: TextColor,
+                      fontFamily: getFontFamily(context),
                     ),
                   ),
                 ],
