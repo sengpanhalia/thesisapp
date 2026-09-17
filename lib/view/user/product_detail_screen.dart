@@ -9,6 +9,7 @@ import 'package:thesisapp/component/card_product.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/component/full_image_view.dart';
+import 'package:thesisapp/component/navigation_provider.dart';
 import 'package:thesisapp/component/product_spec_row.dart';
 import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
@@ -17,9 +18,7 @@ import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
-import 'package:thesisapp/view/cart_screen.dart';
 import 'package:thesisapp/view/signin_screen.dart';
-import 'package:thesisapp/view/user/checkout_payment.dart';
 import 'package:thesisapp/view/user/product_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -173,15 +172,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return;
     }
 
+    final available = _book.availableQty;
+    if (available != null && available > 0 && quantity > available) {
+      Fluttertoast.showToast(
+        msg: lang.translate('not_enough_stock'),
+        backgroundColor: Colors.redAccent,
+      );
+      return;
+    }
+
     final cart = context.read<CartProvider>();
     cart.toggleSelectAll(false);
     final added = await cart.addBook(_book, quantity: quantity);
-    if (!added || !mounted) return;
+    if (!added) {
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: lang.translate('not_enough_stock'),
+          backgroundColor: Colors.redAccent,
+        );
+      }
+      return;
+    }
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CartScreen()),
-    );
+    if (!mounted) return;
+
+    context.read<NavigationProvider>().setIndex(2);
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<int?> _showQuantityDialog(

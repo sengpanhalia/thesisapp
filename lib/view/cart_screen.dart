@@ -81,10 +81,14 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Auto-refresh cart when screen regains focus (after build completes)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CartProvider>().fetchCart();
-    });
+    final cart = context.read<CartProvider>();
+    if (cart.cartItems.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<CartProvider>().fetchCart();
+        }
+      });
+    }
   }
 
   @override
@@ -124,35 +128,51 @@ class _CartScreenState extends State<CartScreen> {
             
                   // Empty cart state
                   if (cartProvider.cartItems.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_cart_rounded,
-                            size: 100,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            lang.translate('your cart is empty'),
-                            style: TextStyle(
-                              fontSize: fontTitle,
-                              fontWeight: FontWeight.bold,
-                              color: TextColor,
+                    return Stack(
+                      children: [
+                        if (Navigator.canPop(context))
+                          Positioned(
+                            top: 10,
+                            left: 10,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: ButtonColor,
+                              ),
+                              onPressed: () => Navigator.pop(context),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            lang.translate('looks like you haven\'t added anything yet'),
-                            style: TextStyle(
-                              fontSize: fontSubtitle,
-                              color: TextColor,
-                            ),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.shopping_cart_rounded,
+                                size: 100,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                lang.translate('your cart is empty'),
+                                style: TextStyle(
+                                  fontSize: fontTitle,
+                                  fontWeight: FontWeight.bold,
+                                  color: TextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                lang.translate('looks like you haven\'t added anything yet'),
+                                style: TextStyle(
+                                  fontSize: fontSubtitle,
+                                  color: TextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
                           ),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   }
             
@@ -168,8 +188,17 @@ class _CartScreenState extends State<CartScreen> {
                           vertical: 15,
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            if (Navigator.canPop(context)) ...[
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: ButtonColor,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -191,6 +220,7 @@ class _CartScreenState extends State<CartScreen> {
                                 ),
                               ],
                             ),
+                            const Spacer(),
                             GestureDetector(
                               onTap: !canContinue
                                   ? null
@@ -200,7 +230,7 @@ class _CartScreenState extends State<CartScreen> {
                               child: Container(
                                 height: 50,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 50,
+                                  horizontal: 40,
                                 ),
                                 decoration: BoxDecoration(
                                   color: canContinue

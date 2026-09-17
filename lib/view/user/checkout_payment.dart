@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
@@ -11,8 +10,13 @@ import 'package:thesisapp/component/payment_option_card.dart';
 import 'package:thesisapp/view/user/order_summary_screen.dart';
 
 class CheckoutPayment extends StatefulWidget {
+  final List<Map<String, dynamic>>? directItems;
+  final double? directTotal;
+
   const CheckoutPayment({
     super.key,
+    this.directItems,
+    this.directTotal,
   });
 
   @override
@@ -26,14 +30,15 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
   PaymentMethod selectedMethod = PaymentMethod.cash;
 
   Future<void> _refreshCart() async {
+    if (widget.directItems != null) return;
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     await cartProvider.fetchCart();
   }
 
   void placeOrder() {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    final items = cartProvider.selectedItems;
-    final total = cartProvider.total;
+    final items = widget.directItems ?? cartProvider.selectedItems;
+    final total = widget.directTotal ?? cartProvider.total;
 
     if (items.isEmpty) {
       Fluttertoast.showToast(
@@ -57,10 +62,12 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      cartProvider.fetchCart();
-    });
+    if (widget.directItems == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final cartProvider = Provider.of<CartProvider>(context, listen: false);
+        cartProvider.fetchCart();
+      });
+    }
   }
 
   @override
@@ -68,7 +75,9 @@ class _CheckoutPaymentState extends State<CheckoutPayment> {
     final cartProvider = Provider.of<CartProvider>(context);
     final primary = Theme.of(context).colorScheme.primary;
     const background = Colors.white;
-    final canPlaceOrder = cartProvider.selectedItems.isNotEmpty;
+    final canPlaceOrder = widget.directItems != null
+        ? widget.directItems!.isNotEmpty
+        : cartProvider.selectedItems.isNotEmpty;
     final lang = AppLocalizations.of(context)!;
 
     return Scaffold(

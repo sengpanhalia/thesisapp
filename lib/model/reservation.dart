@@ -205,8 +205,8 @@ class Reservation {
       createdAt: _dateTime(json['created_at']),
       lines: (json['lines'] is List)
           ? (json['lines'] as List)
-                .whereType<Map<String, dynamic>>()
-                .map(ReservationLine.fromJson)
+                .whereType<Map>()
+                .map((e) => ReservationLine.fromJson(Map<String, dynamic>.from(e)))
                 .toList()
           : const [],
     );

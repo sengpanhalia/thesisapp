@@ -437,7 +437,10 @@ class InventoryApi {
   static List<Map<String, dynamic>> _list(dynamic value) {
     if (value is! List) return const [];
 
-    return value.whereType<Map<String, dynamic>>().toList();
+    return value
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   static int? _int(dynamic value) {

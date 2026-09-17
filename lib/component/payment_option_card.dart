@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:thesisapp/theme_color.dart';
 
 class PaymentOptionCard extends StatelessWidget {

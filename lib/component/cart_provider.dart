@@ -33,6 +33,7 @@ class CartProvider extends ChangeNotifier {
   Set<int> _selectedItemIds = {};
   String? _loadedUserId;
   bool _selectionInitialized = false;
+  Future<void>? _activeFetchFuture;
 
   List<Map<String, dynamic>> get cartItems => _cartItems;
   bool get isLoading => _isLoading;
@@ -129,7 +130,20 @@ class CartProvider extends ChangeNotifier {
 
   /// Reloads the basket from the device. Named for the screens that call it
   /// on pull-to-refresh; there is no server round trip behind it.
-  Future<void> fetchCart() async {
+  Future<void> fetchCart() {
+    final active = _activeFetchFuture;
+    if (active != null) return active;
+
+    final future = _fetchCartInternal();
+    _activeFetchFuture = future;
+    return future.whenComplete(() {
+      if (_activeFetchFuture == future) {
+        _activeFetchFuture = null;
+      }
+    });
+  }
+
+  Future<void> _fetchCartInternal() async {
     final user = authProvider.user;
 
     if (user == null) {
@@ -188,8 +202,8 @@ class CartProvider extends ChangeNotifier {
       if (decoded is! List) return [];
 
       return decoded
-          .whereType<Map<String, dynamic>>()
-          .map(Map<String, dynamic>.from)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (_) {
       return [];
@@ -213,6 +227,10 @@ class CartProvider extends ChangeNotifier {
   /// basket. Never puts in more than the catalogue says are free.
   Future<bool> addBook(Book book, {int quantity = 1}) async {
     if (quantity <= 0) return false;
+
+    if (_activeFetchFuture != null) {
+      await _activeFetchFuture;
+    }
 
     final user = authProvider.user;
     if (user == null) return false;
@@ -318,6 +336,10 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> updateQuantity(int cartId, int change) async {
+    if (_activeFetchFuture != null) {
+      await _activeFetchFuture;
+    }
+
     final index = _cartItems.indexWhere(
       (item) => _parseInt(item['cart_id']) == cartId,
     );
@@ -366,6 +388,10 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> removeItem(int cartId) async {
+    if (_activeFetchFuture != null) {
+      await _activeFetchFuture;
+    }
+
     _cartItems.removeWhere((item) => _parseInt(item['cart_id']) == cartId);
     _selectedItemIds.remove(cartId);
     _selectionInitialized = true;
@@ -391,6 +417,10 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> clearCart() async {
+    if (_activeFetchFuture != null) {
+      await _activeFetchFuture;
+    }
+
     _cartItems = [];
     _selectedItemIds.clear();
     _selectionInitialized = false;
