@@ -24,6 +24,9 @@ class OrderSuccessScreen extends StatefulWidget {
   final DateTime createdAt;
   final int? displayOrderNumber;
   final String? trackingNumber;
+  final String? orderStatus;
+  final String? paymentStatus;
+  final bool? isPaid;
 
   OrderSuccessScreen({
     super.key,
@@ -34,6 +37,9 @@ class OrderSuccessScreen extends StatefulWidget {
     required this.paymentMethod,
     this.displayOrderNumber,
     this.trackingNumber,
+    this.orderStatus,
+    this.paymentStatus,
+    this.isPaid,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -177,7 +183,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     return data!.buffer.asUint8List();
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(String label, String value, {Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -188,7 +194,11 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontFamily: getFontFamily(context),
+                fontWeight: FontWeight.w600,
+                color: valueColor,
+              ),
             ),
           ),
         ],
@@ -249,7 +259,12 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   }
 
   Widget _buildReceiptContent({required bool showImages}) {
-    final paymentStatus = ReceiptFormat.paymentStatus(widget.paymentMethod);
+    final paymentStatus = widget.paymentStatus ??
+        ReceiptFormat.paymentStatus(
+          widget.paymentMethod,
+          orderStatus: widget.orderStatus,
+          isPaid: widget.isPaid,
+        );
     final trackingNumber = _trackingNumberLabel();
     final lang = AppLocalizations.of(context)!;
 
@@ -329,14 +344,24 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             ),
             _infoRow(
               lang.translate('payment method'),
-              ReceiptFormat.paymentLabel(widget.paymentMethod),
+              ReceiptFormat.paymentLabel(widget.paymentMethod, lang: lang),
             ),
-            _infoRow(lang.translate('payment status'), paymentStatus),
+            _infoRow(
+              lang.translate('payment status'),
+              paymentStatus,
+              valueColor: paymentStatus == 'CANCELLED'
+                  ? Colors.red
+                  : (paymentStatus == 'PAID' ? ButtonColor : Colors.orange[800]),
+            ),
             _infoRow(lang.translate('code number of order'), trackingNumber),
             const SizedBox(height: 8),
             Text(
               lang.translate('collect_at_the_counter'),
-              style: TextStyle(color: RedColor, fontSize: fontText),
+              style: TextStyle(
+                color: RedColor,
+                fontSize: fontText,
+                fontFamily: getFontFamily(context),
+              ),
             ),
             // if (_resolvedTrackingNumber != null)
             //   Align(

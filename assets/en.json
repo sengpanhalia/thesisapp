@@ -134,7 +134,7 @@
   "payment_khqr": "KHQR",
   "payment_bakong": "Bakong",
   "payment_card": "Card",
-  "pay_at_the_counter": "Pay at the book counter when you collect",
+  "pay_at_the_counter": "Pay at the book counter",
   "settled_at_the_counter": "Scan and pay at the book counter",
   "reservation_payment_note": "Nothing is charged in the app. The books are held for you and paid for at the book counter.",
   "reserve_books": "Reserve",

@@ -55,7 +55,22 @@ class ReceiptFormat {
   }
 
   /// The four names the API accepts, as the receipt should read them.
-  static String paymentLabel(String method) {
+  static String paymentLabel(String method, {dynamic lang}) {
+    if (lang != null) {
+      final key = switch (method.trim().toLowerCase()) {
+        'cash' => 'payment_cash',
+        'khqr' => 'payment_khqr',
+        'bakong' => 'payment_bakong',
+        'card' => 'payment_card',
+        _ => null,
+      };
+      if (key != null) {
+        if (method.trim().toLowerCase() == 'cash') {
+          return '${lang.translate('pay_at_the_counter')}';
+        }
+        return lang.translate(key);
+      }
+    }
     switch (method) {
       case 'Cash':
         return 'Cash — pay at the book counter';
@@ -70,13 +85,37 @@ class ReceiptFormat {
     }
   }
 
-  /// What the system will have recorded.
-  ///
-  /// Only a cash sale is booked as PAID. A wallet or card payment is not
-  /// settled until the provider confirms it, and this system does not capture
-  /// payment at all — so anything else is unpaid until the counter says
-  /// otherwise, and the receipt must not claim it is paid.
-  static String paymentStatus(String method) {
-    return method == 'Cash' ? 'PAID' : 'PENDING';
+  /// When ordered from mobile, orders start as PENDING payment.
+  /// Only after payment confirmation (e.g. counter marks it COLLECTED, or backend
+  /// confirms payment as PAID) does it change to PAID.
+  /// Cancelled orders are recorded as CANCELLED.
+  static String paymentStatus(
+    String method, {
+    String? orderStatus,
+    String? rawPaymentStatus,
+    bool? isPaid,
+  }) {
+    final status = (orderStatus ?? '').trim().toUpperCase();
+    if (status == 'CANCELLED' || status == 'CANCEL') {
+      return 'CANCELLED';
+    }
+    if (isPaid == true) {
+      return 'PAID';
+    }
+    final pStatus = (rawPaymentStatus ?? '').trim().toUpperCase();
+    if (pStatus == 'PAID' ||
+        pStatus == 'COMPLETED' ||
+        pStatus == 'SUCCESS' ||
+        pStatus == '1' ||
+        pStatus == 'TRUE') {
+      return 'PAID';
+    }
+    if (status == 'CONFIRMED' ||
+        status == 'READY_FOR_PICKUP' ||
+        status == 'READY' ||
+        status == 'COLLECTED') {
+      return 'PAID';
+    }
+    return 'PENDING';
   }
 }

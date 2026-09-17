@@ -4,8 +4,9 @@ import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Color;
+import 'package:flutter/material.dart' show Color, ValueNotifier;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:thesisapp/model/reservation.dart' show ReservationStatus;
 import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/service/student_session_store.dart';
 import '../firebase_options.dart';
@@ -31,6 +32,8 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static int _badgeCount = 0;
+  static final ValueNotifier<int> unreadCountNotifier = ValueNotifier<int>(0);
+  static int get badgeCount => unreadCountNotifier.value;
 
   static Future<void> initialize() async {
     // 1. Initialize Firebase
@@ -167,10 +170,11 @@ class NotificationService {
     updateBadgeCount(_badgeCount);
   }
 
-  /// Updates app icon launcher badge count on phone home screen
+  /// Updates app icon launcher badge count and in-app badge listeners
   static Future<void> updateBadgeCount(int count) async {
     try {
       _badgeCount = count;
+      unreadCountNotifier.value = count;
       final isSupported = await AppBadgePlus.isSupported();
       if (isSupported) {
         await AppBadgePlus.updateBadge(count);
@@ -180,16 +184,67 @@ class NotificationService {
     }
   }
 
-  /// Clears app icon launcher badge count
+  /// Clears in-app badge count and app icon launcher badge count
   static Future<void> removeBadge() async {
     try {
       _badgeCount = 0;
+      unreadCountNotifier.value = 0;
       final isSupported = await AppBadgePlus.isSupported();
       if (isSupported) {
         await AppBadgePlus.updateBadge(0);
       }
     } catch (e) {
       if (kDebugMode) debugPrint("Error removing badge: $e");
+    }
+  }
+
+  /// Clears only the OS launcher icon badge count on the device home screen
+  static Future<void> removeLauncherBadge() async {
+    try {
+      final isSupported = await AppBadgePlus.isSupported();
+      if (isSupported) {
+        await AppBadgePlus.updateBadge(0);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint("Error removing launcher badge: $e");
+    }
+  }
+
+  /// Fetches unread notifications count from the server and updates listeners
+  static Future<int> fetchUnreadCount({InventoryApi? api}) async {
+    final session = await StudentSessionStore.readValid();
+    if (session.isEmpty) {
+      await updateBadgeCount(0);
+      return 0;
+    }
+
+    try {
+      final inventoryApi = api ?? InventoryApi();
+      int count = 0;
+      try {
+        final inbox = await inventoryApi.notifications();
+        count = inbox.unread;
+      } catch (e) {
+        if (kDebugMode) debugPrint("Error fetching notifications: $e");
+      }
+
+      try {
+        final reservations = await inventoryApi.myReservations();
+        final readyCount = reservations
+            .where((r) => r.status == ReservationStatus.readyForPickup)
+            .length;
+        if (readyCount > count) {
+          count = readyCount;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint("Error checking reservations status: $e");
+      }
+
+      await updateBadgeCount(count);
+      return count;
+    } catch (e) {
+      if (kDebugMode) debugPrint("Could not update badge count: $e");
+      return unreadCountNotifier.value;
     }
   }
 

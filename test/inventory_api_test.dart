@@ -93,11 +93,44 @@ void main() {
       expect(reservation.createdAt, DateTime(2026, 8, 15, 22, 39, 56));
     });
 
-    test('anything but cash is unpaid, because nothing settles it', () {
+    test('orders start as unpaid (PENDING) until confirmed', () {
       expect(Reservation.fromJson(json).isPaid, isFalse);
       expect(
         Reservation.fromJson({...json, 'payment_method': 'Cash'}).isPaid,
+        isFalse,
+      );
+      expect(
+        Reservation.fromJson({
+          ...json,
+          'payment_method': 'Cash',
+          'status': 'CONFIRMED',
+        }).isPaid,
         isTrue,
+      );
+      expect(
+        Reservation.fromJson({
+          ...json,
+          'payment_method': 'Cash',
+          'status': 'COLLECTED',
+        }).isPaid,
+        isTrue,
+      );
+      expect(
+        Reservation.fromJson({
+          ...json,
+          'payment_method': 'Cash',
+          'payment_status': 'PAID',
+        }).isPaid,
+        isTrue,
+      );
+      expect(
+        Reservation.fromJson({
+          ...json,
+          'payment_method': 'Cash',
+          'payment_status': 'PAID',
+          'status': 'CANCELLED',
+        }).isPaid,
+        isFalse,
       );
     });
 

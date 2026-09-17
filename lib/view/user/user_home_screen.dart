@@ -9,13 +9,12 @@ import 'package:thesisapp/component/recommended_products_section.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/book.dart';
 import 'package:thesisapp/model/book_category.dart';
-import 'package:thesisapp/model/reservation.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
+import 'package:thesisapp/service/notification_service.dart';
 import 'package:thesisapp/service/student_directory.dart';
-import 'package:thesisapp/service/student_session_store.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/notification_screen.dart';
 import 'package:thesisapp/view/user/product_detail_screen.dart';
@@ -53,11 +52,6 @@ class HomePageState extends State<HomePage> {
   /// Why the catalogue is empty, when it is empty for a reason worth saying.
   String? _loadError;
 
-  /// Reservations waiting at the counter — the app's own reason to show a
-  /// badge. The API has no notifications of any kind; what a student needs to
-  /// be told is that a book is ready to collect, and that is in the orders.
-  int _readyForPickupCount = 0;
-
   Future<void> refresh() async {
     if (!mounted) return;
     setState(() {
@@ -66,7 +60,7 @@ class HomePageState extends State<HomePage> {
     await Future.wait([
       _fetchBooks(),
       _fetchUserData(),
-      _fetchReadyForPickupCount(),
+      _fetchNotificationCount(),
     ]);
   }
 
@@ -93,31 +87,11 @@ class HomePageState extends State<HomePage> {
     super.initState();
     _fetchBooks();
     _fetchUserData();
-    _fetchReadyForPickupCount();
+    _fetchNotificationCount();
   }
 
-  Future<void> _fetchReadyForPickupCount() async {
-    // The badge reads the student's *own* reservations, so it needs their
-    // signed session — orders scoped by a bare student number are refused now.
-    // Without a session there is nobody to count for, so skip quietly rather
-    // than let me.php answer 401: the badge is not worth a sign-in prompt.
-    final session = await StudentSessionStore.readValid();
-
-    if (session.isEmpty) return;
-
-    try {
-      final reservations = await _api.myReservations();
-      if (!mounted) return;
-
-      setState(() {
-        _readyForPickupCount = reservations
-            .where((r) => r.status == ReservationStatus.readyForPickup)
-            .length;
-      });
-    } on ApiException catch (error) {
-      // A badge is not worth interrupting the screen for.
-      debugPrint('Could not count ready reservations: $error');
-    }
+  Future<void> _fetchNotificationCount() async {
+    await NotificationService.fetchUnreadCount(api: _api);
   }
 
   /// Reads the real book categories and the books in each.
@@ -228,72 +202,77 @@ class HomePageState extends State<HomePage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: MgPd20),
-            child: GestureDetector(
-              onTap: () async {
-                final authUser = context.read<AuthProvider>().user;
-                final studentId = (authUser?.student_id.isNotEmpty == true)
-                    ? authUser!.student_id
-                    : _userDetail?.student_id;
+            child: ValueListenableBuilder<int>(
+              valueListenable: NotificationService.unreadCountNotifier,
+              builder: (context, badgeCount, _) {
+                return GestureDetector(
+                  onTap: () async {
+                    final authUser = context.read<AuthProvider>().user;
+                    final studentId = (authUser?.student_id.isNotEmpty == true)
+                        ? authUser!.student_id
+                        : _userDetail?.student_id;
 
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => NotificationScreen(
-                      userId: studentId,
-                    ),
-                  ),
-                );
-                _fetchReadyForPickupCount();
-              },
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: StrokeSearchBar, width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.notifications_rounded,
-                      color: TextColor,
-                      size: 22,
-                    ),
-                  ),
-                  if (_readyForPickupCount > 0)
-                    Positioned(
-                      top: -2,
-                      right: -2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                        child: Text(
-                          _readyForPickupCount > 99 ? '99+' : '$_readyForPickupCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NotificationScreen(
+                          userId: studentId,
                         ),
                       ),
-                    ),
-                ],
-              ),
+                    );
+                    _fetchNotificationCount();
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: StrokeSearchBar, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.notifications_rounded,
+                          color: TextColor,
+                          size: 22,
+                        ),
+                      ),
+                      if (badgeCount > 0)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                            child: Text(
+                              badgeCount > 99 ? '99+' : '$badgeCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

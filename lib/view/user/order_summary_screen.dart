@@ -115,6 +115,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       for (final line in lines) _parseInt(line['cart_id']),
     ]);
 
+    final isKhmer = Localizations.localeOf(context).languageCode == 'km';
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -123,16 +125,30 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
           items: [
             for (final line in order.asLines)
               {
-                'name': line.titleEn,
+                'name': line.title(khmer: isKhmer),
                 'quantity': line.quantity,
                 'price': line.unitPrice,
-                'image': null,
+                'image': lines
+                    .cast<Map<String, dynamic>?>()
+                    .firstWhere(
+                      (l) => _parseInt(l?['item_id']) == line.itemId,
+                      orElse: () => null,
+                    )?['image'] ??
+                    lines
+                    .cast<Map<String, dynamic>?>()
+                    .firstWhere(
+                      (l) => _parseInt(l?['item_id']) == line.itemId,
+                      orElse: () => null,
+                    )?['image_url'],
               },
           ],
           total: order.totalPrice ?? 0,
           paymentMethod: widget.paymentMethod.wireName,
           // One code for the whole basket — this joined several with commas.
           trackingNumber: order.code,
+          orderStatus: order.status.wireName,
+          isPaid: order.isPaid,
+          paymentStatus: order.isPaid ? 'PAID' : 'PENDING',
         ),
       ),
       (route) => false,

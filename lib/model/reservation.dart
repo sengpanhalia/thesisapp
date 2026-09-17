@@ -128,6 +128,7 @@ class Reservation {
     required this.note,
     required this.createdAt,
     this.lines = const [],
+    this.rawPaymentStatus,
   });
 
   final int id;
@@ -149,6 +150,7 @@ class Reservation {
   final String paymentMethod;
   final String note;
   final DateTime? createdAt;
+  final String? rawPaymentStatus;
 
   /// Every title under this one code.
   ///
@@ -157,9 +159,27 @@ class Reservation {
   /// has to handle both shapes.
   final List<ReservationLine> lines;
 
-  /// Anything but cash is unsettled until the provider confirms it, and this
-  /// system does not capture payment. Never show it as paid.
-  bool get isPaid => paymentMethod.toLowerCase() == 'cash';
+  /// Mobile orders start as unpaid (PENDING).
+  /// Once status shows confirmed (or ready for pickup / collected),
+  /// or when payment_status is explicitly PAID, payment is marked as PAID.
+  /// Cancelled orders are never paid.
+  bool get isPaid {
+    if (status == ReservationStatus.cancelled) return false;
+    final ps = (rawPaymentStatus ?? '').trim().toUpperCase();
+    if (ps == 'PAID' ||
+        ps == 'COMPLETED' ||
+        ps == 'SUCCESS' ||
+        ps == '1' ||
+        ps == 'TRUE') {
+      return true;
+    }
+    if (status == ReservationStatus.confirmed ||
+        status == ReservationStatus.readyForPickup ||
+        status == ReservationStatus.collected) {
+      return true;
+    }
+    return false;
+  }
 
   /// True when this order covers more than one title.
   bool get isBasket => lines.length > 1;
@@ -203,6 +223,9 @@ class Reservation {
       paymentMethod: _text(json['payment_method']),
       note: _text(json['note']),
       createdAt: _dateTime(json['created_at']),
+      rawPaymentStatus: _text(
+        json['payment_status'] ?? json['paymentStatus'] ?? json['is_paid'],
+      ),
       lines: (json['lines'] is List)
           ? (json['lines'] as List)
                 .whereType<Map>()

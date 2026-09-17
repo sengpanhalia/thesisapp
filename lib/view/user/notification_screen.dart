@@ -47,7 +47,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    NotificationService.removeBadge();
+    NotificationService.removeLauncherBadge();
     _fetch();
   }
 

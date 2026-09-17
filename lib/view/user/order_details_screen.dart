@@ -29,6 +29,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   late Reservation _order = widget.order;
   bool _isRefreshing = true;
+  // ignore: unused_field
   bool _isCancelling = false;
 
   @override
@@ -53,6 +54,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _cancel() async {
     final lang = AppLocalizations.of(context)!;
     final user = context.read<AuthProvider>().user;
@@ -131,7 +133,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           items: [
             for (final line in _order.asLines)
               {
-                'name': line.titleEn,
+                'name': line.title(
+                  khmer: Localizations.localeOf(context).languageCode == 'km',
+                ),
                 'quantity': line.quantity,
                 'price': line.unitPrice,
                 'image': null,
@@ -141,6 +145,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           paymentMethod: _order.paymentMethod,
           createdAt: _order.createdAt,
           trackingNumber: _order.code,
+          orderStatus: _order.status.wireName,
+          isPaid: _order.isPaid,
+          paymentStatus: _order.status == ReservationStatus.cancelled
+              ? 'CANCELLED'
+              : (_order.isPaid ? 'PAID' : 'PENDING'),
         ),
       ),
     );
@@ -328,11 +337,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       ),
                       // Only a cash sale is booked as paid, and nothing is
                       // settled in the app — so this says PENDING until the
-                      // counter takes the money.
+                      // counter takes the money. Cancelled orders show CANCELLED.
                       _row(
                         lang.translate('payment status'),
-                        _order.isPaid ? 'PAID' : 'PENDING',
-                        valueColor: _order.isPaid ? ButtonColor : TextColor,
+                        _order.status == ReservationStatus.cancelled
+                            ? 'CANCELLED'
+                            : (_order.isPaid ? 'PAID' : 'PENDING'),
+                        valueColor: _order.status == ReservationStatus.cancelled
+                            ? Colors.red
+                            : (_order.isPaid ? ButtonColor : Colors.orange[800]),
                       ),
                       if (_order.note.isNotEmpty)
                         _row(lang.translate('note'), _order.note),
@@ -417,42 +430,42 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  // const SizedBox(height: 12),
 
-                  // Cancelling releases the held copies straight away. Offered
-                  // only while the reservation can still be called off.
-                  if (_order.status.isCancellable)
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _isCancelling ? null : _cancel,
-                        icon: _isCancelling
-                            ? const SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.close_rounded, color: ButtonColor),
-                        label: Text(
-                          lang.translate('cancel_reservation'),
-                          style: TextStyle(
-                            color: ButtonColor,
-                            fontFamily: getFontFamily(context),
-                          ),
-                        ),
-                        // Blue like every other button on the app's order
-                        // screens; the confirm dialog is what guards the cancel.
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: ButtonColor),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
+                  // // Cancelling releases the held copies straight away. Offered
+                  // // only while the reservation can still be called off.
+                  // if (_order.status.isCancellable)
+                  //   SizedBox(
+                  //     width: double.infinity,
+                  //     child: OutlinedButton.icon(
+                  //       onPressed: _isCancelling ? null : _cancel,
+                  //       icon: _isCancelling
+                  //           ? const SizedBox(
+                  //               height: 16,
+                  //               width: 16,
+                  //               child: CircularProgressIndicator(
+                  //                 strokeWidth: 2,
+                  //               ),
+                  //             )
+                  //           : const Icon(Icons.close_rounded, color: ButtonColor),
+                  //       label: Text(
+                  //         lang.translate('cancel_reservation'),
+                  //         style: TextStyle(
+                  //           color: ButtonColor,
+                  //           fontFamily: getFontFamily(context),
+                  //         ),
+                  //       ),
+                  //       // Blue like every other button on the app's order
+                  //       // screens; the confirm dialog is what guards the cancel.
+                  //       style: OutlinedButton.styleFrom(
+                  //         padding: const EdgeInsets.symmetric(vertical: 14),
+                  //         side: const BorderSide(color: ButtonColor),
+                  //         shape: RoundedRectangleBorder(
+                  //           borderRadius: BorderRadius.circular(12),
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
 
                   const SizedBox(height: 24),
                 ],

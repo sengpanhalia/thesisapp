@@ -95,6 +95,7 @@ class _SigninScreenState extends State<SigninScreen> {
        * failure costs the push and nothing else.
        */
       unawaited(NotificationService.registerWithServer());
+      unawaited(NotificationService.fetchUnreadCount());
 
       // The shared-default-password notice is intentionally not shown in
       // production: the shared credential is a known, accepted situation, so
