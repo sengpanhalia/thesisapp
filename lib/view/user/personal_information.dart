@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:thesisapp/component/component_app.dart';
 import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/model/user_detail.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/student_directory.dart';
 import 'package:thesisapp/theme_color.dart';
+
+const _profileCardColor = Color(0xFFFBFAF8);
+const _profileCardBorder = Color(0xFFF0E9E1);
+const _profileDividerColor = Color(0xFFBDB7AE);
+const _profileBackFill = Color(0xFFF8F1E8);
+const _profileBackBorder = Color(0xFFE9DED1);
+const _profileShadow = Color(0x16000000);
+const _profileHorizontalPadding = 24.0;
+const _profileRowRadius = 14.0;
+const _profileRowGap = 7.0;
+const _profileLabelWidth = 108.0;
 
 class PersonalInformation extends StatefulWidget {
   const PersonalInformation({super.key});
@@ -38,33 +48,62 @@ class _PersonalInformationState extends State<PersonalInformation> {
     }
   }
 
-  String getStatusUser(BuildContext context) {
+  String getGenderUser(BuildContext context) {
     final lang = AppLocalizations.of(context);
     final isEnglish = lang?.locale.languageCode == 'en';
-    if (!isEnglish) {
-      return _userDetail?.status_name ?? "";
-    } else {
-      final List<Map<String, String>> status = [
-        {
-          "kh": "កំពុងសិក្សា",
-          "en": "Studying",
-        },
-        {
-          "kh": "បញ្ចប់ការសិក្សា",
-          "en": "Graduated",
-        },
-        {
-          "kh": "បោះបង់ការសិក្សា",
-          "en": "Dropout",
-        },
-      ];
-      for (final status in status) {
-        if (status["kh"] == _userDetail?.status_name) {
-          return status["en"]!;
-        }
-      }
-      return _userDetail?.status_name ?? "";
+    final gender = _userDetail?.gender.trim() ?? "";
+    final normalized = gender.toLowerCase();
+
+    if (isEnglish) {
+      if (gender == "ប្រុស" || normalized == "m") return "Male";
+      if (gender == "ស្រី" || normalized == "f") return "Female";
+      return gender;
     }
+
+    if (normalized == "male" || normalized == "m") return "ប្រុស";
+    if (normalized == "female" || normalized == "f") return "ស្រី";
+    return gender;
+  }
+
+  String getDateOfBirthUser(BuildContext context) {
+    final rawDate = _userDetail?.date_of_birth.trim() ?? "";
+    final parsedDate = DateTime.tryParse(rawDate);
+    if (parsedDate == null) return rawDate;
+
+    final lang = AppLocalizations.of(context);
+    final isEnglish = lang?.locale.languageCode == 'en';
+    final months = isEnglish
+        ? const [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ]
+        : const [
+            "មករា",
+            "កុម្ភៈ",
+            "មីនា",
+            "មេសា",
+            "ឧសភា",
+            "មិថុនា",
+            "កក្កដា",
+            "សីហា",
+            "កញ្ញា",
+            "តុលា",
+            "វិច្ឆិកា",
+            "ធ្នូ",
+          ];
+    final day = parsedDate.day.toString().padLeft(2, '0');
+
+    return "$day-${months[parsedDate.month - 1]}-${parsedDate.year}";
   }
 
   String getUserFaculty(BuildContext context) {
@@ -152,16 +191,43 @@ class _PersonalInformationState extends State<PersonalInformation> {
     final nameUser = getNameUser(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
+        backgroundColor: WhiteColor,
+        surfaceTintColor: WhiteColor,
         shadowColor: Colors.transparent,
+        toolbarHeight: 58,
         title: Text(
           'ព័ត៌មានផ្ទាល់ខ្លួន',
-          style: TextStyle(fontFamily: 'KhmerMool1', fontSize: fontAppBar),
+          style: TextStyle(
+            fontFamily: 'KhmerMool1',
+            fontSize: fontHeadTitle,
+            fontWeight: FontWeight.w500,
+            color: TitleColor,
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
+        leadingWidth: 48,
+        leading: Center(
+          child: Tooltip(
+            message: lang.translate('back'),
+            child: Material(
+              color: _profileBackFill,
+              shape: const CircleBorder(
+                side: BorderSide(color: _profileBackBorder),
+              ),
+              child: InkResponse(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.pop(context),
+                child: const SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 15,
+                    color: TitleColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
         centerTitle: true,
         elevation: 0,
@@ -169,17 +235,12 @@ class _PersonalInformationState extends State<PersonalInformation> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: gradientColor(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        color: WhiteColor,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: MgPd20,
-              vertical: Height15,
+              horizontal: _profileHorizontalPadding,
+              vertical: Height10,
             ),
             child: Column(
               children: [
@@ -188,42 +249,43 @@ class _PersonalInformationState extends State<PersonalInformation> {
                   title: lang.translate('student_id'),
                   subTitle: _userDetail?.student_id ?? "",
                 ),
-                SizedBox(height: Height15),
+                const SizedBox(height: _profileRowGap),
                 ListInfo(
                   context: context,
                   title: lang.translate('full_name'),
                   subTitle: nameUser,
                 ),
-                SizedBox(height: Height15),
+                const SizedBox(height: _profileRowGap),
                 ListInfo(
                   context: context,
-                  title: lang.translate('status'),
-                  subTitle: getStatusUser(context),
+                  title: lang.translate('gender'),
+                  subTitle: getGenderUser(context),
                 ),
-                SizedBox(height: Height15),
+                const SizedBox(height: _profileRowGap),
                 ListInfo(
                   context: context,
                   title: lang.translate('date_of_birth'),
-                  subTitle: _userDetail?.date_of_birth ?? "",
+                  subTitle: getDateOfBirthUser(context),
                 ),
-                SizedBox(height: Height15),
+                const SizedBox(height: _profileRowGap),
                 ListInfo(
                   context: context,
                   title: lang.translate('faculty'),
                   subTitle: getUserFaculty(context),
                 ),
-                SizedBox(height: Height15),
+                const SizedBox(height: _profileRowGap),
                 ListInfo(
                   context: context,
                   title: lang.translate('major'),
                   subTitle: _userDetail?.major_name ?? "",
                 ),
-                SizedBox(height: Height15),
+                const SizedBox(height: _profileRowGap),
                 CardYear(
                   context: context,
                   year: _userDetail?.year_name ?? "",
                   semester: _userDetail?.semester_name ?? "",
                   stage_name: _userDetail?.stage_name ?? "",
+                  term_name: _userDetail?.term_name ?? "",
                   academic_year: _userDetail?.academic_year ?? "",
                 ),
               ],
@@ -235,44 +297,56 @@ class _PersonalInformationState extends State<PersonalInformation> {
   }
 }
 
-Widget ListInfo({required BuildContext context, required String title, required String subTitle}) {
+Widget ListInfo({
+  required BuildContext context,
+  required String title,
+  required String subTitle,
+}) {
   return Container(
     decoration: BoxDecoration(
-      color: CardColor,
-      borderRadius: BorderRadius.circular(Round10),
-      border: Border.all(color: WhiteColor, width: 1),
-      boxShadow: [
+      color: _profileCardColor,
+      borderRadius: BorderRadius.circular(_profileRowRadius),
+      border: Border.all(color: _profileCardBorder, width: 1),
+      boxShadow: const [
         BoxShadow(
-          color: BlackColor.withOpacity(0.2),
-          offset: Offset(0, 4),
-          blurRadius: 6,
+          color: _profileShadow,
+          offset: Offset(0, 3),
+          blurRadius: 5,
         ),
       ],
     ),
     child: Padding(
-      padding: const EdgeInsets.all(MgPd10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: IntrinsicHeight(
         child: Row(
           children: [
             SizedBox(
-              width: 120,
+              width: _profileLabelWidth,
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: fontTitle,
+                  fontSize: fontSubtitle,
                   fontFamily: getFontFamily(context),
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
                   color: TextColor,
                 ),
               ),
             ),
-            const VerticalDivider(width: 1, thickness: 1, color: Colors.grey),
-            SizedBox(width: 20),
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: _profileDividerColor,
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 subTitle,
                 style: TextStyle(
-                  fontSize: fontTitle,
+                  fontSize: fontSubtitle,
                   fontFamily: getFontFamily(context),
+                  fontWeight: FontWeight.w500,
+                  height: 1.25,
                   color: TextColor,
                 ),
                 softWrap: true,
@@ -291,54 +365,73 @@ Widget CardYear({
   required String year,
   required String semester,
   required String stage_name,
+  required String term_name,
   required String academic_year,
 }) {
   final lang = AppLocalizations.of(context)!;
 
-  // The server sends year and semester already labelled ("ឆ្នាំទី 3",
-  // "ឆមាសទី 2 · 2024–2025") and usually sends nothing for the promotion or the
-  // academic year. Show a proper aligned table: the label as a heading, the
-  // value directly under it. Strip the label back out of the value so the
-  // heading is not repeated, and skip any field with no value so the remaining
-  // columns share the width evenly and line up.
+  // Values may arrive already labelled; keep the card label as the heading and
+  // show only the useful part underneath.
   String strip(String value, String label) {
     final v = value.trim();
     return v.startsWith(label) ? v.substring(label.length).trim() : v;
   }
 
+  String displayValue(String value) {
+    final v = value.trim();
+    return v.isEmpty ? '-' : v;
+  }
+
+  final yearValue = strip(year, lang.translate('student_study_year'));
+  var semesterValue = strip(semester, lang.translate('semester'));
+  final promotionSource = stage_name.trim().isNotEmpty ? stage_name : term_name;
+  final stageValue = strip(promotionSource, lang.translate('promotion'));
+  var academicYearValue = strip(academic_year, lang.translate('acad_year'));
+
+  final semesterParts = semesterValue
+      .split(RegExp('[\\u00B7\\u2022]'))
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList();
+
+  if (semesterParts.length > 1) {
+    semesterValue = semesterParts.first;
+    if (academicYearValue.isEmpty) {
+      academicYearValue = semesterParts.skip(1).join(' ');
+    }
+  }
+
   final entries = <MapEntry<String, String>>[
-    if (year.trim().isNotEmpty)
-      MapEntry(lang.translate('student_study_year'),
-          strip(year, lang.translate('student_study_year'))),
-    if (semester.trim().isNotEmpty)
-      MapEntry(lang.translate('semester'),
-          strip(semester, lang.translate('semester'))),
-    if (stage_name.trim().isNotEmpty)
-      MapEntry(lang.translate('promotion'), stage_name.trim()),
-    if (academic_year.trim().isNotEmpty)
-      MapEntry(lang.translate('acad_year'), academic_year.trim()),
+    MapEntry(lang.translate('student_study_year'), displayValue(yearValue)),
+    MapEntry(lang.translate('semester'), displayValue(semesterValue)),
+    MapEntry(lang.translate('promotion'), displayValue(stageValue)),
+    MapEntry(lang.translate('acad_year'), displayValue(academicYearValue)),
   ];
 
-  if (entries.isEmpty) return const SizedBox.shrink();
+  if ([year, semester, stage_name, term_name, academic_year].every(
+    (v) => v.trim().isEmpty,
+  )) {
+    return const SizedBox.shrink();
+  }
 
   return Container(
     width: double.infinity,
     decoration: BoxDecoration(
-      color: CardColor,
-      borderRadius: BorderRadius.circular(Round10),
-      border: Border.all(color: WhiteColor, width: 1),
-      boxShadow: [
+      color: _profileCardColor,
+      borderRadius: BorderRadius.circular(_profileRowRadius),
+      border: Border.all(color: _profileCardBorder, width: 1),
+      boxShadow: const [
         BoxShadow(
-          color: BlackColor.withOpacity(0.2),
-          offset: Offset(0, 4),
-          blurRadius: 6,
+          color: _profileShadow,
+          offset: Offset(0, 3),
+          blurRadius: 5,
         ),
       ],
     ),
     child: Padding(
       padding: const EdgeInsets.symmetric(
-        vertical: Height10,
-        horizontal: MgPd10,
+        vertical: 8,
+        horizontal: 12,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,18 +466,20 @@ Widget _CardYearItem({
         style: TextStyle(
           fontSize: fontText,
           fontFamily: getFontFamily(context),
-          color: TextSoftColor,
+          fontWeight: FontWeight.w600,
+          height: 1.25,
+          color: const Color(0xFF8D877F),
         ),
       ),
-      SizedBox(height: Height5),
-      // No FittedBox: a long value (e.g. "2 · 2024–2025") wraps onto a second
-      // line instead of being shrunk, so every column keeps the same text size
-      // and the values stay lined up under their headings.
+      const SizedBox(height: 4),
+      // Long values stay on one line to preserve the four-column shape.
       Text(
         value,
         textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: fontTitle,
+          fontSize: fontSubtitle,
           fontFamily: getFontFamily(context),
           color: TextColor,
           fontWeight: FontWeight.w600,

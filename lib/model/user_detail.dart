@@ -25,6 +25,18 @@ class UserDetail {
   });
 
   factory UserDetail.fromJson(Map<String, dynamic> json) {
+    String field(List<String> keys) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value == null) continue;
+
+        final text = value.toString().trim();
+        if (text.isNotEmpty) return text;
+      }
+
+      return '';
+    }
+
     return UserDetail(
       faculty_name: json['faculty_name'] ?? '',
       degree_name: json['degree_name'] ?? '',
@@ -34,8 +46,16 @@ class UserDetail {
       name_kh: json['name_kh'] ?? '',
       name_en: json['name_en'] ?? '',
       student_id: json['student_id'] ?? '',
-      stage_name: json['stage_name'] ?? '',
-      term_name: json['term_name'] ?? '',
+      stage_name: field([
+        'stage_name',
+        'promotion',
+        'promotion_name',
+        'generation',
+        'generation_name',
+        'batch',
+        'batch_name',
+      ]),
+      term_name: field(['term_name', 'term', 'term_no']),
       academic_year: json['academic_year'] ?? '',
       shift_name: json['shift_name'] ?? '',
       room_name: json['room_name'] ?? '',
