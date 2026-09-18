@@ -179,6 +179,7 @@ class _SigninScreenState extends State<SigninScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context)!;
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -333,7 +334,7 @@ class _SigninScreenState extends State<SigninScreen> {
                         ),
                         const SizedBox(height: Height30),
                         AppButton(
-                          title: 'ចូលគណនី',
+                          title: _isSigningIn ? lang.translate('signing_in') : lang.translate('sign_in'),
                           onTap: () {
                             // Guarded rather than disabled: two taps must
                             // not start two sign-ins.

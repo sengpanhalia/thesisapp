@@ -165,5 +165,7 @@
   "no related books": "No related books",
   "api_key": "Book system key",
   "api_key_message": "Paste the key the book office issued for this phone. It is shown only once, when it is created.",
-  "api_key_saved": "Key saved"
+  "api_key_saved": "Key saved",
+  "signing_in": "Sign in ...",
+  "sign_in": "Sign in"
 }
