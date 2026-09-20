@@ -53,13 +53,21 @@ class _CategoryScreenState extends State<CategoryScreen> {
       final categories = await _api.categories(forMyYear: true);
       if (!mounted) return;
 
-      // "All books" leads, then one tile per category. Its count is the sum of
-      // the per-category counts, which is what the server counted as sellable.
-      final total = categories.fold<int>(0, (sum, c) => sum + c.bookCount);
-
+      /*
+       * One tile per category the server sends, and nothing else.
+       *
+       * An "All books" tile used to lead the list, from when the server sent a
+       * dozen real categories and browsing the lot was a genuine shortcut. It
+       * now sends exactly two — សៀវភៅសិក្សា and សម្ភារៈ — so "All" was a third
+       * tile meaning "both of the two directly below it", which is not a choice
+       * worth offering (asked for 2026-09-20).
+       *
+       * _BrowseGroup keeps its nullable category and `isEverything`: opening a
+       * group still passes `categoryId: null` to mean the whole catalogue, and
+       * search relies on that.
+       */
       setState(() {
         _groups = [
-          _BrowseGroup(category: null, count: total),
           for (final category in categories)
             _BrowseGroup(category: category, count: category.bookCount),
         ];
