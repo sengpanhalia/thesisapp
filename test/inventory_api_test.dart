@@ -236,6 +236,57 @@ void main() {
       expect(ReservationStatus.collected.isCancellable, isFalse);
       expect(ReservationStatus.cancelled.isCancellable, isFalse);
     });
+
+    /*
+     * A basket holding books and materials is one order under one code.
+     *
+     * One student, one basket, one payment — so one number to quote. The two
+     * rooms still hand their own share over, which is what `counters` says.
+     * This is the exact shape POST orders.php answered with on the running
+     * server for a textbook and a packet of paper.
+     */
+    test('a mixed basket is one code collected from two counters', () {
+      final order = Reservation.fromJson({
+        'id': 2160,
+        'code': 'ORD-USEA-D00035DA',
+        'status': 'PENDING',
+        'student_id': 'BSR170342',
+        'student_name': 'PANHA SENG',
+        'payment_method': 'Cash',
+        'quantity': 2,
+        'total_price': 3.5,
+        'line_count': 2,
+        'counters': const ['book counter', 'stock counter'],
+        'lines': const [
+          {'id': 1, 'item_id': 32, 'title': 'Statistics for Business', 'quantity': 1, 'total_price': 2.5},
+          {'id': 2, 'item_id': 1, 'title': 'Paper A4', 'quantity': 1, 'total_price': 1.0},
+        ],
+      });
+
+      expect(order.code, 'ORD-USEA-D00035DA');
+      expect(order.counters, ['book counter', 'stock counter']);
+      expect(order.lines, hasLength(2));
+      expect(order.totalPrice, 3.5);
+
+      // Not paid until the counter takes the money.
+      expect(order.isPaid, isFalse);
+    });
+
+    test('an order from a server that names no counter still reads', () {
+      final order = Reservation.fromJson({
+        'id': 7,
+        'code': 'ORD-000007',
+        'status': 'PENDING',
+        'student_id': 'BSR170342',
+        'quantity': 1,
+        'total_price': 2.0,
+      });
+
+      // Empty rather than null, so the receipt falls back to its old wording
+      // instead of printing the word "null" at somebody.
+      expect(order.counter, '');
+      expect(order.code, 'ORD-000007');
+    });
   });
 
   test('StudentProfile reads students.php', () {

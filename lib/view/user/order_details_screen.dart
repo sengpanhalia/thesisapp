@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +26,14 @@ class OrderDetailsScreen extends StatefulWidget {
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
 }
 
-class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+class _OrderDetailsScreenState extends State<OrderDetailsScreen>
+    with WidgetsBindingObserver {
+  /// See order_screen.dart — this is the screen a student actually holds up at
+  /// the counter, so it is the one that must not say "កំពុងរង់ចាំ" after
+  /// reception has already confirmed the payment.
+  static const Duration _pollEvery = Duration(seconds: 10);
+
+  Timer? _poll;
   final InventoryApi _api = InventoryApi();
 
   late Reservation _order = widget.order;
@@ -35,7 +44,36 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+      _schedulePoll();
+    } else {
+      _poll?.cancel();
+      _poll = null;
+    }
+  }
+
+  /// Stops of its own accord once the order can no longer move.
+  void _schedulePoll() {
+    _poll?.cancel();
+    _poll = null;
+
+    if (!mounted || _order.status.isFinished) return;
+
+    _poll = Timer.periodic(_pollEvery, (_) => _refresh());
   }
 
   Future<void> _refresh() async {
@@ -46,6 +84,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       if (!mounted) return;
 
       setState(() => _order = fresh);
+
+      // Collected or cancelled: nothing more will happen, so stop asking.
+      _schedulePoll();
     } on ApiException catch (error) {
       if (!mounted) return;
       Fluttertoast.showToast(msg: error.message(AppLocalizations.of(context)));

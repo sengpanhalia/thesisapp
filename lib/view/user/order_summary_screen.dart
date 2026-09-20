@@ -79,10 +79,13 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
     setState(() => _isLoading = true);
 
-    final Reservation order;
+    // A list because the API can answer with more than one order; one code
+    // per purchase means it is a list of one, and the fold below is what keeps
+    // this honest if that ever changes again.
+    final List<Reservation> placed;
 
     try {
-      order = await _api.reserveAll(
+      placed = await _api.reserveAll(
         items: [
           for (final line in lines)
             (
@@ -116,14 +119,28 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     ]);
 
     final isKhmer = Localizations.localeOf(context).languageCode == 'km';
+    final first = placed.first;
+
+    /*
+     * One receipt for the whole purchase.
+     *
+     * The student bought one basket, paid one total and carries one code — so
+     * one slip, listing every title. A mixed basket only changes where they
+     * walk with it, which the counters row below names.
+     */
+    final everyLine = [for (final order in placed) ...order.asLines];
+    final grandTotal = placed.fold<double>(
+      0,
+      (sum, order) => sum + (order.totalPrice ?? 0),
+    );
 
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (_) => OrderSuccessScreen(
-          orderId: order.id,
+          orderId: first.id,
           items: [
-            for (final line in order.asLines)
+            for (final line in everyLine)
               {
                 'name': line.title(khmer: isKhmer),
                 'quantity': line.quantity,
@@ -142,13 +159,16 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                     )?['image_url'],
               },
           ],
-          total: order.totalPrice ?? 0,
+          total: grandTotal,
           paymentMethod: widget.paymentMethod.wireName,
-          // One code for the whole basket — this joined several with commas.
-          trackingNumber: order.code,
-          orderStatus: order.status.wireName,
-          isPaid: order.isPaid,
-          paymentStatus: order.isPaid ? 'PAID' : 'PENDING',
+          trackingNumber: first.code,
+          // One code now, however many catalogues it drew on — but possibly
+          // two counters to walk to, which is the part the student cannot
+          // work out from the titles.
+          counters: first.counters,
+          orderStatus: first.status.wireName,
+          isPaid: first.isPaid,
+          paymentStatus: first.isPaid ? 'PAID' : 'PENDING',
         ),
       ),
       (route) => false,

@@ -20,49 +20,48 @@ class ApiConfig {
   const ApiConfig._();
 
   static const String _defaultBaseUrl =
-      'http://192.168.3.3/USEA_Smart_Inventory_Management_System/api/v1';
+      'http://10.0.2.2/USEA/USEA_Smart_Inventory_Management_System/api/v1';
 
   static const String baseUrl = String.fromEnvironment(
     'USEA_API_BASE_URL',
     defaultValue: _defaultBaseUrl,
   );
 
-  /// The bearer token baked into this build.
+  /// The bearer token compiled into this build, and **empty in the student
+  /// build** — which is the point of it.
   ///
-  /// It must match `api.token` in the server's `config/secrets.json`. The server
-  /// checks it with `hash_equals`, so even a whitespace mismatch is a refusal.
+  /// It used to default to the live key written out in this file. That is one
+  /// permanent token with an administrator's authority, and a value written
+  /// here is not only in every checkout of this repository but in every APK
+  /// handed to a student: unpack the bundle, run `strings`, read the key. Whoever
+  /// has it can call `orders.php` with no session at all and list any
+  /// classmate's reservations. The server's session-first rule (bootstrap.php)
+  /// closes that only for callers who present a session — a bare token is still
+  /// answered as its owner, so the key itself had to stop shipping.
   ///
-  /// **If the baked token ever drifts from the server, students are not locked
-  /// out.** The server now falls back to the student's signed session whenever
-  /// the bearer token is absent or invalid, so the catalogue, orders, profile
-  /// and notifications keep working. The token only matters for staff or bot
-  /// callers that rely on its authority.
+  /// The student app never needed it. Signing in mints an HMAC-signed session
+  /// (StudentSessionStore) that names one student, and every endpoint the app
+  /// touches — catalogue, orders, profile, notifications — accepts that
+  /// instead. Empty here costs a student nothing.
   ///
-  /// Override per build with `--dart-define=USEA_API_TOKEN=…`; to rotate, change
-  /// `api.token` in `config/secrets.json` and the default below together.
+  /// Staff and bot builds still pass one, out of the gitignored
+  /// `dart_defines.json` via `./run.sh`; ApiTokenStore explains the precedence.
+  /// To rotate, change `api.token` in the server's `config/secrets.json` and
+  /// that file — never this one. `test/api_config_test.dart` fails if the
+  /// default stops being empty.
   static const String buildTimeToken = String.fromEnvironment(
     'USEA_API_TOKEN',
-    defaultValue: _bakedToken,
+    defaultValue: '',
   );
-
-  /// The current permanent token — `api.token` from the server's
-  /// `config/secrets.json`.
-  ///
-  /// Keep this in sync with the server. When the server rotates the token,
-  /// update this value and rebuild. Because the server falls back to student
-  /// sessions for the student endpoints, a mismatch here does not break the
-  /// student app — but a staff or bot build that depends on this token will
-  /// need it corrected.
-  static const String _bakedToken = '53a2b48099dc86710e266858c269aae33cc6f089c95ea6762e0cf7409c4d7831';
 
   static Uri endpoint(String file, [Map<String, String>? query]) {
     final base = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
 
-    return Uri.parse('$base/$file').replace(
-      queryParameters: (query == null || query.isEmpty) ? null : query,
-    );
+    return Uri.parse(
+      '$base/$file',
+    ).replace(queryParameters: (query == null || query.isEmpty) ? null : query);
   }
 
   /// The origin the API is served from — `http://host[:port]` — which is what
@@ -70,8 +69,11 @@ class ApiConfig {
   static String get origin {
     final uri = Uri.parse(baseUrl);
 
-    return Uri(scheme: uri.scheme, host: uri.host, port: uri.hasPort ? uri.port : null)
-        .toString();
+    return Uri(
+      scheme: uri.scheme,
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
+    ).toString();
   }
 
   /// Turns the API's `image_url` into something [Image.network] can fetch.

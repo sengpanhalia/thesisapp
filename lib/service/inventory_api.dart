@@ -288,9 +288,22 @@ class InventoryApi {
   /// sold out left the student holding two reservations, no third, and two
   /// codes to explain. The server locks every title and refuses the lot if one
   /// is short — a slip printed for four books and honoured for three is a
-  /// queue at the desk rather than a sale — so this either returns one order
-  /// covering everything or throws, and the cart is emptied only on success.
-  Future<Reservation> reserveAll({
+  /// queue at the desk rather than a sale — so this either reserves everything
+  /// or throws, and the cart is emptied only on success.
+  ///
+  /// **A basket may hold books and materials together, and comes back as more
+  /// than one reservation.** They are two counters: the book room hands over
+  /// books, the stock room hands over materials, and an order is the thing one
+  /// room releases. So the server places one order per room, inside a single
+  /// transaction — a shortage on either side reserves neither — and answers
+  /// with both. Each carries the counter that will hand it over.
+  ///
+  /// `multi_order` is this build telling the server it can show several codes.
+  /// Without it the server refuses a mixed basket outright, which is what it
+  /// must keep doing for an older build: one that reads only `order` would send
+  /// the student to the counter holding one of two codes, with no idea the
+  /// other existed.
+  Future<List<Reservation>> reserveAll({
     required List<({int itemId, int quantity})> items,
     required String studentId,
     required PaymentMethod paymentMethod,
@@ -307,15 +320,31 @@ class InventoryApi {
       'student_id': studentId.trim(),
       'payment_method': paymentMethod.wireName,
       'note': note,
+      'multi_order': true,
     });
 
+    final orders = json['orders'];
+
+    if (orders is List) {
+      final placed = [
+        for (final entry in orders.whereType<Map>())
+          Reservation.fromJson(Map<String, dynamic>.from(entry)),
+      ];
+
+      if (placed.isNotEmpty) {
+        return placed;
+      }
+    }
+
+    // A server too old to split a basket answers with `order` alone, and for a
+    // single-kind basket that is the same reservation under another name.
     final order = json['order'];
 
     if (order is! Map<String, dynamic>) {
       throw ApiException(ApiErrorKind.malformed);
     }
 
-    return Reservation.fromJson(order);
+    return [Reservation.fromJson(order)];
   }
 
   /// Every reservation this student has made, newest first.

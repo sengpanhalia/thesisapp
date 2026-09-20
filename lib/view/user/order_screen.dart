@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/component_app.dart';
@@ -18,8 +20,21 @@ class OrderScreen extends StatefulWidget {
 
 enum OrderHistoryFilter { all, week, month, year }
 
-class _OrderScreenState extends State<OrderScreen> {
+class _OrderScreenState extends State<OrderScreen> with WidgetsBindingObserver {
   final InventoryApi _api = InventoryApi();
+
+  /*
+   * How often an order still in flight is re-read.
+   *
+   * The counter moves an order forward on a web screen the student cannot see,
+   * so a list read once when the screen opened says "កំពុងរង់ចាំ" long after
+   * reception has confirmed the payment — the student is standing at the desk
+   * being told their order is still waiting. Fifteen seconds is short enough
+   * to feel immediate while they wait at the counter, and one small GET.
+   */
+  static const Duration _pollEvery = Duration(seconds: 15);
+
+  Timer? _poll;
 
   List<Reservation> _orders = [];
   bool _isLoading = true;
@@ -32,7 +47,53 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchOrders();
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /*
+   * Away from the app, nothing is polled; coming back, the list is read at once.
+   *
+   * A phone in a pocket has no counter to watch, and a timer left running there
+   * is battery spent on an answer nobody is reading. Returning to the app is
+   * also the moment the list is most likely to be wrong — the student queued,
+   * paid, and is looking at the screen again.
+   */
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchOrders();
+      _schedulePoll();
+    } else {
+      _poll?.cancel();
+      _poll = null;
+    }
+  }
+
+  /// Polls only while something can still change.
+  ///
+  /// This is the guard the earlier attempt lacked. An order that has been
+  /// collected or cancelled is finished and will never move again, so a list
+  /// holding nothing but finished orders is re-read never rather than every
+  /// fifteen seconds — which for most students, most of the time, is no
+  /// polling at all. The timer is replaced rather than stacked, so two reasons
+  /// to refresh arriving together cannot leave two timers running.
+  void _schedulePoll() {
+    _poll?.cancel();
+    _poll = null;
+
+    final live = _orders.any((order) => !order.status.isFinished);
+
+    if (!live || !mounted) return;
+
+    _poll = Timer.periodic(_pollEvery, (_) => _fetchOrders());
   }
 
   /*
@@ -76,6 +137,10 @@ class _OrderScreenState extends State<OrderScreen> {
         _orders = orders;
         _loadError = null;
       });
+
+      // What is still in flight has just changed, so the timer is decided
+      // again — the last live order being collected stops the polling.
+      _schedulePoll();
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() => _loadError = error.message(AppLocalizations.of(context)));

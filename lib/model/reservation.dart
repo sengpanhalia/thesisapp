@@ -129,6 +129,8 @@ class Reservation {
     required this.createdAt,
     this.lines = const [],
     this.rawPaymentStatus,
+    this.counter = '',
+    this.counters = const [],
   });
 
   final int id;
@@ -151,6 +153,21 @@ class Reservation {
   final String note;
   final DateTime? createdAt;
   final String? rawPaymentStatus;
+
+  /// Which counter hands this order over — `book counter` or `stock counter`.
+  ///
+  /// Empty against a server too old to say, and every screen falls back to the
+  /// wording it used before.
+  final String counter;
+
+  /// Every counter this one code has to be collected from.
+  ///
+  /// One entry for an ordinary order. Two when the basket held books and
+  /// materials: it is one code and one payment, but the two rooms hand their
+  /// own share over, so the student walks to both. The server decides it —
+  /// the rule is the server's — and the student cannot work it out from the
+  /// titles alone, which is why it is carried rather than guessed at.
+  final List<String> counters;
 
   /// Every title under this one code.
   ///
@@ -226,6 +243,18 @@ class Reservation {
       rawPaymentStatus: _text(
         json['payment_status'] ?? json['paymentStatus'] ?? json['is_paid'],
       ),
+      counter: _text(json['counter']),
+      // `counters` is what a server that can split a basket sends; `counter`
+      // is the single-room shape that came before it. Either alone is enough,
+      // and an older server sends neither.
+      counters: (json['counters'] is List)
+          ? [
+              for (final entry in (json['counters'] as List))
+                if (_text(entry).isNotEmpty) _text(entry),
+            ]
+          : (_text(json['counter']).isEmpty
+                ? const <String>[]
+                : [_text(json['counter'])]),
       lines: (json['lines'] is List)
           ? (json['lines'] as List)
                 .whereType<Map>()

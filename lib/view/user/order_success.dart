@@ -28,6 +28,14 @@ class OrderSuccessScreen extends StatefulWidget {
   final String? paymentStatus;
   final bool? isPaid;
 
+  /// Every counter this one code has to be collected from.
+  ///
+  /// One entry for an ordinary order. Two when the basket held books and
+  /// materials: one code and one payment, but the book room and the stock room
+  /// each hand their own share over, so the student walks to both. Empty
+  /// against a server that does not say, and the receipt keeps its old wording.
+  final List<String> counters;
+
   OrderSuccessScreen({
     super.key,
     required this.orderId,
@@ -40,6 +48,7 @@ class OrderSuccessScreen extends StatefulWidget {
     this.orderStatus,
     this.paymentStatus,
     this.isPaid,
+    this.counters = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -72,6 +81,25 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     return _resolvedTrackingNumber ??
         _normalizeTrackingNumber(widget.trackingNumber) ??
         'Pending assignment';
+  }
+
+  /// The room a code is collected from, in the reader's language.
+  ///
+  /// The server sends it in English — `book counter`, `stock counter` — because
+  /// the rule that decides it is the server's. Anything else it might send is
+  /// shown as it came rather than dropped, so a counter added later still
+  /// reaches the student while this app waits to learn the word for it.
+  String _counterLabel(String counter, AppLocalizations lang) {
+    switch (counter.trim().toLowerCase()) {
+      case 'book counter':
+        return lang.translate('counter_book');
+      case 'stock counter':
+        return lang.translate('counter_stock');
+      default:
+        return counter.trim().isEmpty
+            ? lang.translate('code number of order')
+            : counter.trim();
+    }
   }
 
   // Future<void> _copyTrackingNumber() async {
@@ -354,9 +382,18 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                   : (paymentStatus == 'PAID' ? ButtonColor : Colors.orange[800]),
             ),
             _infoRow(lang.translate('code number of order'), trackingNumber),
+            // Where to take it. Two rooms means two walks with the same code,
+            // so they are named rather than left to the student to guess.
+            if (widget.counters.length > 1)
+              _infoRow(
+                lang.translate('collect_from'),
+                widget.counters.map((c) => _counterLabel(c, lang)).join(' + '),
+              ),
             const SizedBox(height: 8),
             Text(
-              lang.translate('collect_at_the_counter'),
+              widget.counters.length > 1
+                  ? lang.translate('collect_at_two_counters')
+                  : lang.translate('collect_at_the_counter'),
               style: TextStyle(
                 color: RedColor,
                 fontSize: fontText,
