@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 
 class InfoCard extends StatelessWidget {
@@ -147,8 +148,8 @@ class OrderItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Qty: $qty',
-                      style: GoogleFonts.poppins(
+                      '${AppLocalizations.of(context)!.translate('qty')}: $qty',
+                      style: TextStyle(
                         fontSize: fontText,
                         color: Colors.grey[600],
                       ),

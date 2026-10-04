@@ -462,7 +462,7 @@ class _NotificationDetailSheet extends StatelessWidget {
                     _detailRow(
                       context,
                       rowIcon: Icons.access_time_rounded,
-                      label: 'Date',
+                      label: AppLocalizations.of(context)!.translate('date'),
                       value: formattedDate,
                     ),
                   ],
@@ -472,7 +472,7 @@ class _NotificationDetailSheet extends StatelessWidget {
                     _detailRow(
                       context,
                       rowIcon: Icons.receipt_long_rounded,
-                      label: 'Order',
+                      label: AppLocalizations.of(context)!.translate('code number of order'),
                       value: message.orderCode!,
                     ),
                   ],
@@ -493,7 +493,7 @@ class _NotificationDetailSheet extends StatelessWidget {
                       ),
                       onPressed: () => Navigator.pop(context),
                       child: Text(
-                        'Close',
+                        AppLocalizations.of(context)!.translate('close'),
                         style: TextStyle(
                           fontFamily: getFontFamily(context),
                           fontSize: fontSubtitle,

@@ -334,9 +334,9 @@ class _CartScreenState extends State<CartScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 10),
-                                      const Text(
-                                        "Select all available",
-                                        style: TextStyle(
+                                      Text(
+                                        AppLocalizations.of(context)!.translate('select_all_available'),
+                                        style: const TextStyle(
                                           color: Color(0xFF9A9288),
                                           fontWeight: FontWeight.w500,
                                         ),

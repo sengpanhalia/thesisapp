@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:thesisapp/localization/app_localizations.dart';
 import 'package:thesisapp/theme_color.dart';
 
 class CartSummaryCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class CartSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorText = Color(0xFFFFFFFF);
+    final lang = AppLocalizations.of(context)!;
     // final bgBlue = AppColors.accentDeep;
 
     return Container(
@@ -28,9 +30,9 @@ class CartSummaryCard extends StatelessWidget {
               border: Border.all(color: Colors.white),
             ),
             alignment: Alignment.center,
-            child: const Text(
-              "Description",
-              style: TextStyle(
+            child: Text(
+              lang.translate('order_summary'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: fontTitle,
                 fontWeight: FontWeight.w600,
@@ -45,11 +47,11 @@ class CartSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 flex: 3,
-                child: Text("Name", style: TextStyle(color: colorText)),
+                child: Text(lang.translate('item_name'), style: TextStyle(color: colorText)),
               ),
               Expanded(
                 child: Text(
-                  "Amount",
+                  lang.translate('quantity'),
                   style: TextStyle(color: colorText),
                   textAlign: TextAlign.center,
                 ),
@@ -63,7 +65,7 @@ class CartSummaryCard extends StatelessWidget {
               // ),
               Expanded(
                 child: Text(
-                  "Price",
+                  lang.translate('price'),
                   style: TextStyle(color: colorText),
                   textAlign: TextAlign.end,
                 ),

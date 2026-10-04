@@ -8,6 +8,7 @@ import 'package:thesisapp/model/reservation.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
+import 'package:thesisapp/service/notification_service.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/order_details_screen.dart';
 
@@ -48,12 +49,15 @@ class _OrderScreenState extends State<OrderScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // A push means one of these orders moved: re-read the list now.
+    NotificationService.orderUpdates.addListener(_fetchOrders);
     _fetchOrders();
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    NotificationService.orderUpdates.removeListener(_fetchOrders);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -608,16 +612,17 @@ class _OrderScreenState extends State<OrderScreen> with WidgetsBindingObserver {
       padding: const EdgeInsets.only(top: 40),
       child: Center(
         child: Column(
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.filter_alt_off_rounded,
               size: 44,
               color: IconColor,
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              "No orders for the selected period",
+              AppLocalizations.of(context)!.translate('no_orders_in_period'),
               style: TextStyle(
+                fontFamily: getFontFamily(context),
                 fontSize: fontSubtitle,
                 fontWeight: FontWeight.w600,
                 color: TextColor,

@@ -74,6 +74,27 @@ class HomePageState extends State<HomePage> {
     return '${lang.translate('good night')},';
   }
 
+  /// The student's name in the screen's language, falling back to the other
+  /// one, then to the university's name while nothing has loaded yet.
+  ///
+  /// `watch`, not `read`: the saved sign-in can finish loading after this
+  /// screen first draws, and a read never looks again — the greeting stayed
+  /// on the university's name whenever the server was out of reach to force
+  /// a redraw (found 2026-10-02). Called from build, so watching is allowed.
+  String _greetingName() {
+    final khmer = Localizations.localeOf(context).languageCode == 'km';
+    final user = context.watch<AuthProvider>().user;
+    final candidates = khmer
+        ? [_userDetail?.name_kh, user?.name_kh, _userDetail?.name_en, user?.name_en]
+        : [_userDetail?.name_en, user?.name_en, _userDetail?.name_kh, user?.name_kh];
+
+    for (final name in candidates) {
+      if ((name ?? '').trim().isNotEmpty) return name!.trim();
+    }
+
+    return khmer ? 'សាកលវិទ្យាល័យ សៅស៍អុីសថ៍អេយសៀ' : 'University of South-East Asia';
+  }
+
   void _openSearch() {
     Navigator.push(
       context,
@@ -186,12 +207,16 @@ class HomePageState extends State<HomePage> {
                     ),
                   ),
                   SizedBox(height: Height5),
+                  // "Good morning," and then the student — it was the
+                  // university's name, in Khmer whatever the language.
                   textGradient(
-                    'សាកលវិទ្យាល័យ​ សៅស៍អុីសថ៍អេយសៀ',
+                    _greetingName(),
                     TextStyle(
                       fontSize: fontSubtitle,
                       color: Colors.white,
-                      fontFamily: 'KhmerMool1',
+                      fontFamily: RegExp(r'[\u1780-\u17FF]').hasMatch(_greetingName())
+                          ? 'KhmerMool1'
+                          : getFontFamily(context),
                     ),
                   ),
                 ],

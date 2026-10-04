@@ -256,8 +256,8 @@ class _UserProfileState extends State<UserProfile> {
                   SizedBox(height: Height50),
                   Center(
                     child: Text(
-                      "Version 1.0.0 by USEA",
-                      style: TextStyle(color: TextColor),
+                      lang.translate('app_version'),
+                      style: TextStyle(color: TextColor, fontFamily: getFontFamily(context)),
                     ),
                   ),
                 ],

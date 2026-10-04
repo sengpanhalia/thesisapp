@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:thesisapp/component/cart_provider.dart';
 import 'package:thesisapp/component/component_app.dart';
@@ -11,6 +10,7 @@ import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/component/order_summary_components.dart';
+import 'package:thesisapp/view/user/order_details_screen.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
@@ -134,6 +134,31 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       (sum, order) => sum + (order.totalPrice ?? 0),
     );
 
+    String? imageOf(int itemId) {
+      final line = lines.cast<Map<String, dynamic>?>().firstWhere(
+            (l) => _parseInt(l?['item_id']) == itemId,
+            orElse: () => null,
+          );
+      return (line?['image'] ?? line?['image_url'])?.toString();
+    }
+
+    // One code — the usual case — opens the live receipt: the student holds
+    // it up at the counter, and it has to turn to "paid" when reception takes
+    // the money rather than keep saying "not paid yet" (found 2026-09-30).
+    if (placed.length == 1) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LiveReceipt(
+            order: first,
+            images: {for (final line in everyLine) line.itemId: imageOf(line.itemId)},
+          ),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -226,11 +251,12 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 ),
                 const SizedBox(height: 14),
                 InfoCard(
-                  title: 'Order Items',
+                  title: lang.translate('order items'),
                   child: widget.items.isEmpty
                       ? Text(
-                          'No items found',
-                          style: GoogleFonts.poppins(
+                          lang.translate('no items found'),
+                          style: TextStyle(
+                            fontFamily: getFontFamily(context),
                             fontSize: fontText,
                             color: Colors.grey[600],
                           ),
@@ -262,9 +288,9 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                 ),
                 const SizedBox(height: 14),
                 InfoCard(
-                  title: 'Total',
+                  title: lang.translate('total'),
                   child: InfoRow(
-                    label: 'Grand Total',
+                    label: lang.translate('grand total'),
                     value: '\$${widget.total.toStringAsFixed(2)}',
                     valueColor: ButtonColor,
                     valueWeight: FontWeight.w700,
@@ -295,8 +321,9 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                             ),
                           )
                         : Text(
-                            'Confirm Order',
-                            style: GoogleFonts.poppins(
+                            lang.translate('confirm_order'),
+                            style: TextStyle(
+                              fontFamily: getFontFamily(context),
                               fontSize: fontTitle,
                               fontWeight: FontWeight.w600,
                             ),

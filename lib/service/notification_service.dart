@@ -35,6 +35,12 @@ class NotificationService {
   static final ValueNotifier<int> unreadCountNotifier = ValueNotifier<int>(0);
   static int get badgeCount => unreadCountNotifier.value;
 
+  /// Ticks every time a push arrives or is tapped. Every push the server sends
+  /// a student is about one of their orders moving, so a screen showing an
+  /// order listens to this and re-reads it at once, instead of waiting for its
+  /// next poll — an open receipt used to keep its old status until reopened.
+  static final ValueNotifier<int> orderUpdates = ValueNotifier<int>(0);
+
   static Future<void> initialize() async {
     // 1. Initialize Firebase
     await Firebase.initializeApp(
@@ -99,6 +105,7 @@ class NotificationService {
 
     // 6. Listen for incoming messages while app is in Foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      orderUpdates.value++;
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification?.android;
 
@@ -109,6 +116,7 @@ class NotificationService {
 
     // 7. Listen when app is opened from notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      orderUpdates.value++;
       removeBadge();
     });
   }

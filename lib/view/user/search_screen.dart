@@ -269,7 +269,7 @@ class _SearchScreenState extends State<SearchScreen> {
         IconButton(
           onPressed: _history.isEmpty ? null : _clearHistory,
           icon: const Icon(Icons.delete_outline_rounded, color: _accent),
-          tooltip: 'Clear',
+          tooltip: lang.translate('clear'),
         ),
       ],
     );

@@ -9,6 +9,8 @@ import 'package:thesisapp/model/reservation.dart';
 import 'package:thesisapp/provider/auth_provider.dart';
 import 'package:thesisapp/service/api_client.dart';
 import 'package:thesisapp/service/inventory_api.dart';
+import 'package:thesisapp/service/notification_service.dart';
+import 'package:thesisapp/service/receipt_format.dart';
 import 'package:thesisapp/theme_color.dart';
 import 'package:thesisapp/view/user/order_success.dart';
 
@@ -45,12 +47,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // A push is the counter moving this order on: re-read it now.
+    NotificationService.orderUpdates.addListener(_refresh);
     _refresh();
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    NotificationService.orderUpdates.removeListener(_refresh);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -168,31 +173,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   void _openReceipt() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => OrderSuccessScreen(
-          orderId: _order.id,
-          items: [
-            for (final line in _order.asLines)
-              {
-                'name': line.title(
-                  khmer: Localizations.localeOf(context).languageCode == 'km',
-                ),
-                'quantity': line.quantity,
-                'price': line.unitPrice,
-                'image': null,
-              },
-          ],
-          total: _order.totalPrice ?? 0,
-          paymentMethod: _order.paymentMethod,
-          createdAt: _order.createdAt,
-          trackingNumber: _order.code,
-          orderStatus: _order.status.wireName,
-          isPaid: _order.isPaid,
-          paymentStatus: _order.status == ReservationStatus.cancelled
-              ? 'CANCELLED'
-              : (_order.isPaid ? 'PAID' : 'PENDING'),
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => LiveReceipt(order: _order)),
     );
   }
 
@@ -374,16 +355,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       ),
                       _row(
                         lang.translate('payment method'),
-                        _order.paymentMethod,
+                        ReceiptFormat.paymentLabel(_order.paymentMethod, lang: lang),
                       ),
-                      // Only a cash sale is booked as paid, and nothing is
-                      // settled in the app — so this says PENDING until the
-                      // counter takes the money. Cancelled orders show CANCELLED.
+                      // Nothing is settled in the app, so this is unpaid until
+                      // the counter takes the money — in the student's words,
+                      // not the PAID / PENDING / CANCELLED codes it used to print.
                       _row(
                         lang.translate('payment status'),
                         _order.status == ReservationStatus.cancelled
-                            ? 'CANCELLED'
-                            : (_order.isPaid ? 'PAID' : 'PENDING'),
+                            ? lang.translate('order_status_cancelled')
+                            : (_order.isPaid
+                                ? lang.translate('paid')
+                                : lang.translate('payment_pending')),
                         valueColor: _order.status == ReservationStatus.cancelled
                             ? Colors.red
                             : (_order.isPaid ? ButtonColor : Colors.orange[800]),
@@ -407,8 +390,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                     children: [
                       for (final (index, line) in _order.asLines.indexed) ...[
                         if (index > 0) const Divider(height: 24),
-                        _row(lang.translate('book'), line.title(khmer: khmer)),
-                        _row(lang.translate('book_code'), line.itemCode),
+                        // "Item", not "book": one basket can hold both.
+                        _row(lang.translate('item_name'), line.title(khmer: khmer)),
+                        _row(lang.translate('item_code'), line.itemCode),
                         _row(
                           lang.translate('quantity'),
                           line.quantity.toString(),
@@ -515,6 +499,93 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The receipt for one order, kept up to date while it is open.
+///
+/// It used to be drawn once from what the details screen held, so a receipt
+/// left open at the counter kept saying "unpaid" after reception had taken the
+/// money. This re-reads the order when a push arrives, and every ten seconds
+/// until the order is finished, and redraws the same receipt with what it gets.
+class LiveReceipt extends StatefulWidget {
+  const LiveReceipt({super.key, required this.order, this.images = const {}});
+
+  final Reservation order;
+
+  /// Pictures by item id, where the caller has them — the cart does, the
+  /// order read back from the server does not.
+  final Map<int, String?> images;
+
+  @override
+  State<LiveReceipt> createState() => _LiveReceiptState();
+}
+
+class _LiveReceiptState extends State<LiveReceipt> {
+  static const Duration _pollEvery = Duration(seconds: 10);
+
+  final InventoryApi _api = InventoryApi();
+  late Reservation _order = widget.order;
+  Timer? _poll;
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.orderUpdates.addListener(_refresh);
+    _schedulePoll();
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    NotificationService.orderUpdates.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _schedulePoll() {
+    _poll?.cancel();
+    _poll = null;
+    if (!mounted || _order.status.isFinished) return;
+    _poll = Timer.periodic(_pollEvery, (_) => _refresh());
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final fresh = await _api.reservation(_order.code);
+      if (!mounted) return;
+      setState(() => _order = fresh);
+      _schedulePoll();
+    } on ApiException {
+      // The receipt keeps what it last knew; the next tick tries again.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final khmer = Localizations.localeOf(context).languageCode == 'km';
+
+    return OrderSuccessScreen(
+      orderId: _order.id,
+      items: [
+        for (final line in _order.asLines)
+          {
+            'name': line.title(khmer: khmer),
+            'quantity': line.quantity,
+            'price': line.unitPrice,
+            'image': widget.images[line.itemId],
+          },
+      ],
+      total: _order.totalPrice ?? 0,
+      paymentMethod: _order.paymentMethod,
+      createdAt: _order.createdAt,
+      trackingNumber: _order.code,
+      counters: _order.counters,
+      orderStatus: _order.status.wireName,
+      isPaid: _order.isPaid,
+      paymentStatus: _order.status == ReservationStatus.cancelled
+          ? 'CANCELLED'
+          : (_order.isPaid ? 'PAID' : 'PENDING'),
     );
   }
 }

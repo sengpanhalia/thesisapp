@@ -77,10 +77,23 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
     return normalized;
   }
 
-  String _trackingNumberLabel() {
+  String _trackingNumberLabel(AppLocalizations lang) {
     return _resolvedTrackingNumber ??
         _normalizeTrackingNumber(widget.trackingNumber) ??
-        'Pending assignment';
+        lang.translate('pending_assignment');
+  }
+
+  /// PAID / PENDING / CANCELLED are what the code compares; the student reads
+  /// them in their own language. They were printed on the receipt as they are.
+  String _paymentStatusLabel(String code, AppLocalizations lang) {
+    switch (code) {
+      case 'PAID':
+        return lang.translate('paid');
+      case 'CANCELLED':
+        return lang.translate('order_status_cancelled');
+      default:
+        return lang.translate('payment_pending');
+    }
   }
 
   /// The room a code is collected from, in the reader's language.
@@ -293,8 +306,31 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
           orderStatus: widget.orderStatus,
           isPaid: widget.isPaid,
         );
-    final trackingNumber = _trackingNumberLabel();
     final lang = AppLocalizations.of(context)!;
+    final trackingNumber = _trackingNumberLabel(lang);
+
+    // What the receipt says follows where the order has got to. It always said
+    // "reserved" and "collect and pay", so a receipt opened after the student
+    // had paid, or collected, still told them to go and pay.
+    final orderStatus = (widget.orderStatus ?? '').trim().toUpperCase();
+    final cancelled = paymentStatus == 'CANCELLED';
+    final collected = !cancelled && orderStatus == 'COLLECTED';
+    final paid = !cancelled && paymentStatus == 'PAID';
+    final twoCounters = widget.counters.length > 1;
+    final headingKey = cancelled
+        ? 'reservation_cancelled'
+        : collected
+            ? 'collected_title'
+            : paid
+                ? 'paid_title'
+                : 'reserved_successfully';
+    final noteKey = cancelled
+        ? 'cancelled_receipt_message'
+        : collected
+            ? 'collected_receipt_message'
+            : paid
+                ? (twoCounters ? 'paid_collect_two_counters' : 'paid_collect_message')
+                : (twoCounters ? 'collect_at_two_counters' : 'collect_at_the_counter');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,9 +363,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
               ),
               // const SizedBox(height: 10),
               Text(
-                // Nothing has been paid and nothing has been sold: the copies
-                // are held until the student collects them at the counter.
-                lang.translate('reserved_successfully'),
+                lang.translate(headingKey),
                 style: TextStyle(
                   fontFamily: getFontFamily(context),
                   fontSize: fontHeadTitle,
@@ -376,7 +410,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             ),
             _infoRow(
               lang.translate('payment status'),
-              paymentStatus,
+              _paymentStatusLabel(paymentStatus, lang),
               valueColor: paymentStatus == 'CANCELLED'
                   ? Colors.red
                   : (paymentStatus == 'PAID' ? ButtonColor : Colors.orange[800]),
@@ -384,18 +418,16 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             _infoRow(lang.translate('code number of order'), trackingNumber),
             // Where to take it. Two rooms means two walks with the same code,
             // so they are named rather than left to the student to guess.
-            if (widget.counters.length > 1)
+            if (twoCounters && !cancelled && !collected)
               _infoRow(
                 lang.translate('collect_from'),
                 widget.counters.map((c) => _counterLabel(c, lang)).join(' + '),
               ),
             const SizedBox(height: 8),
             Text(
-              widget.counters.length > 1
-                  ? lang.translate('collect_at_two_counters')
-                  : lang.translate('collect_at_the_counter'),
+              lang.translate(noteKey),
               style: TextStyle(
-                color: RedColor,
+                color: (paid || collected) ? ButtonColor : RedColor,
                 fontSize: fontText,
                 fontFamily: getFontFamily(context),
               ),
